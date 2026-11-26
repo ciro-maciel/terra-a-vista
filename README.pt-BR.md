@@ -31,7 +31,8 @@ o chão é o relevo e a cobertura do solo de verdade. Cada número leva a uma fo
 - **Linha do tempo**, por tema. *Gente*: os Censos de 1970 a 2022; os estandartes mostram a população contada em
   cada um e o mapa pinta o crescimento por ano de cada década, na mesma escala para todas. *Terra*: o MapBiomas
   (Coleção 11), de cinco em cinco anos de 1985 a 2025, a parcela de cada município em vegetação nativa, pasto,
-  agricultura, soja e cidade, na mesma escala para todos os anos.
+  agricultura, soja e cidade, na mesma escala para todos os anos. *Lavoura*: a PAM e a PPM do IBGE, de cinco em cinco
+  anos de 1975 a 2025, a área colhida de todas as lavouras, de soja, milho, cana e café, e os bois por km².
 - **Por quê?** no painel de cada cidade e estado: a população nos seus municípios e em cada Censo, o PIB nos setores e
   nos municípios (e o crescimento real desde 2002), o crescimento nos municípios que somaram ou perderam gente, e o
   tipo de cidade nas atividades que o explicam; e uma pergunta por tema da linha do tempo ("o que aconteceu com a

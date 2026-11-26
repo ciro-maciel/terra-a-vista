@@ -16,7 +16,8 @@ const BIG = 100000;
 // id, button label, series file (none = the Census theme). Order = order on the bar.
 const THEMES = [
   { id: "people", label: "Gente" },
-  { id: "land", label: "Terra", file: "series_land" },
+  { id: "land", label: "Terra", file: "series_land", icon: "l-forest" },
+  { id: "farm", label: "Lavoura", file: "series_farm", icon: "l-farmland" },
 ];
 const nf = (d) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: d, minimumFractionDigits: d });
 const rate = (a, b, years) => (a > 0 && b > 0 && years > 0 ? (b / a) ** (1 / years) - 1 : null);
@@ -89,7 +90,7 @@ export function install(app) {
   document.body.appendChild(bar);
 
   const btn = app.ui.addTopButton({
-    id: "btn-timeline", label: "Linha do tempo", title: "Linha do tempo: o Brasil em cada Censo desde 1970, a terra desde 1985 e mais",
+    id: "btn-timeline", label: "Linha do tempo", title: "Linha do tempo: a gente desde 1970, a terra desde 1985, a lavoura e o gado desde 1975",
     onClick: () => (open ? close() : show()),
   });
   if (btn) {
@@ -212,7 +213,7 @@ export function install(app) {
       }
     }
     ourLens = {
-      id: `tl-${theme}-${m.id}-${by}-${d.years[i]}`, group: theme, name: `${m.name} em ${d.years[i]}`, icon: "l-forest",
+      id: `tl-${theme}-${m.id}-${by}-${d.years[i]}`, group: theme, name: `${m.name} em ${d.years[i]}`, icon: themeOf(theme).icon || "l-people",
       unit: m.unit, format: m.format, scale: m.scale, domain: m.domain, ramp: m.ramp, higher_is: m.higher_is,
       source: d.sources[0],
       description: `${m.description} ${by === "states" ? "Por estado." : "Cada hexágono tem a cor do município que mais o ocupa."} A mesma escala vale para todos os anos.`,
@@ -221,13 +222,16 @@ export function install(app) {
     app.setLens(ourLens);
   }
 
-  // The municipalities that changed the most since the first year (and today's leader when it is the first year).
+  // The municipalities that changed the most: since the first year when every year has today's borders, else since
+  // the year before (a municipality that later split would otherwise look like it shrank).
+  const baseOf = (d, i) => (d.fixed_borders === false ? i - 1 : 0);
   function movers(m, i) {
     const d = files.get(theme);
     let up = null, down = null;
     const rows = d.munis[m.id] || [];
+    const j = baseOf(d, i);
     for (let k = 0; k < rows.length; k++) {
-      const a = muniValue(m, k, 0), b = muniValue(m, k, i);
+      const a = muniValue(m, k, j), b = muniValue(m, k, i);
       if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
       const dv = b - a;
       if (!up || dv > up.dv) up = { k, dv };
@@ -261,7 +265,7 @@ export function install(app) {
       </div>
       <div class="tl-info">
         <b>Brasil em ${year}: ${esc(fmtValue(m, br[i]))} ${esc(m.unit || "")}</b>${i > 0 && Number.isFinite(br[0]) && Number.isFinite(br[i]) ? ` · ${pts(br[i] - br[0], m)} desde ${ys[0]}` : ""}.
-        ${up && down ? `<br>Desde ${ys[0]}, a maior alta foi em <b>${esc(muniName(up.k))}</b> (${pts(up.dv, m)}) e a maior queda, em <b>${esc(muniName(down.k))}</b> (${pts(down.dv, m)}).` : ""}
+        ${up && down ? `<br>${baseOf(d, i) === 0 ? `Desde ${ys[0]}` : `De ${ys[i - 1]} a ${year}`}, a maior alta foi em <b>${esc(muniName(up.k))}</b> (${pts(up.dv, m)}) e a maior queda, em <b>${esc(muniName(down.k))}</b> (${pts(down.dv, m)}).` : ""}
         ${i === 0 ? `<br>Escolha um ano depois de ${ys[0]} para ver quem mais mudou.` : ""}
       </div>
       <div class="tl-legend"><span>${esc(fmtValue(m, lo))}</span><i style="background:linear-gradient(90deg, ${m.ramp.join(",")})"></i><span>${esc(fmtValue(m, hi))}</span><span>· ${esc(m.name.toLowerCase())}, ${by === "states" ? "por estado" : "por município"}, na mesma escala para todos os anos · ${esc(d.vintage)}</span></div>`;

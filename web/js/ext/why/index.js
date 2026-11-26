@@ -216,12 +216,15 @@ export function install(app) {
     const codes = t.kind === "city" ? t.city.counties || [] : null;
     const all = app.w.raw.counties || [];
     const rows = [];
+    // When each year has its own borders, compare municipalities only from the year their borders settled.
+    const j0 = d.fixed_borders === false && d.stable_from ? Math.max(0, ys.findIndex((y) => y >= d.stable_from)) : 0;
+    const yFrom = ys[j0];
     for (let k = 0; k < all.length; k++) {
       const code = String(all[k].geoid);
       if (codes ? !codes.includes(code) : code.slice(0, 2) !== t.st.fips) continue;
       const r = d.munis[m.id]?.[k];
       if (!r) continue;
-      const a = r[first(r)], b = r.at(-1);
+      const a = r[Math.max(first(r), j0)], b = r.at(-1);
       if (a == null || b == null) continue;
       rows.push({ name: all[k].name, d: (b - a) / (m.muni_div || 1) });
     }
@@ -230,7 +233,7 @@ export function install(app) {
       const tiny = m.format === "pct" ? 0.005 : 0.05;
       const down = rows.slice(0, 3).filter((x) => x.d < -tiny), up = rows.slice(-3).reverse().filter((x) => x.d > tiny);
       const list = (xs) => `<table>${xs.map((x) => `<tr><td>${esc(x.name)}</td><td class="n">${diff(m, 0, x.d)}</td></tr>`).join("")}</table>`;
-      if (down.length) html += `<p>${esc(m.name)}: os municípios com a maior queda de ${y0} a ${y1}:</p>${list(down)}`;
+      if (down.length) html += `<p>${esc(m.name)}: os municípios com a maior queda de ${yFrom} a ${y1}:</p>${list(down)}`;
       if (up.length) html += `<p>E os com a maior alta:</p>${list(up)}`;
     }
     return html + `<p class="src">${esc(d.rule)} Fonte: ${esc(d.vintage)}.</p>`;

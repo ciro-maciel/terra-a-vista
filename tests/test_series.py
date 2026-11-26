@@ -40,5 +40,18 @@ class MapBiomasGroups(unittest.TestCase):
         self.assertEqual(groups_of(15, "Anthropic", "3.1. Pasture"), {"pasture"})
 
 
+
+
+class FarmPlausible(unittest.TestCase):
+    def test_a_crop_larger_than_the_municipality_is_dropped(self):
+        from pipeline.build.series_farm import plausible
+        out = plausible({"m": {"2020": 50.0, "2025": 195.0}}, {"m": 100.0}, 1.0)
+        self.assertEqual(out["m"], {"2020": 50.0, "2025": None})
+
+    def test_all_crops_may_reach_twice_the_area(self):
+        from pipeline.build.series_farm import plausible
+        self.assertEqual(plausible({"m": {"2025": 180.0}}, {"m": 100.0}, 2.0)["m"]["2025"], 180.0)
+
+
 if __name__ == "__main__":
     unittest.main()

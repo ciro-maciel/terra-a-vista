@@ -37,7 +37,7 @@ def build() -> None:
     area = mb["area_ha"]
     build_series(
         {"id": "land", "name": "Terra", "vintage": mb.get("vintage") or "MapBiomas Coleção 11", "sources": ["mapbiomas"],
-         "years": years, "rule": RULE, "question": "O que aconteceu com a terra desde {first}?"},
+         "years": years, "rule": RULE, "question": "O que aconteceu com a terra desde {first}?", "fixed_borders": True},
         [{"id": k, "name": n, "unit": "da área", "format": "pct", "ramp": ramp, "higher_is": hi,
           "description": d, "num": zero_filled(mb["groups"][k], area), "den": area, "lo_floor": 0} for k, n, ramp, hi, d in METRICS],
     )

@@ -31,6 +31,8 @@ relief and land cover. Every number traces back to a public source, listed in th
 - **Timeline**, by theme. *People*: the Censuses from 1970 to 2022; banners show each count and the map colours each
   decade's yearly growth on one scale for all. *Land*: MapBiomas Collection 11, every five years from 1985 to 2025,
   the share of each municipality in native vegetation, pasture, agriculture, soy and city, on one scale for all years.
+  *Farming*: IBGE PAM and PPM every five years from 1975 to 2025, harvested area of all crops, soy, corn, sugarcane
+  and coffee, and head of cattle per km².
 - **Why?** in every city and state panel: population by municipality and Census, GDP by sector and municipality
   (and real change since 2002), growth by the municipalities that gained or lost people, and the city type by the
   activities behind it; and one question per timeline theme ("what happened to the land since 1985?").
