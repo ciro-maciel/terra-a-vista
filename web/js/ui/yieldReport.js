@@ -73,7 +73,7 @@ export function statDefs(nation) {
     },
     ...yields,
     {
-      key: "unemployment", label: "Desemprego", name: "Taxa de desemprego", color: "#e8dcc0", iconId: "unemployment", emoji: "😐",
+      key: "unemployment", label: "Desocupação", name: "Taxa de desocupação", color: "#e8dcc0", iconId: "unemployment", emoji: "😐",
       unit: "rate", description: "Desocupados ÷ força de trabalho.", source: nation?.vintage || "", value: n.unemployment ?? null,
     },
   ];
