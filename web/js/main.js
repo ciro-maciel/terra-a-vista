@@ -786,7 +786,7 @@ async function main() {
     beforeCopy: () => url.flush(),
     fileName: () => {
       const sel = shareInfo().selection;
-      return `united-states-${state.lens?.id || "terrain"}${sel ? "-" + slug(sel.name) : ""}.png`;
+      return `brasil-${state.lens?.id || "terreno"}${sel ? "-" + slug(sel.name) : ""}.png`;
     },
     onToast: toast,
   });

@@ -281,8 +281,9 @@ def check_growth(r: Report, docs: dict) -> None:
         bad += 1
     year = nat.get("year") if nat else None
     for w in windows:
-        if is_int(year) and len(w) == 2 and w[1] != year:
-            r.fail(f"growth_years end in {w[1]} but nation.json year is {year} (growth must end at the year shown)")
+        # Brazil: the panels show the 2022 Census, growth runs between later IBGE estimates (2024 → latest)
+        if is_int(year) and len(w) == 2 and w[1] < year:
+            r.fail(f"growth_years end in {w[1]}, before nation.json year {year}")
             bad += 1
     for what, o in fixed:
         if o.get("growth_years") is not None and o.get("growth") is None:
@@ -290,7 +291,7 @@ def check_growth(r: Report, docs: dict) -> None:
             bad += 1
     if not bad and windows:
         (w,) = windows
-        r.ok(f"growth: one window {w[0]}→{w[1]} ending at nation.json year; every state and the nation have a rate")
+        r.ok(f"growth: one window {w[0]}→{w[1]}; every state and the nation have a rate")
 
 
 def check_cities(r: Report, cities, ctx: dict | None, yield_keys=YIELD_KEYS) -> None:

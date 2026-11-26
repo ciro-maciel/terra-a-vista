@@ -22,7 +22,7 @@ from ..core.store import load_interim, load_interim_payload, write_web
 from .growth import Growth
 from .yields import GDP_INDUSTRIES, INDUSTRY_LINES, YIELDS, bea_combos, economy, gdp_profile, sum_counties
 
-REQUIRES = ["_world", "ibge_census", "ibge_gdp", "ibge_arranjos", "ibge_localities", "ibge_boundaries", "ibge_cempre", "ibge_censo2022"]
+REQUIRES = ["_world", "ibge_census", "ibge_gdp", "ibge_arranjos", "ibge_localities", "ibge_boundaries", "ibge_cempre", "ibge_censo2022", "ibge_estimates"]
 PRODUCES = ["cities.json", "nation.json"]
 
 NON_CONUS = {"AK", "HI", "PR"}
@@ -255,6 +255,23 @@ def level_jobs(values_of) -> dict:
     return out
 
 
+def growth_of(est: dict | None, codes: list[str], years: list[int]) -> tuple:
+    """(growth, growth_years, pop_series) from the IBGE estimates summed over the territories: growth between the
+    first and last estimate year (estimates only; see sources/ibge_estimates.py). Any member missing a year → that
+    year is None and growth is None; |growth| above 25% is treated as an error (None)."""
+    if not est:
+        return None, None, None
+    series = {}
+    for y in years:
+        vals = [est.get(c, {}).get(str(y)) for c in codes]
+        series[str(y)] = None if any(v is None for v in vals) else sum(vals)
+    a, b = series[str(years[0])], series[str(years[-1])]
+    g = round(b / a - 1, 4) if a and b is not None else None
+    if g is not None and abs(g) > 0.25:
+        g = None
+    return g, [years[0], years[-1]], series
+
+
 def labour(censo: dict | None, codes: list[str]) -> dict:
     """Mean monthly earnings per worker and the unemployment rate over a set of territories (Censo 2022 counts,
     so a city adds up its municipalities exactly). Any member missing → None."""
@@ -340,6 +357,7 @@ def build() -> None:
     names = {c["geoid"]: c["name"] for c in bounds["counties"]}
     cempre = load_interim("ibge_cempre")
     censo22 = load_interim("ibge_censo2022")
+    est = load_interim("ibge_estimates")
 
     groups = []  # (members, full name, principal)
     in_arranjo = set()
@@ -382,6 +400,8 @@ def build() -> None:
             }
         )
     cities.sort(key=lambda c: -c["population"])
+    for c in cities:
+        c["growth"], c["growth_years"], c["pop_series"] = growth_of(est["municipalities"], c["counties"], est["years"])
 
     # Banner cells: on Brazilian land, one city per cell where possible (bigger cities choose first).
     fips_of_abbr = {v: k for k, v in abbr.items()}
@@ -417,6 +437,7 @@ def build() -> None:
     nation = empty_economy(census["nation"]["1"], gdp["nation"]["1"], gdp_year,
                            level_jobs(lambda c: (cempre["us"].get(c) or [None])[0] and cempre["us"][c][0][0]),
                            cempre["us_total"][0], labour(censo22["nation"], ["1"]))
+    nation["growth"], nation["growth_years"], _ = growth_of(est["nation"], ["1"], est["years"])
     write_web("cities.json", cities)
     write_web(
         "nation.json",
