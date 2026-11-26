@@ -22,7 +22,7 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
-      - run: mkdir _site && cp -r web/index.html web/og-image.png web/favicon.svg web/favicon-32.png web/apple-touch-icon.png web/css web/js web/data web/llms.txt web/pergunte web/como-contamos _site/
+      - run: mkdir _site && cp -r web/index.html web/og-image.png web/favicon.svg web/favicon-32.png web/apple-touch-icon.png web/css web/js web/data web/llms.txt web/i18n web/pergunte web/como-contamos _site/
       - uses: actions/upload-pages-artifact@v3
       - id: deployment
         uses: actions/deploy-pages@v4
