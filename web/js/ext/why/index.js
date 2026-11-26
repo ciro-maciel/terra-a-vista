@@ -250,6 +250,12 @@ export function install(app) {
       if (down.length) html += `<p>${esc(m.name)}: os municípios${d.movers ? ` de ${int(d.movers_min_pop)} habitantes ou mais` : ""} com a maior queda de ${yFrom} a ${y1}:</p>${list(down)}`;
       if (up.length) html += `<p>E os com a maior alta:</p>${list(up)}`;
     }
+    // Notable single events the series carries (the deadliest disasters), inside this city or state.
+    if (d.events?.length) {
+      const mine = d.events.filter((e) => (codes ? codes.includes(e.code) : e.code.slice(0, 2) === t.st.fips)).slice(0, 5);
+      const nameOf2 = new Map(all.map((c) => [String(c.geoid), c.name]));
+      if (mine.length) html += `<p>Os mais mortais:</p><table>${mine.map((e) => `<tr><td>${esc(e.type)}, ${esc(nameOf2.get(e.code) || e.code)}<br><span class="src">${esc(e.date)}</span></td><td class="n">${int(e.dead)} mortos</td><td class="n m">${e.homeless ? `${int(e.homeless)} sem casa` : ""}</td></tr>`).join("")}</table>`;
+    }
     return html + `<p class="src">${esc(d.rule)} Fonte: ${esc(d.vintage)}.</p>`;
   }
 

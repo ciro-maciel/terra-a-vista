@@ -21,6 +21,7 @@ const THEMES = [
   { id: "health", label: "Saúde", file: "series_health", icon: "l-age" },
   { id: "school", label: "Escola", file: "series_school", icon: "l-degrees" },
   { id: "net", label: "Conexão", file: "series_net", icon: "l-developed" },
+  { id: "disasters", label: "Desastres", file: "series_disasters", icon: "unemployment" },
 ];
 const nf = (d) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: d, minimumFractionDigits: d });
 const rate = (a, b, years) => (a > 0 && b > 0 && years > 0 ? (b / a) ** (1 / years) - 1 : null);

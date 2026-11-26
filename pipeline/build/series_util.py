@@ -76,6 +76,8 @@ def build_series(theme: dict, metrics: list[dict]) -> dict:
     # True when every year uses today's municipal borders (MapBiomas); False when each year has its own (IBGE surveys),
     # so a municipality that later split looks like it shrank: compare a year with the one before, not the first.
     out["fixed_borders"] = bool(theme.get("fixed_borders", True))
+    if theme.get("events"):
+        out["events"] = theme["events"]  # notable single events, [{code, year, date, type, dead, homeless}]
     out["compare_from"] = theme.get("compare_from")  # the "por quê" compares from here (earlier years are less complete)
     out["stable_from"] = theme.get("stable_from")  # first year whose borders match today's (almost no new municipality since 2001)
     out["years"] = [int(y) for y in years]

@@ -40,6 +40,8 @@ o chão é o relevo e a cobertura do solo de verdade. Cada número leva a uma fo
   Datasus, a mortalidade infantil desde 2000 e os médicos e leitos por mil habitantes desde 2010. *Escola*: o Ideb da
   rede pública (Inep), de dois em dois anos desde 2005, anos iniciais e finais (também no conselheiro do Conhecimento).
   *Conexão*: a Anatel, banda larga fixa e celular por 100 habitantes desde 2019, e os moradores cobertos por 4G e 5G.
+  *Desastres*: o Atlas Digital de Desastres da Defesa Civil, secas, chuvas fortes, deslizamentos, mortos e pessoas sem
+  casa, em períodos de cinco anos desde 1991, com os mais mortais em cada painel.
 - **Por quê?** no painel de cada cidade e estado: a população nos seus municípios e em cada Censo, o PIB nos setores e
   nos municípios (e o crescimento real desde 2002), o crescimento nos municípios que somaram ou perderam gente, e o
   tipo de cidade nas atividades que o explicam; e uma pergunta por tema da linha do tempo ("o que aconteceu com a
