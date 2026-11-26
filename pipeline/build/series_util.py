@@ -26,9 +26,11 @@ def ratio(num, den):
     return None if num is None or den in (None, 0) else num / den
 
 
-def _round(v, fmt, digits=3):
+def _round(v, fmt, digits=3, fixed=None):
     if v is None:
         return None
+    if fixed is not None:  # the metric says how many decimals it needs (an index from 0 to 1: three)
+        return round(v, fixed)
     if fmt == "int":
         return round(v)
     return round(v, digits) if fmt == "pct" else round(v, 1) if abs(v) < 1000 else round(v)
@@ -90,11 +92,14 @@ def build_series(theme: dict, metrics: list[dict]) -> dict:
     out.update(metrics=[], munis={}, cities={}, states={}, nation={})
     for m in metrics:
         num, den, fmt = m["num"], m["den"], m.get("format", "pct")
-        rows = [[_round(ratio((num.get(c) or {}).get(y), (den.get(c) or {}).get(y)), fmt) for y in years] for c in codes]
+        fx = m.get("digits")
+        rows = [[_round(ratio((num.get(c) or {}).get(y), (den.get(c) or {}).get(y)), fmt, fixed=fx) for y in years] for c in codes]
         # shares travel as whole thousandths (0..1000): a third of the size; the browser divides by "muni_div"
         div = 1000 if fmt == "pct" else 1
         agg = m.get("agg_num", num)  # what groups sum: may differ (a municipality not yet created counts as 0)
-        meta = {k: v for k, v in m.items() if k not in ("num", "den", "agg_num")}
+        # an index with an official value per state and for Brazil (the IDHM) uses it instead of a weighted mean
+        st_over, nat_over = m.get("states_official"), m.get("nation_official")
+        meta = {k: v for k, v in m.items() if k not in ("num", "den", "agg_num", "states_official", "nation_official")}
         meta.setdefault("format", "pct")
         meta.setdefault("scale", "linear")
         meta.setdefault("higher_is", "neutral")
@@ -107,11 +112,15 @@ def build_series(theme: dict, metrics: list[dict]) -> dict:
         meta["muni_div"] = div
         out["munis"][m["id"]] = [[None if v is None else round(v * div) for v in r] for r in rows] if div != 1 else rows
         for c in cities:
-            out["cities"].setdefault(c["id"], {})[m["id"]] = [_round(v, fmt, 4) for v in aggregate(agg, den, c["counties"], years)]
+            out["cities"].setdefault(c["id"], {})[m["id"]] = [_round(v, fmt, 4, fx) for v in aggregate(agg, den, c["counties"], years)]
         for s in states:
             members = [c for c in codes if c[:2] == s["fips"]]
-            out["states"].setdefault(s["abbr"], {})[m["id"]] = [_round(v, fmt, 4) for v in aggregate(agg, den, members, years)]
-        out["nation"][m["id"]] = [_round(v, fmt, 4) for v in aggregate(agg, den, codes, years)]
+            if st_over is not None:
+                out["states"].setdefault(s["abbr"], {})[m["id"]] = [(st_over.get(s["abbr"]) or {}).get(y) for y in years]
+            else:
+                out["states"].setdefault(s["abbr"], {})[m["id"]] = [_round(v, fmt, 4, fx) for v in aggregate(agg, den, members, years)]
+        out["nation"][m["id"]] = ([nat_over.get(y) for y in years] if nat_over is not None
+                                  else [_round(v, fmt, 4, fx) for v in aggregate(agg, den, codes, years)])
     write_web(f"series_{theme['id']}.json", out)
     return out
 

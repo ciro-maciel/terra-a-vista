@@ -22,11 +22,14 @@ const THEMES = [
   { id: "school", label: "Escola", file: "series_school", icon: "l-degrees" },
   { id: "net", label: "Conexão", file: "series_net", icon: "l-developed" },
   { id: "disasters", label: "Desastres", file: "series_disasters", icon: "unemployment" },
+  { id: "idhm", label: "IDH", file: "series_idhm", icon: "l-income" },
 ];
 const nf = (d) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: d, minimumFractionDigits: d });
 const rate = (a, b, years) => (a > 0 && b > 0 && years > 0 ? (b / a) ** (1 / years) - 1 : null);
 const pctY = (g) => (Number.isFinite(g) ? `${g >= 0 ? "+" : "−"}${nf(1).format(Math.abs(g * 100))}% ao ano` : "–");
-const pts = (d, m) => m.format === "pct"
+const pts = (d, m) => m.digits != null && m.format !== "pct"
+  ? `${d >= 0 ? "+" : "−"}${nf(m.digits).format(Math.abs(d))}`
+  : m.format === "pct"
   ? `${d >= 0 ? "+" : "−"}${nf(1).format(Math.abs(d * 100))} ${Math.abs(d * 100) >= 0.95 && Math.abs(d * 100) < 1.05 ? "ponto" : "pontos"}`
   : `${d >= 0 ? "+" : "−"}${nf(m.format === "int" ? 0 : 1).format(Math.abs(d))}`;
 const people = (v) => (v >= 1e6 ? `${nf(v >= 1e7 ? 1 : 2).format(v / 1e6)} mi` : v >= 1e4 ? `${nf(0).format(v / 1e3)} mil` : nf(0).format(v));
@@ -273,7 +276,7 @@ export function install(app) {
       </div>
       <div class="tl-info">
         <b>Brasil em ${year}: ${esc(fmtValue(m, br[i]))} ${esc(m.unit || "")}</b>${i > f0 && Number.isFinite(br[f0]) && Number.isFinite(br[i]) ? ` · ${pts(br[i] - br[f0], m)} desde ${ys[f0]}` : ""}.
-        ${up && down ? `<br>${d.fixed_borders === false ? `De ${ys[i - 1]} a ${year}` : `Desde ${ys[f0]}`}, ${d.movers ? `entre os municípios de ${people(d.movers_min_pop)} habitantes ou mais, ` : ""}a maior alta foi em <b>${esc(muniName(up.k))}</b> (${pts(up.dv, m)}) e a maior queda, em <b>${esc(muniName(down.k))}</b> (${pts(down.dv, m)}).` : ""}
+        ${up && down ? `<br>${d.fixed_borders === false ? `De ${ys[i - 1]} a ${year}` : `Desde ${ys[f0]}`}, ${d.movers ? `entre os municípios de ${people(d.movers_min_pop)} habitantes ou mais, ` : ""}${up.dv >= 0 ? "a maior alta" : "a menor queda"} foi em <b>${esc(muniName(up.k))}</b> (${pts(up.dv, m)}) e ${down.dv <= 0 ? "a maior queda" : "a menor alta"}, em <b>${esc(muniName(down.k))}</b> (${pts(down.dv, m)}).` : ""}
         ${i <= f0 ? `<br>${br[i] == null ? `Esta medida começa em ${ys[f0]}.` : `Escolha um ano depois de ${ys[f0]} para ver quem mais mudou.`}` : ""}
       </div>
       <div class="tl-legend"><span>${esc(fmtValue(m, lo))}</span><i style="background:linear-gradient(90deg, ${m.ramp.join(",")})"></i><span>${esc(fmtValue(m, hi))}</span><span>· ${esc(m.name)}, ${by === "states" ? "por estado" : "por município"}, na mesma escala para todos os anos · ${esc(d.vintage)}</span></div>`;
@@ -282,7 +285,7 @@ export function install(app) {
   function fmtValue(m, v) {
     if (v == null || !Number.isFinite(v)) return "–";
     if (m.format === "pct") return `${nf(v * 100 < 10 ? 1 : 0).format(v * 100)}%`;
-    return nf(m.format === "int" ? 0 : 1).format(v);
+    return nf(m.digits ?? (m.format === "int" ? 0 : 1)).format(v);
   }
 
   function themeBar() {

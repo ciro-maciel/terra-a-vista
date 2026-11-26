@@ -40,7 +40,8 @@ relief and land cover. Every number traces back to a public source, listed in th
   and late primary years (also in the Knowledge advisor). *Connection*: Anatel, fixed broadband and mobile lines per
   100 people since 2019, and the share of residents covered by 4G and 5G. *Disasters*: the civil defence's Atlas
   Digital de Desastres, droughts, heavy rain, landslides, deaths and people left homeless, in five-year periods since
-  1991, with the deadliest events in each panel.
+  1991, with the deadliest events in each panel. *HDI*: the municipal human development index (PNUD, Ipea, FJP) and its
+  three dimensions in 1991, 2000 and 2010, official values for states and Brazil.
 - **Why?** in every city and state panel: population by municipality and Census, GDP by sector and municipality
   (and real change since 2002), growth by the municipalities that gained or lost people, and the city type by the
   activities behind it; and one question per timeline theme ("what happened to the land since 1985?").
