@@ -23,8 +23,9 @@ relief and land cover. Every number traces back to a public source, listed in th
   concessions (ANM), and 17 crops and herds (IBGE PAM and PPM 2025).
 - **Roads and rail** (Natural Earth), **29 ports** (ANTAQ yearbook 2025), **59 airports** and **40 air routes** (ANAC
   flight statistics 2025, streamed once from a 362 MB file and reduced).
-- **13 lenses** from the 2022 Census and land cover: density, median age, ageing, earnings, GDP per person,
-  unemployment, literacy, degrees, sewer, water, forest, farmland, built-up.
+- **14 lenses** from the 2022 Census, the Tesouro and land cover: density, median age, ageing, earnings, GDP per person,
+  unemployment, the city hall's own money (Siconfi 2024), literacy, degrees, sewer, water, forest, farmland, built-up.
+- **City hall accounts** (Siconfi 2024) in every panel: own taxes, FPM, ICMS share, royalties and other transfers.
 - **26 wonders**: every Brazilian site on UNESCO's World Heritage List.
 - **Protected areas** (Map menu): indigenous lands (Funai) and conservation units (national register), by the hexes
   they cover, with a "how much of here is protected?" question in every panel.

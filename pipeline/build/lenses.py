@@ -18,7 +18,7 @@ from ..core.hexgrid import HexGrid
 from ..core.store import load_interim, write_web
 from .cities import nearest_land
 
-REQUIRES = ["_world", "ibge_census", "ibge_censo2022", "ibge_gdp", "ibge_localities"]
+REQUIRES = ["_world", "ibge_census", "ibge_censo2022", "ibge_gdp", "ibge_localities", "siconfi"]
 PRODUCES = ["lenses.json"]
 
 GROUPS = [
@@ -181,6 +181,31 @@ def build() -> None:
                 v = sum(v * p for v, p in vals) / wsum
                 values[i] = round(v, 4) if meta["format"] == "pct" else round(v, 1 if v < 1000 else 0)
         lenses.append({"id": lid, **meta, "source": "ibge_gdp" if lid == "gdp_pc" else "ibge_censo2022", "values": values})
+
+    # The city hall's own money (Siconfi): the share of its revenue that comes from its own taxes and fees.
+    try:
+        sc = load_interim("siconfi")
+    except FileNotFoundError:
+        sc = None
+    if sc:
+        from .finances import plausible
+        fin = {c: r for c, r in sc["municipalities"].items() if plausible(r)}
+        mval = [ratio(fin.get(m, {}).get("own"), fin.get(m, {}).get("total")) for m in geoids]
+        values = [None] * grid.size
+        for i, parts in enumerate(weights):
+            vals = [(mval[k], p) for k, p in parts if mval[k] is not None]
+            wsum = sum(p for _, p in vals)
+            if wsum:
+                values[i] = round(sum(v * p for v, p in vals) / wsum, 4)
+        lenses.append({
+            "id": "own_revenue", "group": "prosperity", "name": "Dinheiro próprio da prefeitura", "icon": "l-income",
+            "unit": "da receita da prefeitura", "format": "pct", "scale": "linear", "higher_is": "neutral",
+            "ramp": RAMPS["gold"], "source": "siconfi",
+            "description": f"Parte da receita da prefeitura que vem dos impostos e taxas que ela mesma cobra (IPTU, ISS, "
+            f"ITBI e taxas), em {sc['year']}; o resto vem de transferências da União e do estado (Tesouro Nacional, "
+            "Siconfi). Média dos municípios do hexágono ponderada pela população.",
+            "note": "Uma prefeitura que não entregou a declaração ao Tesouro fica sem dado.",
+            "values": values})
 
     pct, owner = world.get("pct"), world["owner"]
     cover = world.get("cover") or [1] * grid.size

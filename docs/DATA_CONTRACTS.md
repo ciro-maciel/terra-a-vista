@@ -772,6 +772,20 @@ A city's value in a Census year sums its member municipalities that existed that
 later was counted in the one it split from); `null` when the municipality that names the city did not exist yet.
 GDP follows the same rule and uses Brazil's GDP deflator for every municipality.
 
+### finances.json (lazy)
+
+Built by `pipeline/build/finances.py` from `siconfi` (each city hall's annual accounts, DCA annex I-C, gross revenue).
+
+```js
+{
+  version: 1, year: 2024, vintage, sources: ["siconfi"], rule: "…",
+  keys: ["total", "own", "transfers", "capital_transfers", "fpm", "icms", "royalties"],
+  munis: {code7: [R$ per key]},                       // only declarations that add up
+  cities: {id: {n, pop, total, own, …}}, states: {abbr: {...}}, nation: {...},   // n = city halls summed
+  municipalities_total, dropped,                      // dropped = declarations left out (negative own taxes etc.)
+}
+```
+
 ### protected.json (lazy)
 
 Built by `pipeline/build/protected.py` from `protected_areas` (Funai indigenous lands and CNUC conservation units).

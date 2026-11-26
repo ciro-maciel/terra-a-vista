@@ -23,8 +23,11 @@ o chão é o relevo e a cobertura do solo de verdade. Cada número leva a uma fo
   lavra (ANM) e 17 lavouras e rebanhos (IBGE, PAM e PPM 2025).
 - **Rodovias e ferrovias** (Natural Earth), **29 portos** (Anuário 2025 da ANTAQ), **59 aeroportos** e **40 rotas
   aéreas** (estatísticas da ANAC 2025, lidas em fluxo de um arquivo de 362 MB e resumidas).
-- **13 lentes** do Censo 2022 e da cobertura do solo: densidade, idade mediana, envelhecimento, renda do trabalho, PIB
-  por habitante, desocupação, alfabetização, ensino superior, esgoto, água, floresta, lavoura, área construída.
+- **14 lentes** do Censo 2022, do Tesouro e da cobertura do solo: densidade, idade mediana, envelhecimento, renda do
+  trabalho, PIB por habitante, desocupação, dinheiro próprio da prefeitura (Siconfi 2024), alfabetização, ensino
+  superior, esgoto, água, floresta, lavoura, área construída.
+- **As contas da prefeitura** (Siconfi 2024) em cada painel: impostos próprios, FPM, parte do ICMS, royalties e outras
+  transferências.
 - **26 maravilhas**: todos os sítios brasileiros do Patrimônio Mundial da UNESCO.
 - **Áreas protegidas** (menu Mapa): terras indígenas (Funai) e unidades de conservação (cadastro nacional), pelos
   hexágonos que cobrem, com a pergunta "quanto daqui é área protegida?" em cada painel.

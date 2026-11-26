@@ -8,6 +8,7 @@
 //   each timeline series theme (series_<id>.json) → its measures in the first and the last year, against Brazil
 //   exports    → the buyers and the products (exports.json), against Brazil
 //   protected  → how much is indigenous land or a conservation unit, and the biggest areas (protected.json)
+//   finances   → where the city hall's money comes from: own taxes, FPM, ICMS, royalties (finances.json)
 // Each answer names its source; a number the data cannot take apart says so instead of guessing.
 import { esc, int, money, pct, dec } from "../../format.js";
 
@@ -81,6 +82,10 @@ export function install(app) {
     app.loadData("exports").then((x) => {
       const b = x && (target.kind === "city" ? x.cities[target.city.id] : x.states[target.st.abbr]);
       if (b && sec.isConnected) add({ title: `Para onde vai o que ${target.kind === "city" ? "a cidade" : "o estado"} exporta?`, series: null, answer: () => whyExports(target, x, b) });
+    }).catch(() => {});
+    app.loadData("finances").then((x) => {
+      const b = x && (target.kind === "city" ? x.cities[target.city.id] : x.states[target.st.abbr]);
+      if (b?.n && sec.isConnected) add({ title: `Quem paga ${target.kind === "city" ? "a prefeitura" : "as prefeituras do estado"}?`, series: null, answer: () => whyFinances(target, x, b) });
     }).catch(() => {});
     app.loadData("protected").then((x) => {
       if (x && sec.isConnected) add({ title: `Quanto ${target.kind === "city" ? "da cidade" : "do estado"} é área protegida?`, series: null, answer: () => whyProtected(target, x) });
@@ -209,11 +214,11 @@ export function install(app) {
     const ys = d.years, y1 = ys.at(-1);
     const c0 = d.compare_from ? Math.max(0, ys.findIndex((y) => y >= d.compare_from)) : 0;
     const y0 = ys[c0];
-    const fmt = (m, v) => (v == null ? "–" : m.format === "pct" ? pct(v, v < 0.1 ? 1 : 0) : dec(v, m.format === "int" ? 0 : 1));
+    const fmt = (m, v) => (v == null ? "–" : m.format === "pct" ? pct(v, v < 0.1 ? 1 : 0) : dec(v, m.digits ?? (m.format === "int" ? 0 : 1)));
     const diff = (m, a, b) => {
       if (a == null || b == null) return "";
       const x = m.format === "pct" ? (b - a) * 100 : b - a;
-      return `<span class="${x >= 0 ? "pos" : "neg"}">${x >= 0 ? "+" : "−"}${dec(Math.abs(x), 1)}${m.format === "pct" ? " pt" : ""}</span>`;
+      return `<span class="${x >= 0 ? "pos" : "neg"}">${x >= 0 ? "+" : "−"}${dec(Math.abs(x), m.format === "pct" ? 1 : m.digits ?? 1)}${m.format === "pct" ? " pt" : ""}</span>`;
     };
     const first = (arr) => arr.findIndex((v) => v != null);
     let html = `<p>${esc(nameOf(t))} em ${y0} e em ${y1}, ao lado do Brasil:</p><table><tr><td class="m"></td><td class="n m">${y0}</td><td class="n m">${y1}</td><td class="n m">mudança</td><td class="n m">Brasil ${y1}</td></tr>`;
@@ -273,6 +278,27 @@ export function install(app) {
     html += `<p>O quê:</p>` + rows(big(b.products), (k) => x.products[k] || k, brP);
     const lead = b.countries[0];
     if (lead && brC.get(lead[0]) && lead[1] / b.fob > 1.5 * brC.get(lead[0])) html += `<p>${esc(lead[0])} pesa aqui ${dec((lead[1] / b.fob) / brC.get(lead[0]), 1)} ${(lead[1] / b.fob) / brC.get(lead[0]) >= 2 ? "vezes" : "vez"} o que pesa nas vendas do Brasil.</p>`;
+    return html + `<p class="src">${esc(x.rule)}</p>`;
+  }
+
+  function whyFinances(t, x, b) {
+    const br = x.nation;
+    const parts = [
+      ["own", "Impostos e taxas próprios", "IPTU, ISS, ITBI e taxas"],
+      ["fpm", "Fundo de Participação (FPM)", "da União"],
+      ["icms", "Parte do ICMS", "do estado"],
+      ["royalties", "Royalties", "petróleo, minérios, água"],
+    ];
+    const other = Math.max(0, (b.transfers || 0) + (b.capital_transfers || 0) - (b.fpm || 0) - (b.icms || 0) - (b.royalties || 0));
+    const rest = Math.max(0, b.total - (b.own || 0) - (b.transfers || 0) - (b.capital_transfers || 0));
+    const rows = [...parts.map(([k, l, s2]) => ({ l, s: s2, v: b[k] || 0, br: (br[k] || 0) / br.total })),
+      { l: "Outras transferências", s: "IPVA, SUS, Fundeb, convênios", v: other, br: Math.max(0, br.transfers + br.capital_transfers - br.fpm - br.icms - br.royalties) / br.total },
+      { l: "Outras receitas", s: "serviços, aplicações, contribuições", v: rest, br: Math.max(0, br.total - br.own - br.transfers - br.capital_transfers) / br.total }];
+    const perCap = b.pop ? b.total / b.pop : null;
+    let html = `<p>${t.kind === "city" ? `As ${int(b.n)} prefeituras da cidade` : `As ${int(b.n)} prefeituras do estado que declararam`} arrecadaram <b>${money(b.total)}</b> em ${x.year}${perCap ? `, ${money(perCap)} por habitante (Brasil: ${money(br.total / br.pop)})` : ""}.</p>`;
+    html += `<table>${rows.filter((r) => r.v > 0).map((r) => `<tr><td>${esc(r.l)}<br><span class="src">${esc(r.s)}</span><span class="bar" style="width:${(100 * r.v / b.total).toFixed(1)}%"></span></td><td class="n">${pct(r.v / b.total, 0)}</td><td class="n m">Brasil ${pct(r.br, 0)}</td></tr>`).join("")}</table>`;
+    const own = (b.own || 0) / b.total, nOwn = br.own / br.total;
+    html += `<p>${own >= nOwn ? `Arrecada por conta própria mais que a média: <b>${pct(own, 0)}</b> da receita vem de impostos e taxas locais (no total das prefeituras do Brasil, ${pct(nOwn, 0)}).` : `A maior parte vem de fora: só <b>${pct(own, 0)}</b> são impostos e taxas locais (no total das prefeituras do Brasil, ${pct(nOwn, 0)}).`}</p>`;
     return html + `<p class="src">${esc(x.rule)}</p>`;
   }
 
