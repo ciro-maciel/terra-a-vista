@@ -14,7 +14,12 @@ PRODUCTS = {
     "soy": (5457, 214, 782, 40124, "t"), "corn": (5457, 214, 782, 40122, "t"),
     "sugarcane": (5457, 214, 782, 40106, "t"), "coffee": (5457, 214, 782, 40139, "t"),
     "orange": (5457, 214, 782, 40151, "t"), "cotton": (5457, 214, 782, 40099, "t"),
-    "cattle": (3939, 105, 79, 2670, "cabeças"),
+    "rice": (5457, 214, 782, 40102, "t"), "beans": (5457, 214, 782, 40112, "t"),
+    "cassava": (5457, 214, 782, 40119, "t"), "wheat": (5457, 214, 782, 40127, "t"),
+    "cocoa": (5457, 214, 782, 40138, "t"), "banana": (5457, 214, 782, 40136, "t"),
+    "grape": (5457, 214, 782, 40274, "t"), "tobacco": (5457, 214, 782, 40113, "t"),
+    "cattle": (3939, 105, 79, 2670, "cabeças"), "pigs": (3939, 105, 79, 32794, "cabeças"),
+    "chickens": (3939, 105, 79, 32796, "cabeças"),
 }
 
 
@@ -25,8 +30,8 @@ class IbgeAgro(Source):
         publisher="Instituto Brasileiro de Geografia e Estatística (IBGE)",
         homepage="https://sidra.ibge.gov.br/tabela/5457",
         license="Dados públicos do IBGE; citar a fonte (IBGE, PAM e PPM)",
-        description=f"Toneladas colhidas de soja, milho, cana-de-açúcar, café, laranja e algodão, e o rebanho bovino, "
-        f"por município, em {YEAR}.",
+        description=f"Toneladas colhidas de soja, milho, cana-de-açúcar, café, laranja, algodão, arroz, feijão, mandioca, "
+        f"trigo, cacau, banana, uva e fumo, e os rebanhos de bois, porcos e galinhas, por município, em {YEAR}.",
         used_for=["Agro como recursos"],
     )
 

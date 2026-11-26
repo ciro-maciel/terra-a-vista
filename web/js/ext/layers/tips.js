@@ -18,34 +18,24 @@ function usd(n) {
   return `R$ ${int(n)}`;
 }
 
-const HUB_NAME = { L: "Large hub", M: "Medium hub", S: "Small hub", N: "Nonhub primary airport" };
-const PORT_TYPE = { coastal: "Coastal port", great_lakes: "Great Lakes port", inland: "Inland river port" };
+const HUB_NAME = { L: "Aeroporto grande", M: "Aeroporto médio", S: "Aeroporto pequeno", N: "Aeroporto regional" };
+const br = (x, d = 1) => x.toFixed(d).replace(".", ",");
 
 export const tips = {
-  port(p, m) {
-    const yr = p.year ?? "";
-    const lines = [
-      `<b>${esc(p.name)}</b> ${muted(`${esc(PORT_TYPE[p.type] || "Port")}, ${esc(p.state || "")}`)}`,
-      `#${esc(p.rank)} by tonnage · <b>${num(p.tons)}</b> short tons (${esc(yr)})`,
-    ];
-    if (p.foreign != null || p.domestic != null) lines.push(`Foreign ${num(p.foreign)} · domestic ${num(p.domestic)}`);
-    if (p.imports != null || p.exports != null) lines.push(`Imports ${num(p.imports)} · exports ${num(p.exports)}`);
-    lines.push(muted("USACE principal ports; placed at the port area's centre (long river ports are approximate)."));
+  port(p) {
+    const lines = [`<b>${esc(p.name)}</b> ${muted(`${esc(p.kind || "Porto")}, ${esc(p.municipality || "")} (${esc(p.state || "")})`)}`];
+    if (p.tons != null) lines.push(`<b>${br(p.tons / 1e6)} milhões de t</b> movimentadas em ${esc(p.year)}`);
+    if (p.teu != null) lines.push(`${int(p.teu)} TEU em contêineres`);
+    if (p.grain_export_t != null) lines.push(`${br(p.grain_export_t / 1e6)} milhões de t de milho e soja exportadas`);
+    lines.push(muted(`ANTAQ, Anuário ${esc(p.year)}; na sede do município (o anuário não traz coordenadas).`));
     return lines.join("<br>");
   },
   airport(a) {
     const lines = [`<b>${esc(a.id)} · ${esc(a.name)}</b> ${muted(esc([a.city, a.state].filter(Boolean).join(", ")))}`];
-    lines.push(a.hub ? esc(HUB_NAME[a.hub] || a.hub) : "All-cargo airport (not a primary passenger airport)");
-    if (a.enplanements != null) {
-      let ch = "";
-      if (a.enplanements_prev > 0) {
-        const r = a.enplanements / a.enplanements_prev - 1;
-        ch = ` (${sign(r)}${Math.abs(r * 100).toFixed(1)}% on ${a.year - 1})`;
-      }
-      lines.push(`<b>${num(a.enplanements)}</b> boardings in ${esc(a.year)}${ch}`);
-    }
-    if (a.cargo_lbs != null) lines.push(`All-cargo landed weight ${num(a.cargo_lbs)} lb`);
-    lines.push(muted("FAA CY enplanements and all-cargo data."));
+    lines.push(a.hub ? esc(HUB_NAME[a.hub] || a.hub) : "Aeroporto de carga");
+    if (a.pax != null) lines.push(`<b>${num(a.pax)}</b> passageiros em ${esc(a.year)}${a.intl_pax ? ` (${num(a.intl_pax)} internacionais)` : ""}`);
+    if (a.cargo_kg != null && a.cargo_kg >= 1e6) lines.push(`${num(a.cargo_kg / 1000)} t de carga e correio`);
+    lines.push(muted("ANAC, Dados Estatísticos do Transporte Aéreo: embarques e desembarques."));
     return lines.join("<br>");
   },
   fort(f, m) {
@@ -94,16 +84,10 @@ export const tips = {
     const r = rt.route;
     const t = m.data.trade || {};
     const a = rt.a?.short || rt.a?.name || r.a, b = rt.b?.short || rt.b?.name || r.b;
-    const modes = Object.entries(r.modes || {}).filter(([, v]) => v >= 0.05).sort((p, q) => q[1] - p[1])
-      .map(([k, v]) => `${esc(MODE_STYLE[k]?.label || k)} ${Math.round(v * 100)}%`).join(" · ");
-    const com = t.commodities?.[r.top_commodity];
-    const lines = [
-      `<b>${esc(a)} ⇄ ${esc(b)}</b> ${muted(`trade route #${esc(r.rank)}`)}`,
-      `<b>${usd(r.value_musd * 1e6)}</b> of freight a year, ${num(r.tons_k * 1e3)} short tons (FAF ${esc(t.year ?? "")} estimate)`,
-    ];
-    if (modes) lines.push(modes);
-    if (com) lines.push(`Top commodity: ${esc(com)}`);
-    lines.push(muted("Both directions summed. Drawn as an arc between each zone's largest city: FAF records where freight starts and ends, not its route."));
-    return lines.join("<br>");
+    return [
+      `<b>${esc(a)} ⇄ ${esc(b)}</b> ${muted(`rota aérea ${esc(r.rank)}ª`)}`,
+      `<b>${num(r.pax)}</b> passageiros em ${esc(t.year ?? "")}, nos dois sentidos · ${int(r.dist_km)} km`,
+      muted(esc(t.path_note || "")),
+    ].join("<br>");
   },
 };

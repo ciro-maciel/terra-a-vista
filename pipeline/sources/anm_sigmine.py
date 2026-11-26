@@ -20,6 +20,10 @@ MINERAL = {
     "NÍQUEL": "nickel", "MINÉRIO DE NÍQUEL": "nickel",
     "CASSITERITA": "tin", "ESTANHO": "tin", "MINÉRIO DE ESTANHO": "tin",
     "CARVÃO": "coal_mine", "CARVÃO MINERAL": "coal_mine",
+    "FOSFATO": "phosphate", "ROCHA FOSFÁTICA": "phosphate", "APATITA": "phosphate",
+    "SILVINITA": "potash", "SAIS DE POTÁSSIO": "potash", "POTÁSSIO": "potash",
+    "NIÓBIO": "niobium", "PIROCLORO": "niobium", "MINÉRIO DE NIÓBIO": "niobium", "COLUMBITA": "niobium",
+    "CAULIM": "kaolin", "DIAMANTE": "diamond",
 }
 
 
@@ -30,8 +34,8 @@ class AnmSigmine(Source):
         publisher="Agência Nacional de Mineração (ANM)",
         homepage="https://geo.anm.gov.br/",
         license="Dados abertos da ANM; citar a fonte",
-        description="As concessões de lavra ativas de ferro, ouro, cobre, bauxita, manganês, níquel, estanho e "
-        "carvão, com o polígono e a área concedida. É a área com direito de lavra, não a produção: a ANM não "
+        description="As concessões de lavra ativas de ferro, ouro, cobre, bauxita, manganês, níquel, estanho, carvão, "
+        "fosfato, potássio, nióbio, caulim e diamante, com o polígono e a área concedida. É a área com direito de lavra, não a produção: a ANM não "
         "publica a produção por mina com posição.",
         used_for=["Minas como recursos"],
     )

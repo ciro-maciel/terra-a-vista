@@ -29,7 +29,7 @@ import urllib.error
 import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Callable
+from typing import Callable, Iterable
 
 from .paths import RAW
 from .store import atomic_write_text
@@ -198,6 +198,38 @@ def download(
         source_id, url, rel_path, lambda tmp: _fetch_to(url, tmp, timeout, headers, expect_binary), force=force
     )
 
+
+
+def download_reduced(
+    source_id: str, url: str, rel_path: str, reduce: Callable[[Iterable[str]], dict], *,
+    force: bool = False, timeout: int = 1800, encoding: str = "utf-8",
+) -> Path:
+    """Stream `url` line by line through `reduce` and cache only its JSON result at rel_path.
+
+    For publishers that offer one huge file and no subset (ANAC's 362 MB flight statistics): the body passes
+    through memory once and is never stored. The manifest records the sha256 and size of the whole body that was
+    read (`stream_sha256`, `stream_bytes`), so provenance stays exact; `sha256`/`bytes` describe the cached result.
+    """
+    extra: dict = {}
+
+    def attempt(tmp: Path) -> tuple[str, int]:
+        digest, size = hashlib.sha256(), 0
+
+        def lines():
+            nonlocal size
+            with urllib.request.urlopen(_request(url), timeout=timeout) as resp:
+                for raw in resp:
+                    digest.update(raw)
+                    size += len(raw)
+                    yield raw.decode(encoding, errors="replace")
+
+        result = reduce(lines())
+        extra.update({"stream_sha256": digest.hexdigest(), "stream_bytes": size, "reduced": True})
+        data = json.dumps(result, ensure_ascii=False, separators=(",", ":")).encode("utf-8")
+        tmp.write_bytes(data)
+        return hashlib.sha256(data).hexdigest(), len(data)
+
+    return _download_with(source_id, url, rel_path, attempt, force=force, note=" (streamed, reduced)", extra=extra)
 
 def _stream_prefix(url: str, tmp: Path, prefix: bytes, header_start: bytes, timeout: int) -> tuple[str, int, int]:
     """One attempt of download_prefix(). Returns (sha256 hex, bytes, matching rows).

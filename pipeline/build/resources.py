@@ -27,12 +27,12 @@ REQUIRES = ["_world", "aneel_siga", "anp_geo", "anm_sigmine", "ibge_agro", "ibge
 PRODUCES = ["resources.json"]
 
 OPERATING = "Operação"
-PLANT_MIN = {"hydro": 250, "gas_plant": 500, "coal_plant": 300}  # MW, single plants
-CLUSTER_MIN = {"wind": 300, "solar": 300}  # MW summed per hex
-PLATFORM_MIN_BPD = 50_000
-FIELD_MIN_KM2 = 20
-MINE_MIN_HA = 1_000  # concession area summed per hex
-AGRO_TOP = 25  # the hexes that produce most of each crop (never two side by side)
+PLANT_MIN = {"hydro": 100, "gas_plant": 200, "coal_plant": 100}  # MW, single plants
+CLUSTER_MIN = {"wind": 150, "solar": 150, "biomass": 150}  # MW summed per hex
+PLATFORM_MIN_BPD = 20_000
+FIELD_MIN_KM2 = 10
+MINE_MIN_HA = 500  # concession area summed per hex
+AGRO_TOP = 30  # the hexes that produce most of each crop (never two side by side)
 SITE_RINGS = 2
 
 
@@ -80,6 +80,11 @@ TYPES = [
     _mineral("nickel", "Mina de níquel", "#7f9a8a", "Níquel.", "r-lead_zinc"),
     _mineral("tin", "Mina de estanho", "#9aa4ae", "Cassiterita, o minério do estanho.", "r-lead_zinc"),
     _mineral("coal_mine", "Mina de carvão", "#4a4038", "Carvão mineral."),
+    _mineral("niobium", "Mina de nióbio", "#5a8aa8", "Nióbio (pirocloro).", "r-rare_earths"),
+    _mineral("phosphate", "Mina de fosfato", "#a8b86a", "Fosfato, base dos fertilizantes.", "r-lead_zinc"),
+    _mineral("potash", "Mina de potássio", "#c87a8a", "Potássio (silvinita), base dos fertilizantes.", "r-lead_zinc"),
+    _mineral("kaolin", "Mina de caulim", "#e8e0d0", "Caulim.", "r-lead_zinc"),
+    _mineral("diamond", "Garimpo de diamante", "#c0e0f0", "Diamante.", "r-platinum"),
     _t("coal_plant", "Termelétrica a carvão", "energy", "#5a5a5a", "MW",
        f"Usinas térmicas a carvão mineral em operação com pelo menos {PLANT_MIN['coal_plant']} MW (ANEEL, SIGA).",
        "aneel_siga"),
@@ -89,6 +94,9 @@ TYPES = [
     _t("wind", "Parques eólicos", "energy", "#9fd8cb", "MW",
        f"Potência eólica em operação somada por hexágono, onde chega a pelo menos {CLUSTER_MIN['wind']} MW (ANEEL, "
        "SIGA): um parque grande é registrado como muitas usinas.", "aneel_siga"),
+    _t("biomass", "Biomassa (bagaço de cana)", "energy", "#9bb04a", "MW",
+       f"Potência das térmicas a biomassa da agroindústria em operação (sobretudo bagaço de cana), somada por "
+       f"hexágono onde chega a pelo menos {CLUSTER_MIN['biomass']} MW (ANEEL, SIGA).", "aneel_siga", "r-gas_plant"),
     _t("solar", "Usinas solares", "energy", "#ffc93c", "MW",
        f"Potência solar fotovoltaica em operação somada por hexágono, onde chega a pelo menos {CLUSTER_MIN['solar']} MW "
        "(ANEEL, SIGA). Inclui a geração distribuída só quando registrada no SIGA.", "aneel_siga"),
@@ -98,7 +106,17 @@ TYPES = [
     _crop("coffee", "Café", "#7a4a2a", "t"),
     _crop("orange", "Laranja", "#f09a2a", "t"),
     _crop("cotton", "Algodão", "#e8e4d8", "t"),
+    _crop("rice", "Arroz", "#e8dca8", "t"),
+    _crop("beans", "Feijão", "#8a3a2a", "t"),
+    _crop("cassava", "Mandioca", "#c8a070", "t"),
+    _crop("wheat", "Trigo", "#d8b84a", "t"),
+    _crop("cocoa", "Cacau", "#6a3a20", "t"),
+    _crop("banana", "Banana", "#f0d040", "t"),
+    _crop("grape", "Uva", "#7a3a8a", "t"),
+    _crop("tobacco", "Fumo", "#9a7a3a", "t"),
     _crop("cattle", "Rebanho bovino", "#a0704a", "cabeças"),
+    _crop("pigs", "Suínos", "#e0a0a0", "cabeças"),
+    _crop("chickens", "Galinhas", "#f0e0c0", "cabeças"),
 ]
 RANK = {t["id"]: i for i, t in enumerate(TYPES)}
 NOT_ADDITIVE = {"oil", "gas"}  # field areas: a sum is not an output
@@ -160,10 +178,10 @@ def power_plants(place: Placer) -> list[dict]:
             detail = ", ".join(x for x in (p["places"], f"desde {p['since']}" if p["since"] else "") if x)
             items.append(_item(tid, p["name"], at, p["mw"], detail))
     # wind and solar: summed per hex
-    for tid, kind in (("wind", "EOL"), ("solar", "UFV")):
+    for tid, kind in (("wind", "EOL"), ("solar", "UFV"), ("biomass", "UTE")):
         by_cell: dict[int, list] = defaultdict(list)
         for p in plants:
-            if p["kind"] != kind:
+            if p["kind"] != kind or (tid == "biomass" and p["fuel"] != "Agroindustriais"):
                 continue
             at = place.at(p["lon"], p["lat"])
             if at:
@@ -175,7 +193,7 @@ def power_plants(place: Placer) -> list[dict]:
             x = sum(a[0] * p["mw"] for p, a in group) / mw
             y = sum(a[1] * p["mw"] for p, a in group) / mw
             place_name = max(group, key=lambda g: g[0]["mw"])[0]["places"].split(" - ")[0] or "?"
-            label = ("Eólicas de " if tid == "wind" else "Solares de ") + place_name
+            label = {"wind": "Eólicas de ", "solar": "Solares de ", "biomass": "Biomassa de "}[tid] + place_name
             items.append(_item(tid, label, (x, y, cell), mw, f"{len(group)} usinas somadas no hexágono"))
     return items
 

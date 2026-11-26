@@ -28,29 +28,38 @@ from ..core.hexgrid import HexGrid
 from ..core.paths import WEB_DATA
 from ..core.store import load_interim, load_interim_payload, write_web
 
-REQUIRES = ["_world", "natural_earth_roads", "natural_earth", "cities.json"]
+REQUIRES = ["_world", "natural_earth_roads", "natural_earth", "antaq_anuario", "anac", "ibge_localities",
+            "ibge_boundaries", "cities.json"]
 PRODUCES = ["infrastructure.json"]
 
 SAMPLE_KM = 4.0
-MAJOR_MAX_SCALERANK = 4
+MAJOR_MAX_SCALERANK = 6
 MAJOR_TYPES = {"Major Highway", "Beltway"}  # in South America these are the principal highways
 RAIL_MAX_SCALERANK = 7
 RAIL_MAIN_SCALERANK = 5
 SITE_RINGS = 2
 ROAD_CLASSES = [{"id": "interstate", "name": "Rodovia principal"}, {"id": "major", "name": "Rodovia"}]
 RAIL_TIERS = [{"id": "main", "name": "Linha principal"}, {"id": "secondary", "name": "Linha secundária"}]
-HUBS = {"L": "Large hub", "M": "Medium hub", "S": "Small hub", "N": "Nonhub primary"}
+HUBS = {"L": "Aeroporto grande", "M": "Aeroporto médio", "S": "Aeroporto pequeno", "N": "Aeroporto regional"}
+PAX_MIN, CARGO_MIN_KG = 100_000, 10_000_000
+HUB_PAX = (("L", 10_000_000), ("M", 3_000_000), ("S", 1_000_000))
+INLAND_PORTS = {"Itacoatiara", "Santarém", "Manaus"}
 
 RULES = {
     "roads": "Rodovias do Natural Earth 1:10m na América do Sul, amostradas a cada 4 km e encaixadas em ligações entre "
              "centros de hexágonos, só em terra brasileira. Classe 0 (rodovia principal): as que o Natural Earth marca "
-             f"como Major Highway. Classe 1 (rodovia): as outras com escala até {MAJOR_MAX_SCALERANK}, onde nenhuma "
+             f"como Major Highway. Classe 1 (rodovia): as outras com escala até {MAJOR_MAX_SCALERANK} (incluindo as que o "
+             "Natural Earth deixa sem tipo, que são a maior parte da malha brasileira), onde nenhuma "
              "principal já liga os mesmos dois hexágonos.",
     "rail": "Ferrovias do Natural Earth 1:10m com escala até 7, amostradas a cada 4 km e encaixadas em ligações entre "
             f"centros de hexágonos; a linha principal tem escala até {RAIL_MAIN_SCALERANK}. As linhas dos países "
             "vizinhos são cortadas. O Natural Earth não tem toda a malha ferroviária, nem dono ou tráfego.",
-    "ports": "Ainda não mapeados no Brasil: a movimentação por porto (ANTAQ) entra numa próxima rodada.",
-    "airports": "Ainda não mapeados no Brasil: o movimento por aeroporto (ANAC) entra numa próxima rodada.",
+    "ports": "As instalações do Anuário Estatístico Aquaviário 2025 da ANTAQ: as 15 que mais movimentaram carga, os 10 "
+             "maiores terminais de contêineres e os principais terminais de exportação de milho e soja. Cada uma fica "
+             "na sede do seu município (o anuário não traz coordenadas).",
+    "airports": "Aeroportos com pelo menos 100 mil passageiros (embarques e desembarques) ou 10 mil toneladas de carga e "
+                "correio no ano (ANAC, Dados Estatísticos), na posição da lista de aeródromos públicos. Porte: grande com "
+                "10 milhões de passageiros ou mais, médio com 3 milhões, pequeno com 1 milhão.",
 }
 
 
@@ -177,7 +186,8 @@ def build_roads(grid, proj, owner, ne):
     for f in ne["roads"]:
         inter = f["type"] in MAJOR_TYPES
         sr = f["scalerank"] if f["scalerank"] is not None else 99
-        major = sr <= MAJOR_MAX_SCALERANK and f["type"] in ("Road", "Major Highway")
+        # In South America most of the network is typed "Unknown" (no class), so scale rank alone decides
+        major = sr <= MAJOR_MAX_SCALERANK and f["type"] in ("Road", "Major Highway", "Unknown")
         if not (inter or major):
             continue
         cls = 0 if inter else 1
@@ -227,15 +237,21 @@ def build_rail(grid, proj, owner, ne, foreign_idx):
 
 
 class Locator:
+    """Place a site on its Brazilian land hex (or the nearest one within SITE_RINGS) and tag its municipality,
+    map city and state."""
+
     def __init__(self, world, grid, proj):
         self.grid, self.proj, self.world = grid, proj, world
         self.owner, self.county, self.geoids = world["owner"], world["county"], world["counties"]
-        bounds = load_interim("census_boundaries")["states"]
-        abbr_of = {s["fips"]: s["abbr"] for s in bounds}
+        bounds = load_interim("ibge_boundaries")
+        abbr_of = {s["fips"]: s["abbr"] for s in bounds["states"]}
         self.abbrs = [abbr_of.get(f) for f in world["states"]]
-        city_ids = {c["id"] for c in json.loads((WEB_DATA / "cities.json").read_text())}
-        self.cbsa_of = {g: code for code, geoids in load_interim("cbsa_delineation")["counties"].items()
-                        if code in city_ids for g in geoids}
+        self.city_of = {m: c["id"] for c in json.loads((WEB_DATA / "cities.json").read_text()) for m in c["counties"]}
+        seats = load_interim("ibge_localities")["seats"]
+        self.seat_by_name = {}
+        for code, s in seats.items():
+            uf = abbr_of.get(code[:2])
+            self.seat_by_name[(s["name"].casefold(), uf)] = s
 
     def land_cell(self, x, y, rings=SITE_RINGS) -> int:
         grid, owner = self.grid, self.owner
@@ -265,33 +281,47 @@ class Locator:
         ci = self.county[cell]
         geoid = self.geoids[ci] if ci >= 0 else None
         return {"x": round(x, 1), "y": round(y, 1), "cell": cell, "county": geoid,
-                "cbsa": self.cbsa_of.get(geoid) if geoid else None, "state": self.abbrs[self.owner[cell]]}
+                "cbsa": self.city_of.get(geoid) if geoid else None, "state": self.abbrs[self.owner[cell]]}
+
+    def seat(self, municipality: str, uf: str):
+        return self.seat_by_name.get((municipality.casefold(), uf))
 
 
-def build_ports(loc: Locator, usace: dict) -> list[dict]:
-    out = []
-    for p in usace["ports"]:
-        at = loc.place(p["lon"], p["lat"])
+def build_ports(loc: Locator, antaq: dict) -> list[dict]:
+    rows = sorted(antaq["installations"], key=lambda r: (-(r["tons"] or 0), -(r["teu"] or 0), -(r["grain_export_t"] or 0)))
+    out, missing = [], []
+    for rank, r in enumerate(rows, 1):
+        s = loc.seat(r["municipality"], r["uf"])
+        at = loc.place(s["lon"], s["lat"]) if s else None
         if at is None:
-            continue  # Alaska, Hawaii, Puerto Rico, Guam ...
-        out.append({"id": p["id"], "name": p["name"], "type": p["type"], "rank": p["rank"], "tons": p["tons"],
-                    "domestic": p["domestic"], "foreign": p["foreign"], "imports": p["imports"],
-                    "exports": p["exports"], "year": usace["year"], **at})
+            missing.append(r["name"])
+            continue
+        out.append({"id": f"p{rank}", "name": r["name"], "kind": r["kind"],
+                    "type": "inland" if r["municipality"] in INLAND_PORTS else "coastal", "rank": rank,
+                    "tons": r["tons"], "teu": r["teu"], "grain_export_t": r["grain_export_t"],
+                    "municipality": r["municipality"], "year": antaq["year"], **at})
+    if missing:
+        print(f"    ! ports without a municipality seat: {missing}")
     return out
 
 
-def build_airports(loc: Locator, faa: dict) -> list[dict]:
-    out = []
-    for a in faa["airports"]:
-        if a["hub"] is None and a["cargo_lbs"] is None:
+def build_airports(loc: Locator, anac: dict) -> list[dict]:
+    out, missing = [], []
+    for code, a in anac["airports"].items():
+        if a["pax"] < PAX_MIN and a["cargo_kg"] < CARGO_MIN_KG:
             continue
-        at = loc.place(a["lon"], a["lat"])
+        p = anac["positions"].get(code)
+        at = loc.place(p["lon"], p["lat"]) if p else None
         if at is None:
+            missing.append(code)
             continue
-        out.append({"id": a["id"], "name": a["name"], "city": a["city"], "hub": a["hub"],
-                    "enplanements": _int(a["enplanements"]), "enplanements_prev": _int(a["enplanements_prev"]),
-                    "cargo_lbs": _int(a["cargo_lbs"]), "year": faa["year"], **at})
-    out.sort(key=lambda a: -(a["enplanements"] or 0))
+        hub = next((h for h, n in HUB_PAX if a["pax"] >= n), "N" if a["pax"] >= PAX_MIN else None)
+        out.append({"id": code, "name": (p["name"] or a["name"]).strip(), "city": p["city"] or a["name"].title(),
+                    "hub": hub, "pax": a["pax"], "intl_pax": a["intl_pax"], "cargo_kg": a["cargo_kg"],
+                    "departures": a["departures"], "year": anac["year"], **at})
+    out.sort(key=lambda a: -a["pax"])
+    if missing:
+        print(f"    ! {len(missing)} airports without a public-aerodrome position: {missing[:8]}")
     return out
 
 
@@ -312,12 +342,17 @@ def build() -> None:
     roads = build_roads(grid, proj, owner, ne)
     rail = build_rail(grid, proj, owner, ne, foreign_idx)
 
-    ports, airports = [], []  # ANTAQ and ANAC traffic files are hundreds of MB: fetched on a runner later
+    loc = Locator(world, grid, proj)
+    antaq = load_interim_payload("antaq_anuario")
+    anac = load_interim_payload("anac")
+    ports = build_ports(loc, antaq["data"])
+    airports = build_airports(loc, anac["data"])
+
     ne_vintage = load_interim_payload("natural_earth_roads")["vintage"]
     doc = {
         "version": 1,
-        "vintage": {"roads": ne_vintage, "rail": ne_vintage, "ports": None, "airports": None},
-        "sources": ["natural_earth_roads"],
+        "vintage": {"roads": ne_vintage, "rail": ne_vintage, "ports": antaq["vintage"], "airports": anac["vintage"]},
+        "sources": ["natural_earth_roads", "antaq_anuario", "anac"],
         "rules": RULES,
         "road_classes": ROAD_CLASSES,
         "rail_tiers": RAIL_TIERS,

@@ -479,8 +479,14 @@ Districts (fixed ids, in this order; NAICS 2022):
 
 ### infrastructure.json (eager)
 
-**Brazil:** roads and rail from Natural Earth 1:10m (South America, clipped to Brazilian land); `ports` and
-`airports` are empty lists until the ANTAQ and ANAC traffic files (hundreds of MB) are fetched on a runner.
+**Brazil:** roads and rail from Natural Earth 1:10m (South America, clipped to Brazilian land). `ports` are the
+installations of ANTAQ's 2025 yearbook (cargo ranking, container terminals, grain export terminals: `tons`, `teu`,
+`grain_export_t`, any may be null), placed at their municipality seat. `airports` come from ANAC's flight statistics,
+streamed once and reduced (`pipeline/core/fetch.py` `download_reduced`): `pax` (boardings + landings), `intl_pax`,
+`cargo_kg`, `departures`; `hub` L/M/S/N by passengers (10 M / 3 M / 1 M / 100 k), null for cargo-only fields.
+
+**trade.json (Brazil):** air routes, not freight: the 40 largest passenger links between map cities at least 250 km
+apart (`pax`, both ways, every airport of each city; `top_mode` "air"; `path` is just the two banner cells).
 
 Tile improvements: roads and rail rasterised onto hex links (no polylines), plus ports and airports as sites. Built by
 `pipeline/build/infrastructure.py` from `natural_earth_roads` (NE 1:10m roads + railroads, pinned v5.1.2), `usace_ports`
