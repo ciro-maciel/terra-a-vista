@@ -85,7 +85,7 @@ export function install(app) {
     for (const th of app.timeline?.themes || []) {
       if (!th.file) continue;
       app.timeline.series(th.id).then((d) => {
-        if (d?.question && sec.isConnected) add({ title: d.question.replace("{first}", d.years[0]), series: th.id, answer: (f) => whySeries(target, f) });
+        if (d?.question && sec.isConnected) add({ title: d.question.replace("{first}", d.compare_from || d.years[0]), series: th.id, answer: (f) => whySeries(target, f) });
       }).catch(() => {});
     }
   }
@@ -202,7 +202,9 @@ export function install(app) {
     if (!d) return `<p>A série não carregou.</p>`;
     const s = t.kind === "city" ? d.cities[t.city.id] : d.states[t.st.abbr];
     if (!s) return `<p>Sem dados para ${esc(nameOf(t))}.</p>`;
-    const ys = d.years, y0 = ys[0], y1 = ys.at(-1);
+    const ys = d.years, y1 = ys.at(-1);
+    const c0 = d.compare_from ? Math.max(0, ys.findIndex((y) => y >= d.compare_from)) : 0;
+    const y0 = ys[c0];
     const fmt = (m, v) => (v == null ? "–" : m.format === "pct" ? pct(v, v < 0.1 ? 1 : 0) : dec(v, m.format === "int" ? 0 : 1));
     const diff = (m, a, b) => {
       if (a == null || b == null) return "";
@@ -212,7 +214,7 @@ export function install(app) {
     const first = (arr) => arr.findIndex((v) => v != null);
     let html = `<p>${esc(nameOf(t))} em ${y0} e em ${y1}, ao lado do Brasil:</p><table><tr><td class="m"></td><td class="n m">${y0}</td><td class="n m">${y1}</td><td class="n m">mudança</td><td class="n m">Brasil ${y1}</td></tr>`;
     for (const m of d.metrics) {
-      const v = s[m.id] || [], i0 = first(v);
+      const v = s[m.id] || [], i0 = Math.max(first(v), c0);
       html += `<tr><td>${esc(m.name)}</td><td class="n">${fmt(m, v[i0])}</td><td class="n">${fmt(m, v.at(-1))}</td><td class="n">${diff(m, v[i0], v.at(-1))}</td><td class="n m">${fmt(m, d.nation[m.id]?.at(-1))}</td></tr>`;
     }
     html += `</table>`;
@@ -222,9 +224,12 @@ export function install(app) {
     const all = app.w.raw.counties || [];
     const rows = [];
     // When each year has its own borders, compare municipalities only from the year their borders settled.
-    const j0 = d.fixed_borders === false && d.stable_from ? Math.max(0, ys.findIndex((y) => y >= d.stable_from)) : 0;
+    const from = Math.max(d.fixed_borders === false ? d.stable_from || 0 : 0, d.compare_from || 0);
+    const j0 = from ? Math.max(0, ys.findIndex((y) => y >= from)) : 0;
     const yFrom = ys[j0];
+    const allowed = d.movers ? new Set(d.movers) : null; // small towns' rates jump by chance
     for (let k = 0; k < all.length; k++) {
+      if (allowed && !allowed.has(k)) continue;
       const code = String(all[k].geoid);
       if (codes ? !codes.includes(code) : code.slice(0, 2) !== t.st.fips) continue;
       const r = d.munis[m.id]?.[k];
@@ -238,7 +243,7 @@ export function install(app) {
       const tiny = m.format === "pct" ? 0.005 : 0.05;
       const down = rows.slice(0, 3).filter((x) => x.d < -tiny), up = rows.slice(-3).reverse().filter((x) => x.d > tiny);
       const list = (xs) => `<table>${xs.map((x) => `<tr><td>${esc(x.name)}</td><td class="n">${diff(m, 0, x.d)}</td></tr>`).join("")}</table>`;
-      if (down.length) html += `<p>${esc(m.name)}: os municípios com a maior queda de ${yFrom} a ${y1}:</p>${list(down)}`;
+      if (down.length) html += `<p>${esc(m.name)}: os municípios${d.movers ? ` de ${int(d.movers_min_pop)} habitantes ou mais` : ""} com a maior queda de ${yFrom} a ${y1}:</p>${list(down)}`;
       if (up.length) html += `<p>E os com a maior alta:</p>${list(up)}`;
     }
     return html + `<p class="src">${esc(d.rule)} Fonte: ${esc(d.vintage)}.</p>`;

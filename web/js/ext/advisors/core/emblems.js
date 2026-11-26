@@ -2,6 +2,9 @@
 import { esc } from "./util.js";
 
 const GLYPHS = {
+  // a cross of care over a heart line
+  health: `<path d="M26 14h12v12h12v12H38v12H26V38H14V26h12z" fill="#fff4d2" stroke="#2a1d08" stroke-width="1.5" stroke-linejoin="round"/>
+    <path d="M16 32h8l3-6 4 12 3-8 2 2h12" fill="none" stroke="#c2463d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`,
   // lightning bolt over a small derrick-like base
   energy: `<path d="M35.5 12 20 35h10.5L27 52l17-25H33z" fill="#fff4d2" stroke="#2a1d08" stroke-width="1.6" stroke-linejoin="round"/>`,
   // a classical bank: pediment, four columns, plinth

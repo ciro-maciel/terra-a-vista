@@ -795,7 +795,10 @@ municipality; the nation: Brasília) to the country's label point. The municipal
 
 One file per timeline theme besides the Census one (`series_land.json`: MapBiomas; `series_farm.json`: PAM and
 PPM). `fixed_borders: false` marks a theme whose years each use their own municipal borders (IBGE surveys): the
-timeline then compares a year with the one before, and `stable_from` is the first year whose borders match today's. Built through
+timeline then compares a year with the one before, and `stable_from` is the first year whose borders match today's.
+`series_health.json` (Datasus) adds `compare_from` (the "por quê" compares from this year: earlier death records were
+incomplete in the North and Northeast) and `movers` (indices of the municipalities with at least `movers_min_pop`
+people, the only ones "who changed most" looks at, since a rate over a few deaths jumps by chance). Built through
 `pipeline/build/series_util.py`; every metric is a ratio Σ num ÷ Σ den, so a city, a state and the nation add up the
 same way as a municipality.
 

@@ -26,14 +26,15 @@ relief and land cover. Every number traces back to a public source, listed in th
 - **13 lenses** from the 2022 Census and land cover: density, median age, ageing, earnings, GDP per person,
   unemployment, literacy, degrees, sewer, water, forest, farmland, built-up.
 - **26 wonders**: every Brazilian site on UNESCO's World Heritage List.
-- **9 advisors**: dashboards beside the map (Economy with GDP by sector, People, Prosperity, Knowledge, Land,
+- **10 advisors**: dashboards beside the map (Economy with GDP by sector, People, Prosperity, Health, Knowledge, Land,
   Energy and resources, Commerce, Culture and the Explorer), linked to the map both ways. Commerce shows what Brazil
   and each city export, where to and what (Comex Stat 2025), with arrows leaving the city towards each buyer.
 - **Timeline**, by theme. *People*: the Censuses from 1970 to 2022; banners show each count and the map colours each
   decade's yearly growth on one scale for all. *Land*: MapBiomas Collection 11, every five years from 1985 to 2025,
   the share of each municipality in native vegetation, pasture, agriculture, soy and city, on one scale for all years.
   *Farming*: IBGE PAM and PPM every five years from 1975 to 2025, harvested area of all crops, soy, corn, sugarcane
-  and coffee, and head of cattle per km².
+  and coffee, and head of cattle per km². *Health*: Datasus, infant mortality since 2000 and doctors and hospital
+  beds per thousand people since 2010.
 - **Why?** in every city and state panel: population by municipality and Census, GDP by sector and municipality
   (and real change since 2002), growth by the municipalities that gained or lost people, and the city type by the
   activities behind it; and one question per timeline theme ("what happened to the land since 1985?").

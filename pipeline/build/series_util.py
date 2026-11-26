@@ -76,8 +76,15 @@ def build_series(theme: dict, metrics: list[dict]) -> dict:
     # True when every year uses today's municipal borders (MapBiomas); False when each year has its own (IBGE surveys),
     # so a municipality that later split looks like it shrank: compare a year with the one before, not the first.
     out["fixed_borders"] = bool(theme.get("fixed_borders", True))
+    out["compare_from"] = theme.get("compare_from")  # the "por quê" compares from here (earlier years are less complete)
     out["stable_from"] = theme.get("stable_from")  # first year whose borders match today's (almost no new municipality since 2001)
     out["years"] = [int(y) for y in years]
+    # A rate over few events (infant deaths in a town of 900) jumps by chance: "who changed most" then looks only at
+    # the municipalities with at least this many people (2022 Census), listed by their index in "counties".
+    if theme.get("movers_min_pop"):
+        pop = load_interim("ibge_census")["municipalities"]
+        out["movers_min_pop"] = theme["movers_min_pop"]
+        out["movers"] = [k for k, c in enumerate(codes) if (pop.get(c) or 0) >= theme["movers_min_pop"]]
     out.update(metrics=[], munis={}, cities={}, states={}, nation={})
     for m in metrics:
         num, den, fmt = m["num"], m["den"], m.get("format", "pct")
@@ -121,6 +128,8 @@ def check_series(web_dir, theme_id: str, min_munis: int = 5000) -> list[tuple[st
         have = sum(1 for r in rows if r[-1] is not None)
         if have < min_munis:
             out.append(("FAIL", f"series_{theme_id}.json: {m['id']} has only {have} municipalities in {doc['years'][-1]}"))
-        if any(v is None for v in doc["nation"][m["id"]]):
+        nat = doc["nation"][m["id"]]
+        k0 = next((k for k, v in enumerate(nat) if v is not None), len(nat))  # a measure may start later
+        if k0 == len(nat) or any(v is None for v in nat[k0:]):
             out.append(("FAIL", f"series_{theme_id}.json: {m['id']} national series has a gap"))
     return out or [("PASS", f"series_{theme_id}.json: {len(doc['metrics'])} metrics, {doc['years'][0]} to {doc['years'][-1]}")]

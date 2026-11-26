@@ -26,7 +26,7 @@ o chão é o relevo e a cobertura do solo de verdade. Cada número leva a uma fo
 - **13 lentes** do Censo 2022 e da cobertura do solo: densidade, idade mediana, envelhecimento, renda do trabalho, PIB
   por habitante, desocupação, alfabetização, ensino superior, esgoto, água, floresta, lavoura, área construída.
 - **26 maravilhas**: todos os sítios brasileiros do Patrimônio Mundial da UNESCO.
-- **9 conselheiros**: painéis ao lado do mapa (Economia com o PIB por setor, Pessoas, Prosperidade, Conhecimento,
+- **10 conselheiros**: painéis ao lado do mapa (Economia com o PIB por setor, Pessoas, Prosperidade, Saúde, Conhecimento,
   Terra, Energia e recursos, Comércio, Cultura e o Explorador), ligados ao mapa nos dois sentidos. O Comércio mostra o
   que o Brasil e cada cidade exportam, para onde e o quê (Comex Stat 2025), com setas saindo da cidade na direção de
   cada comprador.
@@ -34,7 +34,8 @@ o chão é o relevo e a cobertura do solo de verdade. Cada número leva a uma fo
   cada um e o mapa pinta o crescimento por ano de cada década, na mesma escala para todas. *Terra*: o MapBiomas
   (Coleção 11), de cinco em cinco anos de 1985 a 2025, a parcela de cada município em vegetação nativa, pasto,
   agricultura, soja e cidade, na mesma escala para todos os anos. *Lavoura*: a PAM e a PPM do IBGE, de cinco em cinco
-  anos de 1975 a 2025, a área colhida de todas as lavouras, de soja, milho, cana e café, e os bois por km².
+  anos de 1975 a 2025, a área colhida de todas as lavouras, de soja, milho, cana e café, e os bois por km². *Saúde*: o
+  Datasus, a mortalidade infantil desde 2000 e os médicos e leitos por mil habitantes desde 2010.
 - **Por quê?** no painel de cada cidade e estado: a população nos seus municípios e em cada Censo, o PIB nos setores e
   nos municípios (e o crescimento real desde 2002), o crescimento nos municípios que somaram ou perderam gente, e o
   tipo de cidade nas atividades que o explicam; e uma pergunta por tema da linha do tempo ("o que aconteceu com a

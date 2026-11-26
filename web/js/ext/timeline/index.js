@@ -18,6 +18,7 @@ const THEMES = [
   { id: "people", label: "Gente" },
   { id: "land", label: "Terra", file: "series_land", icon: "l-forest" },
   { id: "farm", label: "Lavoura", file: "series_farm", icon: "l-farmland" },
+  { id: "health", label: "Saúde", file: "series_health", icon: "l-age" },
 ];
 const nf = (d) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: d, minimumFractionDigits: d });
 const rate = (a, b, years) => (a > 0 && b > 0 && years > 0 ? (b / a) ** (1 / years) - 1 : null);
@@ -230,7 +231,7 @@ export function install(app) {
     let up = null, down = null;
     const rows = d.munis[m.id] || [];
     const j = baseOf(d, i);
-    for (let k = 0; k < rows.length; k++) {
+    for (const k of d.movers || rows.keys()) {
       const a = muniValue(m, k, j), b = muniValue(m, k, i);
       if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
       const dv = b - a;
@@ -265,7 +266,7 @@ export function install(app) {
       </div>
       <div class="tl-info">
         <b>Brasil em ${year}: ${esc(fmtValue(m, br[i]))} ${esc(m.unit || "")}</b>${i > 0 && Number.isFinite(br[0]) && Number.isFinite(br[i]) ? ` · ${pts(br[i] - br[0], m)} desde ${ys[0]}` : ""}.
-        ${up && down ? `<br>${baseOf(d, i) === 0 ? `Desde ${ys[0]}` : `De ${ys[i - 1]} a ${year}`}, a maior alta foi em <b>${esc(muniName(up.k))}</b> (${pts(up.dv, m)}) e a maior queda, em <b>${esc(muniName(down.k))}</b> (${pts(down.dv, m)}).` : ""}
+        ${up && down ? `<br>${baseOf(d, i) === 0 ? `Desde ${ys[0]}` : `De ${ys[i - 1]} a ${year}`}, ${d.movers ? `entre os municípios de ${people(d.movers_min_pop)} habitantes ou mais, ` : ""}a maior alta foi em <b>${esc(muniName(up.k))}</b> (${pts(up.dv, m)}) e a maior queda, em <b>${esc(muniName(down.k))}</b> (${pts(down.dv, m)}).` : ""}
         ${i === 0 ? `<br>Escolha um ano depois de ${ys[0]} para ver quem mais mudou.` : ""}
       </div>
       <div class="tl-legend"><span>${esc(fmtValue(m, lo))}</span><i style="background:linear-gradient(90deg, ${m.ramp.join(",")})"></i><span>${esc(fmtValue(m, hi))}</span><span>· ${esc(m.name.toLowerCase())}, ${by === "states" ? "por estado" : "por município"}, na mesma escala para todos os anos · ${esc(d.vintage)}</span></div>`;

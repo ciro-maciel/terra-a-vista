@@ -17,6 +17,7 @@ export const ADVISORS = [
   { id: "economy", name: "Economia", role: "Tesoureiro", color: "#c9a43a", dark: "#3a2c08", blurb: "Quem produz o quê: o PIB por setor e as cidades que lideram.", load: () => import("./views/economy.js") },
   { id: "people", name: "Pessoas", role: "Guardião do Censo", color: "#c46a4f", dark: "#3a140c", blurb: "Onde o povo mora, para onde está indo e quão velho está.", load: () => import("./views/people.js") },
   { id: "prosperity", name: "Prosperidade", role: "Guardião do lar", color: "#3f9c82", dark: "#082a22", blurb: "A renda do trabalho, quem está sem trabalho e quem tem esgoto e água.", load: () => import("./views/prosperity.js") },
+  { id: "health", name: "Saúde", role: "Médico da corte", color: "#c2463d", dark: "#3a0e0c", blurb: "Quantos bebês morrem antes de um ano, e onde há médicos e leitos.", load: () => import("./views/health.js") },
   { id: "knowledge", name: "Conhecimento", role: "Sábio da corte", color: "#4a86d6", dark: "#0a1c3a", blurb: "Quem lê, quem tem diploma e onde estão os empregos de Ciência.", load: () => import("./views/knowledge.js") },
   { id: "land", name: "Terra", role: "Agrimensor-mor", color: "#6e9a3c", dark: "#18280a", blurb: "Floresta, lavoura, campo e cidade: o que cobre o país.", load: () => import("./views/land.js") },
   { id: "energy", name: "Energia e recursos", role: "Ministro das minas", color: "#d98a2b", dark: "#3a1f08", blurb: "De onde vem a energia, o que sai do chão e o que se planta.", load: () => import("./views/energy.js") },
@@ -29,7 +30,7 @@ const byId = new Map(ADVISORS.map((a) => [a.id, a]));
 const COUNCIL = (() => {
   const g = [
     { label: "Riqueza e trabalho", ids: ["economy", "prosperity", "commerce", "energy"] },
-    { label: "Povo e terra", ids: ["people", "knowledge", "culture", "land"] },
+    { label: "Povo e terra", ids: ["people", "health", "knowledge", "culture", "land"] },
     { label: "As suas perguntas", ids: ["explorer"] },
   ];
   const listed = new Set(g.flatMap((x) => x.ids));

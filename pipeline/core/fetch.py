@@ -215,6 +215,24 @@ def download_post(source_id: str, url: str, rel_path: str, body: dict, *, force:
     return _download_with(source_id, url, rel_path, attempt, force=force, extra={"body": body})
 
 
+def download_form(source_id: str, url: str, rel_path: str, fields: list[tuple[str, str]], *, encoding: str = "utf-8",
+                  force: bool = False, timeout: int = 600) -> Path:
+    """POST an HTML form (`fields`, encoded in `encoding`) and cache the answer like download() (e.g. Datasus TabNet,
+    which reads its form in latin-1)."""
+    import urllib.parse
+    payload = urllib.parse.urlencode(fields, encoding=encoding).encode("ascii")
+
+    def attempt(tmp: Path) -> tuple[str, int]:
+        req = urllib.request.Request(url, data=payload, method="POST", headers={
+            "User-Agent": USER_AGENT, "Content-Type": "application/x-www-form-urlencoded"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = resp.read()
+        tmp.write_bytes(data)
+        return hashlib.sha256(data).hexdigest(), len(data)
+
+    return _download_with(source_id, url, rel_path, attempt, force=force)
+
+
 def download_reduced(
     source_id: str, url: str, rel_path: str, reduce: Callable[[Iterable[str]], dict], *,
     force: bool = False, timeout: int = 1800, encoding: str = "utf-8",
