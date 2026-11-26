@@ -11,12 +11,12 @@ export function showCellTooltip(mx, my, w, i, lens, showResources = true) {
   const raw = w.raw;
   const lines = [];
   const city = w.cityByCell.get(i);
-  if (city) lines.push(`<b>${esc(city.name)}</b> <span class="muted">· ${popShort(city.population)} people</span>`);
+  if (city) lines.push(`<b>${esc(city.name)}</b> <span class="muted">· ${popShort(city.population)} habitantes</span>`);
 
   const wt = w.water[i];
   if (wt) {
-    const depth = raw.elev[i] < 0 ? ` <span class="muted">· ${int(-raw.elev[i])} m deep</span>` : "";
-    lines.push(`<b>${esc(nameOf(w.tables.water, wt) || "Water")}</b>${depth}`);
+    const depth = raw.elev[i] < 0 ? ` <span class="muted">· ${int(-raw.elev[i])} m de profundidade</span>` : "";
+    lines.push(`<b>${esc(nameOf(w.tables.water, wt) || "Água")}</b>${depth}`);
   } else {
     const cover = w.cover[i] > 0 ? nameOf(w.tables.cover, w.cover[i]) : null;
     const relief = w.relief[i] > 0 ? nameOf(w.tables.relief, w.relief[i]) : null;
@@ -40,7 +40,7 @@ export function showCellTooltip(mx, my, w, i, lens, showResources = true) {
       const kind = it.name && it.name !== t.name ? ` <span class="muted">· ${esc(t.name)}${val}</span>` : `<span class="muted">${val}</span>`;
       lines.push(`<span style="color:${esc(t.color || "#efe4c6")}">${glyph(t, 13)}</span> ${esc(it.name || t.name)}${kind}`);
     }
-    if (res.length > 4) lines.push(`<span class="muted">+${res.length - 4} more</span>`);
+    if (res.length > 4) lines.push(`<span class="muted">e mais ${res.length - 4}</span>`);
   }
   if (city) lines.push(`<span class="muted">Clique para abrir a cidade</span>`);
   else if (o >= 0) lines.push(`<span class="muted">Clique para abrir ${esc(raw.states[o].name)}</span>`);

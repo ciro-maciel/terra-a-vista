@@ -69,15 +69,15 @@ class NaturalEarthRoads(Source):
 
     info = SourceInfo(
         id="natural_earth_roads",
-        title="Natural Earth 1:10m roads and railroads",
+        title="Natural Earth 1:10m: estradas e ferrovias",
         publisher="Natural Earth",
         homepage="https://www.naturalearthdata.com/",
         license="Domínio público",
-        description="Interstates, US highways and major state roads, and main railroads, as 1:10m line work. "
-        "Shown as map art (roads and rail between hex centres), not as statistics: the road alignment dates from "
-        "Natural Earth's older releases, carries no traffic or owner data, and the rail layer holds about half of the "
-        f"real US rail network. Files are pinned to the natural-earth-vector release {TAG}.",
-        used_for=["Interstates and major highways on the map", "Railroads on the map"],
+        description="As rodovias principais e as ferrovias do Brasil, no traçado 1:10m. Aparecem como arte do mapa "
+        "(estradas e trilhos entre os centros dos hexágonos), não como estatística: o traçado vem de versões antigas "
+        "do Natural Earth, não tem tráfego nem dono, e a camada de ferrovias é incompleta. "
+        f"Arquivos fixados na versão {TAG} do natural-earth-vector.",
+        used_for=["Rodovias principais no mapa", "Ferrovias no mapa"],
     )
 
     FILES = ["ne_10m_roads", "ne_10m_railroads"]
@@ -93,7 +93,8 @@ class NaturalEarthRoads(Source):
         roads, rail, types = [], [], {}
         for f in load_geojson(self.raw_dir / self._path("ne_10m_roads")):
             p = f["properties"]
-            if p.get("sov_a3") != "USA" or p.get("featurecla") == "Ferry":
+            # South American roads carry no country code: keep the continent; the builder clips to Brazilian land.
+            if p.get("continent") != "South America" or p.get("featurecla") == "Ferry":
                 continue
             types[p.get("type")] = types.get(p.get("type"), 0) + 1
             if p.get("type") == "Ferry Route":
@@ -116,7 +117,7 @@ class NaturalEarthRoads(Source):
             if lines:
                 rail.append({"scalerank": p.get("scalerank"), "category": p.get("category"),
                              "lines": [[(round(x, 4), round(y, 4)) for x, y in ln] for ln in lines]})
-        print(f"    {len(roads)} US road features ({types}), {len(rail)} rail features in the map window")
+        print(f"    {len(roads)} Brazilian road features ({types}), {len(rail)} rail features in the map window")
         return {
             "vintage": f"Natural Earth {TAG} (1:10m)",
             "_files": [self._path(n) for n in self.FILES],

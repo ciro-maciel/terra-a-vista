@@ -64,12 +64,14 @@ class RoadsTest(unittest.TestCase):
         y = centre(GRID.index(0, 5))[1]
         y2 = centre(GRID.index(0, 7))[1]
         ne = {"roads": [
-            {"level": "Interstate", "type": "Major Highway", "name": "80", "expressway": 1, "scalerank": 3,
+            {"level": None, "type": "Major Highway", "name": "BR-116", "expressway": 0, "scalerank": 3,
              "lines": [[(1.0, y), (190.0, y)]]},
-            {"level": "Federal", "type": "Major Highway", "name": "30", "expressway": 0, "scalerank": 5,
+            {"level": None, "type": "Road", "name": "BR-040", "expressway": 0, "scalerank": 4,
              "lines": [[(1.0, y), (60.0, y)], [(1.0, y2), (100.0, y2)]]},
-            {"level": "State", "type": "Secondary Highway", "name": "9", "expressway": 0, "scalerank": 8,
+            {"level": None, "type": "Road", "name": "SP-9", "expressway": 0, "scalerank": 8,
              "lines": [[(1.0, centre(GRID.index(0, 1))[1]), (150.0, centre(GRID.index(0, 1))[1])]]},
+            {"level": None, "type": "Unknown", "name": None, "expressway": 0, "scalerank": 3,
+             "lines": [[(1.0, centre(GRID.index(0, 3))[1]), (150.0, centre(GRID.index(0, 3))[1])]]},
         ]}
         roads = infra.build_roads(GRID, IdentityProj(), owner, ne)
         pairs = [(a, b) for a, b, *_ in roads]
@@ -78,11 +80,12 @@ class RoadsTest(unittest.TestCase):
             self.assertLess(a, b)
             self.assertIn(b, GRID.neighbours(a))
             self.assertNotIn(foreign, (a, b))
-            self.assertEqual(name, {0: "I-80", 1: "US 30"}[cls])
+            self.assertEqual(name, {0: "BR-116", 1: "BR-040"}[cls])
         row5 = [r for r in roads if GRID.col_row(r[0])[1] == 5 and GRID.col_row(r[1])[1] == 5]
-        self.assertTrue(row5 and all(r[2] == 0 for r in row5), "Interstate wins over the US route on shared links")
+        self.assertTrue(row5 and all(r[2] == 0 for r in row5), "the principal highway wins on shared links")
         self.assertTrue(any(r[2] == 1 for r in roads))
-        self.assertFalse(any(GRID.col_row(r[0])[1] == 1 for r in roads), "low-rank secondary roads are left out")
+        self.assertFalse(any(GRID.col_row(r[0])[1] == 1 for r in roads), "low-rank roads are left out")
+        self.assertFalse(any(GRID.col_row(r[0])[1] == 3 for r in roads), "unclassified roads are left out")
 
     def test_route_name_order(self):
         self.assertEqual(min(["I-295", "I-95", "I-5"], key=infra._route_key), "I-5")

@@ -558,7 +558,8 @@ def check_resources(r: Report, doc, ctx: dict | None, source_ids: set | None, ci
     types = {}
     for t in doc["types"]:
         what = f"resources.json type {t.get('id') if isinstance(t, dict) else t!r}"
-        if not need_keys(r, what, t, ["id", "name", "category", "emoji", "icon", "color", "unit", "description", "source"]):
+        # emoji is optional (Terra à Vista draws every type with an SVG icon; the browser falls back to a dot)
+        if not need_keys(r, what, t, ["id", "name", "category", "icon", "color", "unit", "description", "source"]):
             continue
         types[t["id"]] = t
         if t["category"] not in RESOURCE_CATEGORIES or not COLOR.match(str(t["color"])):

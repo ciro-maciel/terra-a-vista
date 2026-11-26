@@ -28,32 +28,29 @@ from ..core.hexgrid import HexGrid
 from ..core.paths import WEB_DATA
 from ..core.store import load_interim, load_interim_payload, write_web
 
-REQUIRES = ["_world", "natural_earth_roads", "natural_earth", "usace_ports", "faa_airports", "census_boundaries",
-            "cbsa_delineation", "cities.json"]
+REQUIRES = ["_world", "natural_earth_roads", "natural_earth", "cities.json"]
 PRODUCES = ["infrastructure.json"]
 
 SAMPLE_KM = 4.0
-MAJOR_MAX_SCALERANK = 6
-MAJOR_TYPES = {"Major Highway", "Beltway"}
+MAJOR_MAX_SCALERANK = 4
+MAJOR_TYPES = {"Major Highway", "Beltway"}  # in South America these are the principal highways
 RAIL_MAX_SCALERANK = 7
 RAIL_MAIN_SCALERANK = 5
 SITE_RINGS = 2
-ROAD_CLASSES = [{"id": "interstate", "name": "Interstate"}, {"id": "major", "name": "Major highway"}]
-RAIL_TIERS = [{"id": "main", "name": "Main line"}, {"id": "secondary", "name": "Secondary line"}]
+ROAD_CLASSES = [{"id": "interstate", "name": "Rodovia principal"}, {"id": "major", "name": "Rodovia"}]
+RAIL_TIERS = [{"id": "main", "name": "Linha principal"}, {"id": "secondary", "name": "Linha secundária"}]
 HUBS = {"L": "Large hub", "M": "Medium hub", "S": "Small hub", "N": "Nonhub primary"}
 
 RULES = {
-    "roads": "Natural Earth 1:10m roads in the US, sampled every 4 km and snapped to hex-centre links. Class 0: every "
-             "Interstate. Class 1: other roads at Natural Earth scale rank "
-             f"{MAJOR_MAX_SCALERANK} or less (its most prominent US and state highways) plus every expressway Natural "
-             "Earth marks as a major highway or beltway, where no Interstate already joins the same two hexes.",
-    "rail": "Natural Earth 1:10m railroads at scale rank 7 or less, sampled every 4 km and snapped to hex-centre links; "
-            f"tier 0 (main line) is scale rank {RAIL_MAIN_SCALERANK} or less. Lines in Canada and Mexico are clipped. "
-            "Natural Earth holds about half of the real US rail network and carries no owner or traffic data.",
-    "ports": "The USACE principal ports by total tonnage (short tons). Each is a port statistical area, placed at the "
-             "area's centroid, so long river ports are approximate.",
-    "airports": "Every primary airport (FAA hub class large, medium, small or nonhub: 10,000+ boardings a year) and "
-                "every airport in FAA's all-cargo table, placed by FAA location id with the NASR airport master.",
+    "roads": "Rodovias do Natural Earth 1:10m na América do Sul, amostradas a cada 4 km e encaixadas em ligações entre "
+             "centros de hexágonos, só em terra brasileira. Classe 0 (rodovia principal): as que o Natural Earth marca "
+             f"como Major Highway. Classe 1 (rodovia): as outras com escala até {MAJOR_MAX_SCALERANK}, onde nenhuma "
+             "principal já liga os mesmos dois hexágonos.",
+    "rail": "Ferrovias do Natural Earth 1:10m com escala até 7, amostradas a cada 4 km e encaixadas em ligações entre "
+            f"centros de hexágonos; a linha principal tem escala até {RAIL_MAIN_SCALERANK}. As linhas dos países "
+            "vizinhos são cortadas. O Natural Earth não tem toda a malha ferroviária, nem dono ou tráfego.",
+    "ports": "Ainda não mapeados no Brasil: a movimentação por porto (ANTAQ) entra numa próxima rodada.",
+    "airports": "Ainda não mapeados no Brasil: o movimento por aeroporto (ANAC) entra numa próxima rodada.",
 }
 
 
@@ -178,9 +175,9 @@ def build_roads(grid, proj, owner, ne):
     cls_of = defaultdict(lambda: 9)
     names = defaultdict(Counter)
     for f in ne["roads"]:
-        inter = f["level"] == "Interstate"
+        inter = f["type"] in MAJOR_TYPES
         sr = f["scalerank"] if f["scalerank"] is not None else 99
-        major = sr <= MAJOR_MAX_SCALERANK or (f["expressway"] and f["type"] in MAJOR_TYPES)
+        major = sr <= MAJOR_MAX_SCALERANK and f["type"] in ("Road", "Major Highway")
         if not (inter or major):
             continue
         cls = 0 if inter else 1
@@ -315,17 +312,12 @@ def build() -> None:
     roads = build_roads(grid, proj, owner, ne)
     rail = build_rail(grid, proj, owner, ne, foreign_idx)
 
-    loc = Locator(world, grid, proj)
-    usace = load_interim_payload("usace_ports")
-    faa = load_interim_payload("faa_airports")
-    ports = build_ports(loc, usace["data"])
-    airports = build_airports(loc, faa["data"])
-
+    ports, airports = [], []  # ANTAQ and ANAC traffic files are hundreds of MB: fetched on a runner later
     ne_vintage = load_interim_payload("natural_earth_roads")["vintage"]
     doc = {
         "version": 1,
-        "vintage": {"roads": ne_vintage, "rail": ne_vintage, "ports": usace["vintage"], "airports": faa["vintage"]},
-        "sources": ["natural_earth_roads", "usace_ports", "faa_airports"],
+        "vintage": {"roads": ne_vintage, "rail": ne_vintage, "ports": None, "airports": None},
+        "sources": ["natural_earth_roads"],
         "rules": RULES,
         "road_classes": ROAD_CLASSES,
         "rail_tiers": RAIL_TIERS,

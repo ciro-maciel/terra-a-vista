@@ -252,6 +252,11 @@ the other county lenses, and the county formulas are shared with counties.json):
 
 ## resources.json
 
+**Brazil (Terra à Vista):** types and thresholds are in `pipeline/build/resources.py` (ANEEL SIGA power plants,
+ANP fields and offshore production units, ANM SIGMINE concessions, IBGE PAM/PPM crops and cattle). `emoji` is
+optional: every type names an SVG `icon` (agro types use `l-farmland`). A `platform` item's `cell` is the sea hex
+where the unit stands (`owner` < 0) and its `state` is null; every other site sits on a Brazilian land hex.
+
 ```jsonc
 {
   "types": [{"id": "nuclear", "name": "Nuclear plant", "category": "energy|mineral|agri",
@@ -473,6 +478,9 @@ Districts (fixed ids, in this order; NAICS 2022):
   employer's establishment is, not where workers live.
 
 ### infrastructure.json (eager)
+
+**Brazil:** roads and rail from Natural Earth 1:10m (South America, clipped to Brazilian land); `ports` and
+`airports` are empty lists until the ANTAQ and ANAC traffic files (hundreds of MB) are fetched on a runner.
 
 Tile improvements: roads and rail rasterised onto hex links (no polylines), plus ports and airports as sites. Built by
 `pipeline/build/infrastructure.py` from `natural_earth_roads` (NE 1:10m roads + railroads, pinned v5.1.2), `usace_ports`

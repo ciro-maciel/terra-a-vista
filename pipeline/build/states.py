@@ -113,9 +113,9 @@ def label_anchor(grid: HexGrid, owner: list[int], s: int, name: str) -> dict | N
 
 
 PCT_KEYS = ["forest", "crop", "pasture", "grass", "shrub", "wetland", "developed"]
-ENERGY_NOTE = ("Only the power plants and wind/solar/battery clusters mapped as resources, each above its type's "
-               "size threshold (e.g. gas plants of 1,500 MW or more), are counted: this is not the state's total "
-               "generating capacity.")
+ENERGY_NOTE = ("Só as usinas e os conjuntos eólicos e solares mapeados como recursos, cada um acima do limite do seu "
+               "tipo (por exemplo, termelétricas a gás de 500 MW ou mais), entram na conta: não é a capacidade total "
+               "de geração do estado.")
 
 
 def land_shares(world: dict, s: int) -> dict | None:

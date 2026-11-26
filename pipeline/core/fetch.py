@@ -21,6 +21,9 @@ import hashlib
 import http.client
 import itertools
 import json
+import shutil
+import ssl
+import subprocess
 import time
 import urllib.error
 import urllib.request
@@ -81,12 +84,40 @@ def read_manifest(source_id: str) -> dict:
     return json.loads(p.read_text()) if p.exists() else {}
 
 
+def _cert_failure(exc: BaseException) -> bool:
+    reason = getattr(exc, "reason", exc)
+    return isinstance(reason, ssl.SSLCertVerificationError) or "CERTIFICATE_VERIFY_FAILED" in str(exc)
+
+
+def _curl_to(url: str, tmp: Path, timeout: int, headers: dict | None) -> tuple[str, int]:
+    """Download with the system curl, which verifies certificates against the operating system's trust store.
+
+    Used only when Python's own store rejects a server whose chain is incomplete (some Brazilian government hosts
+    send no intermediate certificate); verification stays on.
+    """
+    cmd = ["curl", "-fsSL", "--max-time", str(timeout), "-A", USER_AGENT, "-o", str(tmp)]
+    for k, v in (headers or {}).items():
+        cmd += ["-H", f"{k}: {v}"]
+    subprocess.run(cmd + [url], check=True)
+    data = tmp.read_bytes()
+    return hashlib.sha256(data).hexdigest(), len(data)
+
+
 def _fetch_to(url: str, tmp: Path, timeout: int, headers: dict | None, expect_binary: bool) -> tuple[str, int]:
     """One download attempt into `tmp`. Returns (sha256 hex, size).
 
     A body shorter than the declared Content-Length (connection cut mid-transfer)
     raises ConnectionError, so the attempt is retried instead of cached.
     """
+    try:
+        return _fetch_urllib(url, tmp, timeout, headers, expect_binary)
+    except urllib.error.URLError as exc:
+        if not _cert_failure(exc) or not shutil.which("curl"):
+            raise
+        return _curl_to(url, tmp, timeout, headers)
+
+
+def _fetch_urllib(url: str, tmp: Path, timeout: int, headers: dict | None, expect_binary: bool) -> tuple[str, int]:
     digest = hashlib.sha256()
     size = 0
     with urllib.request.urlopen(_request(url, headers=headers), timeout=timeout) as resp:

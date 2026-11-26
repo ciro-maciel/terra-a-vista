@@ -3,9 +3,9 @@
 // console.info and skipped, so an extension can be left out without breaking the app. A failing install() is logged
 // as an error and does not stop the others. Modules are fetched in parallel and installed in list order.
 // layers/: static map layers (roads, rail, ports, forts, wonders, trade routes) and their toggles.
-// Terra à Vista: advisors/ and layers/ come back with the Brazilian data they show (phases 3 and 4); today they
-// would describe U.S. sources and switch layers that have no data, so only the City View loads.
-const MODULES = ["./cityView/index.js"];
+// Terra à Vista: advisors/ comes back with the Brazilian data it describes (phase 4); today it would describe U.S.
+// sources. layers/ draws roads and rail (the other toggles return with their data).
+const MODULES = ["./cityView/index.js", "./layers/index.js"];
 
 export async function installExtensions(app, list = MODULES) {
   const loads = list.map((spec) => import(spec).then((m) => ({ m }), (err) => ({ err })));
