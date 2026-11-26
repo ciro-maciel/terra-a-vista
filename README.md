@@ -34,7 +34,8 @@ relief and land cover. Every number traces back to a public source, listed in th
   the share of each municipality in native vegetation, pasture, agriculture, soy and city, on one scale for all years.
   *Farming*: IBGE PAM and PPM every five years from 1975 to 2025, harvested area of all crops, soy, corn, sugarcane
   and coffee, and head of cattle per km². *Health*: Datasus, infant mortality since 2000 and doctors and hospital
-  beds per thousand people since 2010.
+  beds per thousand people since 2010. *School*: Inep's Ideb of the public schools, every two years since 2005, early
+  and late primary years (also in the Knowledge advisor).
 - **Why?** in every city and state panel: population by municipality and Census, GDP by sector and municipality
   (and real change since 2002), growth by the municipalities that gained or lost people, and the city type by the
   activities behind it; and one question per timeline theme ("what happened to the land since 1985?").

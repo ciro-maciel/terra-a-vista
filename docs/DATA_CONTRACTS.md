@@ -798,7 +798,8 @@ PPM). `fixed_borders: false` marks a theme whose years each use their own munici
 timeline then compares a year with the one before, and `stable_from` is the first year whose borders match today's.
 `series_health.json` (Datasus) adds `compare_from` (the "por quê" compares from this year: earlier death records were
 incomplete in the North and Northeast) and `movers` (indices of the municipalities with at least `movers_min_pop`
-people, the only ones "who changed most" looks at, since a rate over a few deaths jumps by chance). Built through
+people, the only ones "who changed most" looks at, since a rate over a few deaths jumps by chance).
+`series_school.json` (Inep Ideb) weights each municipality by its 2022 population for cities and states. Built through
 `pipeline/build/series_util.py`; every metric is a ratio Σ num ÷ Σ den, so a city, a state and the nation add up the
 same way as a municipality.
 

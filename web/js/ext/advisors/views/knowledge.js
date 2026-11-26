@@ -1,4 +1,5 @@
-// Knowledge advisor: literacy, higher education and the Science yield.
+// Knowledge advisor: literacy, higher education, the Science yield and the public school's Ideb since 2005
+// (series_school.json, Inep).
 import { esc, fin, ratio, colorScale, robustDomain, RAMPS } from "../core/util.js";
 import { money, pct, int, count3, fmtShort } from "../core/fmt.js";
 import { barList, histogram, rampLegend } from "../core/charts.js";
@@ -131,7 +132,48 @@ export function mount(ctx) {
   });
   ctx.cleanup(() => litTable.destroy?.());
 
-  el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["ibge_censo2022", "ibge_cempre", "ibge_arranjos"], [
+  // --- the public school (Ideb) --------------------------------------------------------------------------------------
+  const iBody = section(el, { title: "A escola pública", kicker: "Ideb, Inep", note: "O Ideb junta a aprovação e a nota no Saeb numa escala de 0 a 10. Os estados pela nota mais recente dos anos iniciais (1º ao 5º ano), com a de 2005 ao lado. Clique para abrir o estado." });
+  iBody.insertAdjacentHTML("beforeend", `<p class="adv-empty">Lendo o Ideb…</p>`);
+  (app.timeline?.series ? app.timeline.series("school") : app.loadData("series_school")).then((sc) => {
+    iBody.innerHTML = "";
+    if (!sc) { iBody.innerHTML = `<p class="adv-empty">O series_school.json não foi gerado.</p>`; return; }
+    const last = sc.years.length - 1, d1 = (v) => (fin(v) ? v.toFixed(1).replace(".", ",") : "–");
+    let stage = "early";
+    const ctl = document.createElement("div");
+    ctl.className = "adv-row";
+    iBody.appendChild(ctl);
+    segmented(ctl, { label: "Etapa", value: stage, options: sc.metrics.map((m) => ({ value: m.id, label: m.name })), onChange: (v) => { stage = v; draw(); } });
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "adv-mini";
+    btn.textContent = "Ver na linha do tempo";
+    btn.addEventListener("click", () => app.timeline?.open(sc.years[last], "school"));
+    ctl.appendChild(btn);
+    const host = document.createElement("div");
+    iBody.appendChild(host);
+    const states = data.levels.states;
+    function draw() {
+      host.innerHTML = "";
+      const rows = states.rows.map((r) => ({ r, s: sc.states[r.key]?.[stage] || [] })).filter((x) => fin(x.s[last])).sort((a, b) => b.s[last] - a.s[last]);
+      const nat = sc.nation[stage];
+      host.insertAdjacentHTML("beforeend", tiles([
+        { label: `Brasil ${sc.years[last]}`, value: d1(nat[last]), sub: `${d1(nat[0])} em ${sc.years[0]}` },
+        { label: "Primeiro estado", value: rows[0]?.r.name || "–", sub: rows[0] ? d1(rows[0].s[last]) : "" },
+        { label: "Quem mais subiu", value: (() => { const u = [...rows].sort((a, b) => (b.s[last] - b.s[0]) - (a.s[last] - a.s[0]))[0]; return u ? u.r.name : "–"; })(), sub: "desde 2005" },
+      ]));
+      barList(host, {
+        compact: true, ariaLabel: "Ideb por estado",
+        rows: rows.map((x) => ({ key: x.r.key, label: x.r.name, value: x.s[last], text: d1(x.s[last]), sub: `2005: ${d1(x.s[0])}`, color: "#4a86d6" })),
+        onHover: (row) => link.hover(row ? rowsHighlight(states, [states.byKey.get(row.key)], { dim: true }) : null),
+        onClick: (row) => states.focus(states.byKey.get(row.key)),
+      });
+      host.insertAdjacentHTML("beforeend", `<p class="adv-note">${esc(sc.rule)}</p>`);
+    }
+    draw();
+  }).catch(() => { iBody.innerHTML = `<p class="adv-empty">O Ideb não carregou.</p>`; });
+
+  el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["ibge_censo2022", "ibge_cempre", "ibge_arranjos", "inep_ideb"], [
     "Os empregos de Ciência são formais e contados onde fica o empregador (CEMPRE), e cobrem atividades inteiras: a recepcionista de uma empresa de software conta; o pesquisador de um hospital não.",
     "A alfabetização de uma cidade com vários municípios é a média das taxas ponderada pela população (aproximação); o ensino superior soma as contagens e é exato.",
     "O mapa de Ciência colore só as cidades (os hexágonos cinza ficam fora delas).",
