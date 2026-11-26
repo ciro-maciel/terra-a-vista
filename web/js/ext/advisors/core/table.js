@@ -11,6 +11,7 @@
 //   search: placeholder text (adds a name filter), searchText(row) = row.name, rank (show the position)
 //   onHover(row|null), onClick(row), caption (aria label), empty (text when no rows)
 import { esc, fin, rafThrottle, onWidth } from "./util.js";
+import { tr, LOCALE } from "../../../i18n.js";
 
 export function createTable(host, opts) {
   const rowH = opts.rowH || 28;
@@ -31,7 +32,7 @@ export function createTable(host, opts) {
     <div class="adv-thead" role="row"></div>
     <div class="adv-tbody" role="rowgroup" tabindex="-1"><div class="adv-tspace"></div></div>`;
   root.setAttribute("role", "table");
-  root.setAttribute("aria-label", opts.caption || "Tabela de dados");
+  root.setAttribute("aria-label", opts.caption || tr("Tabela de dados"));
   host.appendChild(root);
   width = Math.round(root.clientWidth) || 0;
   cols = visibleCols();
@@ -48,7 +49,7 @@ export function createTable(host, opts) {
     head.innerHTML = `${opts.rank ? `<span class="th r" role="columnheader">#</span>` : ""}${cols.map((c) => {
       const s = sort?.key === c.key ? sort.dir : null;
       return `<span class="th ${c.align === "l" ? "l" : "r"}" role="columnheader" aria-sort="${s === "asc" ? "ascending" : s === "desc" ? "descending" : "none"}">
-        <button type="button" data-sort="${esc(c.key)}" title="${esc(c.title || `Ordenar por ${c.label}`)}">${c.short ? c.short : esc(c.label)}${s ? `<span class="arr" aria-hidden="true">${s === "asc" ? "▲" : "▼"}</span>` : ""}</button></span>`;
+        <button type="button" data-sort="${esc(c.key)}" title="${esc(c.title || tr("Ordenar por {0}", c.label))}">${c.short ? c.short : esc(c.label)}${s ? `<span class="arr" aria-hidden="true">${s === "asc" ? "▲" : "▼"}</span>` : ""}</button></span>`;
     }).join("")}`;
   }
 
@@ -68,7 +69,7 @@ export function createTable(host, opts) {
         return dir * (va - vb);
       });
     }
-    if (cnt) cnt.textContent = `${view.length.toLocaleString("pt-BR")} de ${all.length.toLocaleString("pt-BR")}`;
+    if (cnt) cnt.textContent = tr("{0} de {1}", view.length.toLocaleString(LOCALE), all.length.toLocaleString(LOCALE));
     const maxH = opts.maxHeight || 340;
     const h = Math.min(maxH, Math.max(rowH * 2, view.length * rowH + 2));
     body.style.height = `${h}px`;
@@ -99,7 +100,7 @@ export function createTable(host, opts) {
         return `<span class="td ${c.align === "l" ? "l" : "r"}${c.bar ? " hasbar" : ""}" role="cell"${tip ? ` title="${esc(tip)}"` : ""}>${inner}</span>`;
       }).join("")}</div>`;
     }
-    space.innerHTML = html || `<div class="adv-empty pad">${esc(opts.empty || "Nenhuma linha.")}</div>`;
+    space.innerHTML = html || `<div class="adv-empty pad">${esc(opts.empty || tr("Nenhuma linha."))}</div>`;
   }
 
   body.addEventListener("scroll", rafThrottle(() => renderRows()), { passive: true });
@@ -139,7 +140,7 @@ export function createTable(host, opts) {
   });
   // Keyboard: the body is focusable; arrows move the hot row, Enter opens it.
   body.tabIndex = 0;
-  body.setAttribute("aria-label", `${opts.caption || "Tabela"}: use as setas para andar entre as linhas e Enter para abrir uma`);
+  body.setAttribute("aria-label", tr("{0}: use as setas para andar entre as linhas e Enter para abrir uma", opts.caption || tr("Tabela")));
   body.addEventListener("keydown", (e) => {
     if (!view.length) return;
     let i = view.findIndex((r) => String(keyOf(r)) === String(hot));

@@ -1,0 +1,11 @@
+{
+  "cities": ["*"],
+  "history": ["munis"],
+  "world": ["counties.name", "rivers.name", "states.name"],
+  "states": ["name"],
+  "protected": ["areas.n"],
+  "infrastructure": ["airports.name", "airports.city", "airports.id", "ports.name", "ports.municipality"],
+  "resources": ["items.name"],
+  "trade": ["zones.name", "zones.short"],
+  "sources": ["files"]
+}

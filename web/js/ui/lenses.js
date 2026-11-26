@@ -4,6 +4,7 @@ import { compact, esc } from "../format.js";
 import { lensScale } from "../world.js";
 import { rampColor, parseHex } from "../color.js";
 import { icon, glyph } from "./icon.js";
+import { tr, DEC } from "../i18n.js";
 
 export { glyph };
 
@@ -13,18 +14,18 @@ const intish = (v) =>
   Number.isInteger(v) || Math.abs(v) >= 10 ? compact(v) : Math.abs(v) < 1 ? String(+v.toPrecision(1)) : v.toFixed(1);
 
 export function formatLensValue(lens, v) {
-  if (v == null || !Number.isFinite(v)) return "sem dado";
+  if (v == null || !Number.isFinite(v)) return tr("sem dado");
   switch (lens.format) {
-    case "category": return lens.categories?.[Math.round(v)]?.name ?? "sem dado";
+    case "category": return lens.categories?.[Math.round(v)]?.name ?? tr("sem dado");
     case "usd": return "R$ " + compact(v);
-    case "pct": return (v * 100).toFixed(v < 0.1 ? 1 : 0).replace(".", ",") + "%";
+    case "pct": return (v * 100).toFixed(v < 0.1 ? 1 : 0).replace(".", DEC) + "%";
     case "int": return intish(v) + (lens.unit?.startsWith("people") ? " /km²" : lens.unit ? " " + lens.unit : "");
     case "minutes": return v.toFixed(0) + " min";
-    case "years": return v.toFixed(1).replace(".", ",") + " anos";
-    case "float": return (v < 10 ? v.toFixed(1).replace(".", ",") : compact(v)) + (lens.unit ? " " + lens.unit : "");
+    case "years": return v.toFixed(1).replace(".", DEC) + tr(" anos");
+    case "float": return (v < 10 ? v.toFixed(1).replace(".", DEC) : compact(v)) + (lens.unit ? " " + lens.unit : "");
   }
   if (lens.unit?.includes("$")) return "R$ " + compact(v);
-  return (v < 10 ? v.toFixed(1).replace(".", ",") : compact(v)) + (lens.unit?.startsWith("people") ? " /km²" : "");
+  return (v < 10 ? v.toFixed(1).replace(".", DEC) : compact(v)) + (lens.unit?.startsWith("people") ? " /km²" : "");
 }
 
 // A legend tick: the number alone (a long unit such as "adherents per 100 residents" is printed once on the legend's
@@ -50,7 +51,7 @@ export function lensValueAt(lens, t) {
   return d0 + t * (d1 - d0);
 }
 
-const TERRAIN = { id: null, icon: "terrain", emoji: "🗺️", name: "Terreno" };
+const TERRAIN = { id: null, icon: "terrain", emoji: "🗺️", name: tr("Terreno") };
 const RECENT_KEY = "civusa.recentLenses";
 const DEFAULT_RECENT = ["density", "income", "bachelors"];
 const BINS = 40;
@@ -97,22 +98,22 @@ export function initLensDock(opts) {
   const isActive = (l) => (l.id ?? null) === (active?.id ?? null);
   const quickBtn = (l) =>
     `<button class="lens-btn ${isActive(l) ? "active" : ""}" data-id="${esc(l.id ?? "")}" aria-pressed="${isActive(l)}"
-      title="${esc(l.name)}${l.id ? " (lente)" : " (sem lente)"}">${glyph(l, 15)}<span>${esc(l.name)}</span></button>`;
+      title="${esc(l.name)}${l.id ? tr(" (lente)") : tr(" (sem lente)")}">${glyph(l, 15)}<span>${esc(l.name)}</span></button>`;
 
   function renderQuick() {
     const row = [TERRAIN, ...recent.map((id) => byId.get(id)).filter(Boolean)];
     quick.innerHTML = row.map(quickBtn).join("");
     const inRow = !active || recent.includes(active.id);
     moreBtn.classList.toggle("active", !inRow);
-    moreBtn.innerHTML = `${icon("layers", "▤", { size: 15 })}<span>${inRow ? "Lentes" : esc(active.name)}</span><span class="caret" aria-hidden="true">▾</span>`;
-    moreBtn.title = "Todas as lentes (L alterna)";
+    moreBtn.innerHTML = `${icon("layers", "▤", { size: 15 })}<span>${inRow ? tr("Lentes") : esc(active.name)}</span><span class="caret" aria-hidden="true">▾</span>`;
+    moreBtn.title = tr("Todas as lentes (L alterna)");
     moreBtn.hidden = !lenses.length;
   }
 
   function renderPicker() {
     const groups = [...(lensFile?.groups || [])];
     const known = new Set(groups.map((g) => g.id));
-    if (lenses.some((l) => !known.has(l.group))) groups.push({ id: "__other", name: "Outras" });
+    if (lenses.some((l) => !known.has(l.group))) groups.push({ id: "__other", name: tr("Outras") });
     const tile = (l) => `<button class="lp-tile ${isActive(l) ? "active" : ""}" data-id="${esc(l.id ?? "")}" aria-pressed="${isActive(l)}"
         title="${esc(l.description || l.name)}">
         <span class="lp-ic">${glyph(l, 20)}</span><span class="lp-nm">${esc(l.name)}</span>
@@ -120,11 +121,7 @@ export function initLensDock(opts) {
       </button>`;
     const sec = (g, items) => !items.length ? "" : `<section class="lp-group"><h4>${icon(g.icon || `g-${g.id}`, "", { size: 14 })}${esc(g.name)}</h4>
         <div class="lp-tiles">${items.map(tile).join("")}</div></section>`;
-    picker.innerHTML = `<div class="lp-head"><span>Escolha uma lente</span><button class="icon-btn lp-close" aria-label="Fechar a escolha de lente">${icon("close", "✕", { size: 12 })}</button></div>
-      <div class="lp-body">
-      ${sec({ id: "base", name: "Mapa de base", icon: "terrain" }, [TERRAIN])}
-      ${groups.map((g) => sec(g, lenses.filter((l) => (g.id === "__other" ? !known.has(l.group) : l.group === g.id)))).join("")}
-      </div>`;
+    picker.innerHTML = tr("<div class=\"lp-head\"><span>Escolha uma lente</span><button class=\"icon-btn lp-close\" aria-label=\"Fechar a escolha de lente\">{0}</button></div>\n      <div class=\"lp-body\">\n      {1}\n      {2}\n      </div>", icon("close", "✕", { size: 12 }), sec({ id: "base", name: tr("Mapa de base"), icon: "terrain" }, [TERRAIN]), groups.map((g) => sec(g, lenses.filter((l) => (g.id === "__other" ? !known.has(l.group) : l.group === g.id)))).join(""));
   }
 
   function pick(id, fromPicker) {
@@ -235,17 +232,9 @@ export function initLensDock(opts) {
   function renderCategoricalLegend(l) {
     const counts = catCounts(l);
     const sw = l.categories.map((c, k) => `<button type="button" class="lg-cat" data-k="${k}" aria-pressed="false"
-        title="${esc(c.description || c.name)} (${counts[k]} hexágonos)"><i style="background:${esc(c.color || l.ramp[k] || "#888")}"></i><span>${esc(c.name)}</span></button>`).join("");
+        title="${tr("{0} ({1} hexágonos)", esc(c.description || c.name), counts[k])}"><i style="background:${esc(c.color || l.ramp[k] || "#888")}"></i><span>${esc(c.name)}</span></button>`).join("");
     legend.hidden = false;
-    legend.innerHTML = `
-      <div class="lg-head"><span class="lg-ic">${glyph(l, 18)}</span><span class="title">${esc(l.name)}</span>
-        <button class="icon-btn lg-more" aria-expanded="${legendExpanded}" aria-label="Mostrar a legenda completa" title="Detalhes">${legendExpanded ? "−" : "+"}</button>
-        <button class="icon-btn lg-close" aria-label="Desligar a lente (voltar ao terreno)" title="Voltar ao terreno">${icon("close", "✕", { size: 11 })}</button></div>
-      <div class="desc">${esc(l.description || l.unit || "")}</div>
-      ${noteHtml(l)}
-      <div class="lg-cats" role="group" aria-label="${esc(l.name)} categories: click one to show only it">${sw}</div>
-      <div class="lg-meta"><span class="src">${sourceLine(l)}</span></div>
-      <div class="lg-hint" aria-live="polite">Clique numa categoria para mostrar só ela</div>`;
+    legend.innerHTML = tr("\n      <div class=\"lg-head\"><span class=\"lg-ic\">{0}</span><span class=\"title\">{1}</span>\n        <button class=\"icon-btn lg-more\" aria-expanded=\"{2}\" aria-label=\"Mostrar a legenda completa\" title=\"Detalhes\">{3}</button>\n        <button class=\"icon-btn lg-close\" aria-label=\"Desligar a lente (voltar ao terreno)\" title=\"Voltar ao terreno\">{4}</button></div>\n      <div class=\"desc\">{5}</div>\n      {6}\n      <div class=\"lg-cats\" role=\"group\" aria-label=\"{7} categories: click one to show only it\">{8}</div>\n      <div class=\"lg-meta\"><span class=\"src\">{9}</span></div>\n      <div class=\"lg-hint\" aria-live=\"polite\">Clique numa categoria para mostrar só ela</div>", glyph(l, 18), esc(l.name), legendExpanded, legendExpanded ? "−" : "+", icon("close", "✕", { size: 11 }), esc(l.description || l.unit || ""), noteHtml(l), esc(l.name), sw, sourceLine(l));
     legend.querySelector(".lg-close").onclick = () => opts.onPick(null);
     legend.classList.toggle("expanded", legendExpanded);
     legend.querySelector(".lg-more").onclick = () => {
@@ -272,7 +261,7 @@ export function initLensDock(opts) {
     });
     legend.querySelector(".lg-cats")?.classList.toggle("filtered", !!band);
     if (hint) {
-      hint.textContent = picked >= 0 ? `Mostrando só ${l.categories[picked].name}` : "Clique numa categoria para mostrar só ela";
+      hint.textContent = picked >= 0 ? tr("Mostrando só {0}", l.categories[picked].name) : tr("Clique numa categoria para mostrar só ela");
       hint.classList.toggle("on", picked >= 0);
     }
   }
@@ -289,24 +278,10 @@ export function initLensDock(opts) {
     const ticks = [0, 0.25, 0.5, 0.75, 1]
       .map((t, k) => `<span style="left:${t * 100}%;transform:translateX(-${t * 100}%)">${esc(formatLensTick(l, t, k))}</span>`)
       .join("");
-    const hib = l.higher_is === "good" ? `<span class="hib good">▲ Maior é melhor</span>`
-      : l.higher_is === "bad" ? `<span class="hib bad">▲ Maior é pior</span>` : "";
+    const hib = l.higher_is === "good" ? tr("<span class=\"hib good\">▲ Maior é melhor</span>")
+      : l.higher_is === "bad" ? tr("<span class=\"hib bad\">▲ Maior é pior</span>") : "";
     legend.hidden = false;
-    legend.innerHTML = `
-      <div class="lg-head"><span class="lg-ic">${glyph(l, 18)}</span><span class="title">${esc(l.name)}</span>
-        <button class="icon-btn lg-more" aria-expanded="${legendExpanded}" aria-label="Mostrar a legenda completa" title="Detalhes">${legendExpanded ? "−" : "+"}</button>
-        <button class="icon-btn lg-close" aria-label="Desligar a lente (voltar ao terreno)" title="Voltar ao terreno">${icon("close", "✕", { size: 11 })}</button></div>
-      <div class="desc">${esc(l.description || l.unit || "")}</div>
-      ${noteHtml(l)}
-      <div class="lg-scale" role="slider" tabindex="0" aria-label="Destacar uma faixa de valores de ${esc(l.name)}. Passe o mouse ou arraste; as setas movem o destaque, Esc limpa."
-        aria-valuemin="0" aria-valuemax="100" aria-valuenow="50">
-        <canvas class="lg-hist" aria-hidden="true"></canvas>
-        <div class="ramp" style="background:linear-gradient(90deg, ${l.ramp.map(esc).join(",")})"><div class="band-mark" hidden></div></div>
-      </div>
-      <div class="ticks">${ticks}</div>
-      ${l.unit ? `<div class="lg-unit">${esc(l.unit)}</div>` : ""}
-      <div class="lg-meta">${hib}<span class="src">${l.unit ? esc(l.unit) + " · " : ""}${sourceLine(l)}</span></div>
-      <div class="lg-hint" aria-live="polite">Passe o mouse ou arraste na escala para mostrar só aquela faixa</div>`;
+    legend.innerHTML = tr("\n      <div class=\"lg-head\"><span class=\"lg-ic\">{0}</span><span class=\"title\">{1}</span>\n        <button class=\"icon-btn lg-more\" aria-expanded=\"{2}\" aria-label=\"Mostrar a legenda completa\" title=\"Detalhes\">{3}</button>\n        <button class=\"icon-btn lg-close\" aria-label=\"Desligar a lente (voltar ao terreno)\" title=\"Voltar ao terreno\">{4}</button></div>\n      <div class=\"desc\">{5}</div>\n      {6}\n      <div class=\"lg-scale\" role=\"slider\" tabindex=\"0\" aria-label=\"Destacar uma faixa de valores de {7}. Passe o mouse ou arraste; as setas movem o destaque, Esc limpa.\"\n        aria-valuemin=\"0\" aria-valuemax=\"100\" aria-valuenow=\"50\">\n        <canvas class=\"lg-hist\" aria-hidden=\"true\"></canvas>\n        <div class=\"ramp\" style=\"background:linear-gradient(90deg, {8})\"><div class=\"band-mark\" hidden></div></div>\n      </div>\n      <div class=\"ticks\">{9}</div>\n      {10}\n      <div class=\"lg-meta\">{11}<span class=\"src\">{12}{13}</span></div>\n      <div class=\"lg-hint\" aria-live=\"polite\">Passe o mouse ou arraste na escala para mostrar só aquela faixa</div>", glyph(l, 18), esc(l.name), legendExpanded, legendExpanded ? "−" : "+", icon("close", "✕", { size: 11 }), esc(l.description || l.unit || ""), noteHtml(l), esc(l.name), l.ramp.map(esc).join(","), ticks, l.unit ? `<div class="lg-unit">${esc(l.unit)}</div>` : "", hib, l.unit ? esc(l.unit) + " · " : "", sourceLine(l));
     legend.querySelector(".lg-close").onclick = () => opts.onPick(null);
     legend.classList.toggle("expanded", legendExpanded);
     legend.querySelector(".lg-more").onclick = () => {
@@ -354,7 +329,7 @@ export function initLensDock(opts) {
     if (!mark || !active) return;
     if (!band) {
       mark.hidden = true;
-      hint.textContent = "Passe o mouse ou arraste na escala para mostrar só aquela faixa";
+      hint.textContent = tr("Passe o mouse ou arraste na escala para mostrar só aquela faixa");
       hint.classList.remove("on");
     } else {
       const a = Math.max(0, band[0]), b = Math.min(1, band[1]);
@@ -365,7 +340,7 @@ export function initLensDock(opts) {
       const hi = band[1] >= 1 ? "≥ " + formatLensValue(active, lensValueAt(active, a)) : null;
       const txt = band[0] <= 0 && band[1] >= 1 ? "all values"
         : lo || hi || `${formatLensValue(active, lensValueAt(active, a))} – ${formatLensValue(active, lensValueAt(active, b))}`;
-      hint.textContent = `Mostrando só ${txt}`;
+      hint.textContent = tr("Mostrando só {0}", txt);
       hint.classList.add("on");
       scale.setAttribute("aria-valuenow", String(Math.round(((a + b) / 2) * 100)));
     }

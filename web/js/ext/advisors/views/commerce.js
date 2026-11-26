@@ -3,9 +3,11 @@
 // arrows leave the city towards each buyer, on its great-circle bearing, as wide as what it buys.
 import { esc, fin, el as mk } from "../core/util.js";
 import { int, count3, pct } from "../core/fmt.js";
+import { UNIT } from "../../../format.js";
 import { barList, sizeLegend } from "../core/charts.js";
 import { section, tiles, segmented, sourcesHtml } from "../core/view.js";
 import { frameBox, focusPoint } from "../core/frame.js";
+import { tr, DEC } from "../../../i18n.js";
 
 const ROUTE_COLOR = "#c9a0e0", PORT_COLOR = "#4f9ad6", AIR_COLOR = "#e6cf86";
 
@@ -13,7 +15,7 @@ export async function mount(ctx) {
   const { app, el, link, data } = ctx;
   const [trade, infra, exp] = await Promise.all([app.loadData("trade"), app.loadData("infrastructure"), app.loadData("exports")]);
   if (!trade && !infra) {
-    el.innerHTML = `<p class="adv-empty pad">O trade.json e o infrastructure.json não foram gerados, então o mestre do comércio não tem o que contar.</p>`;
+    el.innerHTML = tr("<p class=\"adv-empty pad\">O trade.json e o infrastructure.json não foram gerados, então o mestre do comércio não tem o que contar.</p>");
     return {};
   }
   const grid = app.w.grid;
@@ -27,9 +29,9 @@ export async function mount(ctx) {
   const topAir = [...airports].sort((a, b) => (b.pax || 0) - (a.pax || 0))[0];
   const paxAll = airports.reduce((a, x) => a + (x.pax || 0), 0);
   el.insertAdjacentHTML("beforeend", tiles([
-    { label: "Passageiros aéreos", value: count3(paxAll), sub: `embarques e desembarques, ${topAir?.year || ""}` },
-    { label: "Maior porto", value: topPort ? `${count3(topPort.tons)} t` : "–", sub: topPort ? `${topPort.name} (${topPort.state})` : "" },
-    { label: "Maior aeroporto", value: topAir ? count3(topAir.pax) : "–", sub: topAir ? `${topAir.city || topAir.name}, passageiros` : "" },
+    { label: tr("Passageiros aéreos"), value: count3(paxAll), sub: tr("embarques e desembarques, {0}", topAir?.year || "") },
+    { label: tr("Maior porto"), value: topPort ? `${count3(topPort.tons)} t` : "–", sub: topPort ? `${topPort.name} (${topPort.state})` : "" },
+    { label: tr("Maior aeroporto"), value: topAir ? count3(topAir.pax) : "–", sub: topAir ? tr("{0}, passageiros", topAir.city || topAir.name) : "" },
   ]));
 
   // --- air routes -----------------------------------------------------------------------------------------------
@@ -47,14 +49,14 @@ export async function mount(ctx) {
     for (const list of routeCells.values()) list.sort((a, b) => b.pax - a.pax);
     const vMax = Math.max(1, ...routes.map((r) => r.pax || 0));
 
-    const rBody = section(el, { title: "As rotas aéreas", kicker: esc(trade.vintage || ""), note: esc(trade.rule || "") });
+    const rBody = section(el, { title: tr("As rotas aéreas"), kicker: esc(trade.vintage || ""), note: esc(trade.rule || "") });
     const fRow = mk("div", "adv-row adv-filterbar");
     rBody.appendChild(fRow);
     fRow.addEventListener("click", (e) => { if (e.target.closest("[data-clear-city]")) setCity(null); });
     const rHost = mk("div");
     rBody.appendChild(rHost);
     rBody.appendChild(rDetail);
-    rBody.insertAdjacentHTML("beforeend", `<p class="adv-note">${esc(trade.path_note || "")} A espessura da linha segue os passageiros. Clique numa cidade do mapa para ver só as rotas dela.</p>`);
+    rBody.insertAdjacentHTML("beforeend", tr("<p class=\"adv-note\">{0} A espessura da linha segue os passageiros. Clique numa cidade do mapa para ver só as rotas dela.</p>", esc(trade.path_note || "")));
 
     const routeHighlight = (r) => {
       const cells = new Set(), cities = new Set();
@@ -71,7 +73,7 @@ export async function mount(ctx) {
       const vis = visibleRoutes();
       rHost.innerHTML = "";
       routeBars = barList(rHost, {
-        rank: !st.city, ariaLabel: "As maiores rotas aéreas", max: vMax,
+        rank: !st.city, ariaLabel: tr("As maiores rotas aéreas"), max: vMax,
         rows: vis.map((r) => ({ key: r.key, label: r.label, value: r.pax, text: count3(r.pax), color: ROUTE_COLOR, sub: `${int(r.dist_km)} km`, full: `#${r.rank} ${zoneById.get(r.a)?.name || r.a} ⇄ ${zoneById.get(r.b)?.name || r.b}` })),
         selected: st.route?.key,
         onHover: (row) => {
@@ -81,8 +83,8 @@ export async function mount(ctx) {
         },
         onClick: (row) => selectRoute(routes.find((x) => x.key === row.key)),
       });
-      fRow.innerHTML = st.city ? `<span class="adv-fchip">Cidade: <b>${esc(zName(st.city))}</b> · ${vis.length} rotas<button type="button" data-clear-city aria-label="Limpar o filtro de cidade">✕</button></span>` : "";
-      if (!vis.length) rHost.innerHTML = `<p class="adv-empty">Nenhuma das ${routes.length} maiores rotas toca esta cidade.</p>`;
+      fRow.innerHTML = st.city ? tr("<span class=\"adv-fchip\">Cidade: <b>{0}</b> · {1} rotas<button type=\"button\" data-clear-city aria-label=\"Limpar o filtro de cidade\">✕</button></span>", esc(zName(st.city)), vis.length) : "";
+      if (!vis.length) rHost.innerHTML = tr("<p class=\"adv-empty\">Nenhuma das {0} maiores rotas toca esta cidade.</p>", routes.length);
       redraw();
     };
     function setCity(id) {
@@ -108,14 +110,11 @@ export async function mount(ctx) {
     function drawRouteDetail() {
       const r = st.route;
       if (!r) { rDetail.innerHTML = ""; return; }
-      rDetail.innerHTML = `<div class="adv-card-detail">
-        <h4 class="adv-h4">#${r.rank} ${esc(zoneById.get(r.a)?.name || r.a)} ⇄ ${esc(zoneById.get(r.b)?.name || r.b)}</h4>
-        ${tiles([
-          { label: "Passageiros", value: count3(r.pax), sub: "por ano, nos dois sentidos" },
-          { label: "Por dia", value: count3(r.pax / 365), sub: "em média" },
-          { label: "Distância", value: `${int(r.dist_km)} km`, sub: "em linha reta" },
-        ])}
-        <button type="button" class="adv-mini" data-unpin>Fechar</button></div>`;
+      rDetail.innerHTML = tr("<div class=\"adv-card-detail\">\n        <h4 class=\"adv-h4\">#{0} {1} ⇄ {2}</h4>\n        {3}\n        <button type=\"button\" class=\"adv-mini\" data-unpin>Fechar</button></div>", r.rank, esc(zoneById.get(r.a)?.name || r.a), esc(zoneById.get(r.b)?.name || r.b), tiles([
+          { label: tr("Passageiros"), value: count3(r.pax), sub: tr("por ano, nos dois sentidos") },
+          { label: tr("Por dia"), value: count3(r.pax / 365), sub: tr("em média") },
+          { label: tr("Distância"), value: `${int(r.dist_km)} km`, sub: tr("em linha reta") },
+        ]));
       rDetail.querySelector("[data-unpin]").addEventListener("click", () => selectRoute(st.route));
     }
 
@@ -182,10 +181,10 @@ export async function mount(ctx) {
   let portBars = null, airBars = null, portBubbles = null, airBubbles = null;
   if (infra) {
     const v = infra.vintage || {};
-    const pBody = section(el, { title: "Os portos", kicker: esc(typeof v === "string" ? v : v.ports || ""), note: esc(infra.rules?.ports || "") });
+    const pBody = section(el, { title: tr("Os portos"), kicker: esc(typeof v === "string" ? v : v.ports || ""), note: esc(infra.rules?.ports || "") });
     let pMode = "tons";
     const pHost = mk("div");
-    segmented(pBody, { label: "Ordenar por", value: pMode, options: [{ value: "tons", label: "Carga" }, { value: "teu", label: "Contêineres" }, { value: "grain", label: "Grãos exportados" }], onChange: (x) => { pMode = x; drawPorts(); } });
+    segmented(pBody, { label: tr("Ordenar por"), value: pMode, options: [{ value: "tons", label: tr("Carga") }, { value: "teu", label: tr("Contêineres") }, { value: "grain", label: tr("Grãos exportados") }], onChange: (x) => { pMode = x; drawPorts(); } });
     pBody.appendChild(pHost);
     const portHover = (p) => {
       link.hover(p ? { cells: new Set(p.cell != null ? [p.cell] : []), label: p.name } : null);
@@ -196,19 +195,19 @@ export async function mount(ctx) {
       const k = { tons: "tons", teu: "teu", grain: "grain_export_t" }[pMode];
       const list = ports.filter((p) => fin(p[k]) && p[k] > 0).sort((a, b) => b[k] - a[k]).slice(0, 15);
       portBars = barList(pHost, {
-        rank: true, ariaLabel: "Os maiores portos",
+        rank: true, ariaLabel: tr("Os maiores portos"),
         rows: list.map((p) => ({ key: p.key, label: p.name, sub: `${p.municipality || ""} (${p.state}) · ${p.kind || ""}`, value: p[k], text: pMode === "teu" ? `${count3(p[k])} TEU` : `${count3(p[k])} t`, color: PORT_COLOR })),
         onHover: (r) => portHover(r ? ports.find((p) => p.key === r.key) : null),
         onClick: (r) => flyTo(ports.find((p) => p.key === r.key)),
       });
-      pHost.insertAdjacentHTML("beforeend", `<p class="adv-note">${pMode === "tons" ? "Toneladas movimentadas no ano, carga e descarga." : pMode === "teu" ? "Contêineres em TEU (a medida de um contêiner de 20 pés)." : "Toneladas de soja e milho embarcadas para exportação."}</p>`);
+      pHost.insertAdjacentHTML("beforeend", `<p class="adv-note">${pMode === "tons" ? tr("Toneladas movimentadas no ano, carga e descarga.") : pMode === "teu" ? tr("Contêineres em TEU (a medida de um contêiner de 20 pés).") : tr("Toneladas de soja e milho embarcadas para exportação.")}</p>`);
     }
     drawPorts();
 
-    const aBody = section(el, { title: "Os aeroportos", kicker: esc(typeof v === "string" ? "" : v.airports || ""), note: esc(infra.rules?.airports || "") });
+    const aBody = section(el, { title: tr("Os aeroportos"), kicker: esc(typeof v === "string" ? "" : v.airports || ""), note: esc(infra.rules?.airports || "") });
     let aMode = "pax";
     const aHost = mk("div");
-    segmented(aBody, { label: "Ordenar por", value: aMode, options: [{ value: "pax", label: "Passageiros" }, { value: "intl", label: "Internacionais" }, { value: "cargo", label: "Carga" }], onChange: (x) => { aMode = x; drawAir(); } });
+    segmented(aBody, { label: tr("Ordenar por"), value: aMode, options: [{ value: "pax", label: tr("Passageiros") }, { value: "intl", label: tr("Internacionais") }, { value: "cargo", label: tr("Carga") }], onChange: (x) => { aMode = x; drawAir(); } });
     aBody.appendChild(aHost);
     const airHover = (a) => {
       link.hover(a ? { cells: new Set(a.cell != null ? [a.cell] : []), label: `${a.id} · ${a.name}` } : null);
@@ -219,37 +218,37 @@ export async function mount(ctx) {
       const k = { pax: "pax", intl: "intl_pax", cargo: "cargo_kg" }[aMode];
       const list = airports.filter((a) => fin(a[k]) && a[k] > 0).sort((a, b) => b[k] - a[k]).slice(0, 15);
       airBars = barList(aHost, {
-        rank: true, ariaLabel: "Os aeroportos mais movimentados",
+        rank: true, ariaLabel: tr("Os aeroportos mais movimentados"),
         rows: list.map((a) => ({
           key: a.key, label: `${a.id} ${a.city || a.name}`, full: a.name, value: a[k],
-          text: aMode === "cargo" ? `${count3(a[k] / 1000)} t` : count3(a[k]), sub: `${a.state} · ${infra.hubs?.[a.hub] || "carga"}`, color: AIR_COLOR,
+          text: aMode === "cargo" ? `${count3(a[k] / 1000)} t` : count3(a[k]), sub: `${a.state} · ${infra.hubs?.[a.hub] || tr("carga")}`, color: AIR_COLOR,
         })),
         onHover: (r) => airHover(r ? airports.find((a) => a.key === r.key) : null),
         onClick: (r) => flyTo(airports.find((a) => a.key === r.key)),
       });
-      aHost.insertAdjacentHTML("beforeend", `<p class="adv-note">${aMode === "cargo" ? "Carga e correio pagos, embarcados e desembarcados, em toneladas." : aMode === "intl" ? "Passageiros de voos internacionais, embarques e desembarques." : "Passageiros pagos e grátis, embarques e desembarques."}</p>`);
+      aHost.insertAdjacentHTML("beforeend", `<p class="adv-note">${aMode === "cargo" ? tr("Carga e correio pagos, embarcados e desembarcados, em toneladas.") : aMode === "intl" ? tr("Passageiros de voos internacionais, embarques e desembarques.") : tr("Passageiros pagos e grátis, embarques e desembarques.")}</p>`);
     }
     drawAir();
 
     // On the map: circles for ports (tons) and airports (passengers).
-    const mBody = section(el, { title: "No mapa" });
+    const mBody = section(el, { title: tr("No mapa") });
     let show = "both";
     segmented(mBody, {
-      label: "Mostrar", value: show,
-      options: [{ value: "both", label: "Portos e aeroportos" }, { value: "ports", label: "Portos" }, { value: "air", label: "Aeroportos" }, { value: "none", label: "Só as rotas" }],
+      label: tr("Mostrar"), value: show,
+      options: [{ value: "both", label: tr("Portos e aeroportos") }, { value: "ports", label: tr("Portos") }, { value: "air", label: tr("Aeroportos") }, { value: "none", label: tr("Só as rotas") }],
       onChange: (x) => { show = x; drawSites(); },
     });
     const sizeBox = mk("div");
     mBody.appendChild(sizeBox);
     portBubbles = ctx.bubbles("ports", {
       rMax: 20, alpha: 0.5,
-      tip: (b) => `<b>${esc(b.it.name)}</b><br>${esc(b.it.kind || "Porto")} · <b>${count3(b.it.tons)} t</b> (${b.it.year})<br><span class="sub">${esc(b.it.municipality || "")} (${esc(b.it.state)})${fin(b.it.teu) ? ` · ${count3(b.it.teu)} TEU` : ""}</span>`,
+      tip: (b) => `<b>${esc(b.it.name)}</b><br>${esc(b.it.kind || tr("Porto"))} · <b>${count3(b.it.tons)} t</b> (${b.it.year})<br><span class="sub">${esc(b.it.municipality || "")} (${esc(b.it.state)})${fin(b.it.teu) ? ` · ${count3(b.it.teu)} TEU` : ""}</span>`,
       onHover: (b) => portBars?.setHot(b ? b.key : null),
       onClick: (b) => { portBars?.setHot(b.key); flyTo(b.it); },
     });
     airBubbles = ctx.bubbles("airports", {
       rMax: 16, alpha: 0.5,
-      tip: (b) => `<b>${esc(b.it.id)} · ${esc(b.it.name)}</b><br>${esc(infra.hubs?.[b.it.hub] || "Aeroporto")} · <b>${count3(b.it.pax)}</b> passageiros${fin(b.it.cargo_kg) ? `<br><span class="sub">carga ${count3(b.it.cargo_kg / 1000)} t</span>` : ""}`,
+      tip: (b) => `<b>${esc(b.it.id)} · ${esc(b.it.name)}</b><br>${esc(infra.hubs?.[b.it.hub] || tr("Aeroporto"))} · <b>${count3(b.it.pax)}</b> ${tr("passageiros{0}", fin(b.it.cargo_kg) ? `<br><span class="sub">${tr("carga {0} t", count3(b.it.cargo_kg / 1000))}</span>` : "")}`,
       onHover: (b) => airBars?.setHot(b ? b.key : null),
       onClick: (b) => { airBars?.setHot(b.key); flyTo(b.it); },
     });
@@ -257,19 +256,17 @@ export async function mount(ctx) {
       const pMax = Math.max(1, ...ports.map((p) => p.tons || 0)), aMax = Math.max(1, ...airports.map((a) => a.pax || 0));
       portBubbles.set(show === "both" || show === "ports" ? ports.filter((p) => fin(p.tons)).map((p) => ({ key: p.key, x: p.x, y: p.y, value: p.tons, color: PORT_COLOR, it: p })) : [], { vMax: pMax });
       airBubbles.set(show === "both" || show === "air" ? airports.filter((a) => fin(a.pax) && a.pax > 0).map((a) => ({ key: a.key, x: a.x, y: a.y, value: a.pax, color: AIR_COLOR, it: a })) : [], { vMax: aMax });
-      sizeBox.innerHTML = (show === "both" || show === "ports" ? sizeLegend([10e6, 100e6], (x) => 20 * Math.sqrt(x / pMax), (x) => `${count3(x)} t`, "Portos (azul): toneladas") : "")
-        + (show === "both" || show === "air" ? sizeLegend([1e6, 20e6], (x) => 16 * Math.sqrt(x / aMax), (x) => count3(x), "Aeroportos (dourado): passageiros") : "");
+      sizeBox.innerHTML = (show === "both" || show === "ports" ? sizeLegend([10e6, 100e6], (x) => 20 * Math.sqrt(x / pMax), (x) => `${count3(x)} t`, tr("Portos (azul): toneladas")) : "")
+        + (show === "both" || show === "air" ? sizeLegend([1e6, 20e6], (x) => 16 * Math.sqrt(x / aMax), (x) => count3(x), tr("Aeroportos (dourado): passageiros")) : "");
     }
     drawSites();
 
     // Roads and rail: the counts and rules (the map layers draw them; their switches live in the Map menu).
-    const nBody = section(el, { title: "Rodovias e ferrovias", open: false });
+    const nBody = section(el, { title: tr("Rodovias e ferrovias"), open: false });
     const nRoad = [0, 0], nRail = [0, 0];
     for (const r of infra.roads || []) nRoad[r[2]] = (nRoad[r[2]] || 0) + 1;
     for (const r of infra.rail || []) nRail[r[2]] = (nRail[r[2]] || 0) + 1;
-    nBody.innerHTML = `<p class="adv-note">${(infra.road_classes || []).map((c, i) => `<b>${esc(c.name)}</b>: ${int(nRoad[i] || 0)} ligações entre hexágonos`).join(" · ")}<br>${(infra.rail_tiers || []).map((c, i) => `<b>${esc(c.name)}</b>: ${int(nRail[i] || 0)} ligações entre hexágonos`).join(" · ")}</p>
-      <p class="adv-note">${esc(infra.rules?.roads || "")}</p><p class="adv-note">${esc(infra.rules?.rail || "")}</p>
-      <p class="adv-note">Ligue ou desligue as rodovias, as ferrovias, os portos e as rotas pelo menu <b>Mapa</b>.</p>`;
+    nBody.innerHTML = tr("<p class=\"adv-note\">{0}<br>{1}</p>\n      <p class=\"adv-note\">{2}</p><p class=\"adv-note\">{3}</p>\n      <p class=\"adv-note\">Ligue ou desligue as rodovias, as ferrovias, os portos e as rotas pelo menu <b>Mapa</b>.</p>", (infra.road_classes || []).map((c, i) => tr("<b>{0}</b>: {1} ligações entre hexágonos", esc(c.name), int(nRoad[i] || 0))).join(" · "), (infra.rail_tiers || []).map((c, i) => tr("<b>{0}</b>: {1} ligações entre hexágonos", esc(c.name), int(nRail[i] || 0))).join(" · "), esc(infra.rules?.roads || ""), esc(infra.rules?.rail || ""));
   }
   function flyTo(p) {
     if (!p) return;
@@ -279,9 +276,9 @@ export async function mount(ctx) {
   // --- exports ---------------------------------------------------------------------------------------------------
   if (exp) mountExports();
   function mountExports() {
-    const usd = (v) => (v >= 1e9 ? `US$ ${dec1(v / 1e9)} bi` : v >= 1e6 ? `US$ ${dec1(v / 1e6)} mi` : `US$ ${int(v / 1e3)} mil`);
-    const dec1 = (x) => (x >= 100 ? int(x) : x.toFixed(1).replace(".", ","));
-    const eBody = section(el, { title: "Exportação", kicker: `Comex Stat ${exp.year}`, note: `${esc(exp.rule)} Clique numa cidade da lista para ver as setas saindo dela; passe o mouse num país para destacar a seta.` });
+    const usd = (v) => (v >= 1e9 ? `US$ ${dec1(v / 1e9)}${UNIT.b}` : v >= 1e6 ? `US$ ${dec1(v / 1e6)}${UNIT.m}` : `US$ ${int(v / 1e3)}${UNIT.k}`);
+    const dec1 = (x) => (x >= 100 ? int(x) : x.toFixed(1).replace(".", DEC));
+    const eBody = section(el, { title: tr("Exportação"), kicker: `Comex Stat ${exp.year}`, note: tr("{0} Clique numa cidade da lista para ver as setas saindo dela; passe o mouse num país para destacar a seta.", esc(exp.rule)) });
     const head = mk("div");
     const cHost = mk("div"), pHost = mk("div"), tHost = mk("div");
     eBody.append(head, cHost, pHost, tHost);
@@ -293,22 +290,22 @@ export async function mount(ctx) {
     };
     function drawExports() {
       const b = blob();
-      const name = eSt.origin ? metros.byKey.get(eSt.origin)?.name || eSt.origin : "Brasil";
+      const name = eSt.origin ? metros.byKey.get(eSt.origin)?.name || eSt.origin : tr("Brasil");
       head.innerHTML = tiles([
-        { label: `Exportou em ${exp.year}`, value: usd(b?.fob || 0), sub: name },
-        { label: "Maior comprador", value: b?.countries?.[0]?.[0] || "–", sub: b?.countries?.[0] ? `${pct(b.countries[0][1] / b.fob)} do total` : "" },
-        { label: "Principal produto", value: b?.products?.[0] ? exp.products[b.products[0][0]] || b.products[0][0] : "–", sub: b?.products?.[0] ? `${pct(b.products[0][1] / b.fob)} do total` : "" },
-      ]) + (eSt.origin ? `<p class="adv-row"><button type="button" class="adv-mini" data-exp-br>Voltar ao Brasil</button></p>` : "");
+        { label: tr("Exportou em {0}", exp.year), value: usd(b?.fob || 0), sub: name },
+        { label: tr("Maior comprador"), value: b?.countries?.[0]?.[0] || "–", sub: b?.countries?.[0] ? tr("{0} do total", pct(b.countries[0][1] / b.fob)) : "" },
+        { label: tr("Principal produto"), value: b?.products?.[0] ? exp.products[b.products[0][0]] || b.products[0][0] : "–", sub: b?.products?.[0] ? tr("{0} do total", pct(b.products[0][1] / b.fob)) : "" },
+      ]) + (eSt.origin ? tr("<p class=\"adv-row\"><button type=\"button\" class=\"adv-mini\" data-exp-br>Voltar ao Brasil</button></p>") : "");
       head.querySelector("[data-exp-br]")?.addEventListener("click", () => setOrigin(null));
-      cHost.innerHTML = "<h4 class=\"adv-h4\">Para onde</h4>";
+      cHost.innerHTML = tr("<h4 class=\"adv-h4\">Para onde</h4>");
       barList(cHost, {
-        compact: true, ariaLabel: "Países que mais compram",
+        compact: true, ariaLabel: tr("Países que mais compram"),
         rows: (b?.countries || []).map(([c, v]) => ({ key: c, label: c, value: v, text: usd(v), sub: pct(v / b.fob), color: "#7fb7d9" })),
         onHover: (r) => { eSt.hot = r ? r.key : null; redraw(); },
       });
-      pHost.innerHTML = "<h4 class=\"adv-h4\">O quê</h4>";
+      pHost.innerHTML = tr("<h4 class=\"adv-h4\">O quê</h4>");
       barList(pHost, {
-        compact: true, ariaLabel: "Produtos mais exportados",
+        compact: true, ariaLabel: tr("Produtos mais exportados"),
         rows: (b?.products || []).map(([k, v]) => ({ key: k, label: exp.products[k] || k, value: v, text: usd(v), sub: pct(v / b.fob), color: "#e3b23c" })),
       });
       redraw();
@@ -322,10 +319,10 @@ export async function mount(ctx) {
       const cell = originCell();
       if (cell != null) focusPoint(app, grid.cx(cell), grid.cy(cell), Math.min(app.cam.scale, (app.cam.fitScale || 1) * 1.2));
     }
-    tHost.innerHTML = "<h4 class=\"adv-h4\">As cidades que mais exportam</h4>";
+    tHost.innerHTML = tr("<h4 class=\"adv-h4\">As cidades que mais exportam</h4>");
     const ranked = Object.entries(exp.cities).sort((a, b) => b[1].fob - a[1].fob).slice(0, 15);
     barList(tHost, {
-      rank: true, compact: true, ariaLabel: "Cidades que mais exportam",
+      rank: true, compact: true, ariaLabel: tr("Cidades que mais exportam"),
       rows: ranked.map(([id, b]) => ({ key: id, label: metros.byKey.get(id)?.name || id, value: b.fob, text: usd(b.fob), sub: exp.products[b.products?.[0]?.[0]] || "", color: "#7fb7d9" })),
       onHover: (r) => link.hover(r && metros.byKey.get(r.key) ? { cells: new Set(metros.byKey.get(r.key).ref.footprint || []), label: metros.byKey.get(r.key).name } : null),
       onClick: (r) => setOrigin(eSt.origin === r.key ? null : r.key),
@@ -384,11 +381,11 @@ export async function mount(ctx) {
   }
 
   el.insertAdjacentHTML("beforeend", sourcesHtml(data, [...(trade?.sources || []), ...(infra?.sources || []), ...(exp?.sources || [])], [
-    "As rotas somam os passageiros dos dois sentidos e de todos os aeroportos de cada cidade, e só contam ligações de 250 km ou mais: a ponte Rio–São Paulo entra, Campinas–São Paulo não.",
-    "O arco é um desenho entre os estandartes, não a rota do voo.",
-    "Os números dos portos foram transcritos do Anuário 2025 da ANTAQ (a base bruta estava fora do ar), e cada porto fica na sede do seu município: um terminal longe da cidade aparece no lugar errado por alguns quilômetros.",
-    "As rodovias e ferrovias do Natural Earth são desenho de mapa, não estatística: um traçado simplificado sem toda a malha, sem tráfego nem dono.",
-    "A seta da exportação aponta o rumo do país pelo menor caminho sobre o globo, a partir da cidade; o comprimento e a espessura seguem o valor, não a distância.",
+    tr("As rotas somam os passageiros dos dois sentidos e de todos os aeroportos de cada cidade, e só contam ligações de 250 km ou mais: a ponte Rio–São Paulo entra, Campinas–São Paulo não."),
+    tr("O arco é um desenho entre os estandartes, não a rota do voo."),
+    tr("Os números dos portos foram transcritos do Anuário 2025 da ANTAQ (a base bruta estava fora do ar), e cada porto fica na sede do seu município: um terminal longe da cidade aparece no lugar errado por alguns quilômetros."),
+    tr("As rodovias e ferrovias do Natural Earth são desenho de mapa, não estatística: um traçado simplificado sem toda a malha, sem tráfego nem dono."),
+    tr("A seta da exportação aponta o rumo do país pelo menor caminho sobre o globo, a partir da cidade; o comprimento e a espessura seguem o valor, não a distância."),
   ]));
 
   return {

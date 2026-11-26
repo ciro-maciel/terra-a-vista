@@ -4,6 +4,7 @@
 import { esc, compact, int, pct } from "../../format.js";
 import { FORT_KINDS, fortKind, WONDER_KINDS } from "../../render/art/sites.js";
 import { MODE_STYLE } from "../../render/art/improvements.js";
+import { tr, DEC } from "../../i18n.js";
 
 const muted = (s) => `<span class="muted">${s}</span>`;
 const num = (n, d = 1) => (n == null || !Number.isFinite(n) ? "–" : compact(n));
@@ -18,24 +19,24 @@ function usd(n) {
   return `R$ ${int(n)}`;
 }
 
-const HUB_NAME = { L: "Aeroporto grande", M: "Aeroporto médio", S: "Aeroporto pequeno", N: "Aeroporto regional" };
-const br = (x, d = 1) => x.toFixed(d).replace(".", ",");
+const HUB_NAME = { L: tr("Aeroporto grande"), M: tr("Aeroporto médio"), S: tr("Aeroporto pequeno"), N: tr("Aeroporto regional") };
+const br = (x, d = 1) => x.toFixed(d).replace(".", DEC);
 
 export const tips = {
   port(p) {
-    const lines = [`<b>${esc(p.name)}</b> ${muted(`${esc(p.kind || "Porto")}, ${esc(p.municipality || "")} (${esc(p.state || "")})`)}`];
-    if (p.tons != null) lines.push(`<b>${br(p.tons / 1e6)} milhões de t</b> movimentadas em ${esc(p.year)}`);
-    if (p.teu != null) lines.push(`${int(p.teu)} TEU em contêineres`);
-    if (p.grain_export_t != null) lines.push(`${br(p.grain_export_t / 1e6)} milhões de t de milho e soja exportadas`);
-    lines.push(muted(`ANTAQ, Anuário ${esc(p.year)}; na sede do município (o anuário não traz coordenadas).`));
+    const lines = [`<b>${esc(p.name)}</b> ${muted(`${esc(p.kind || tr("Porto"))}, ${esc(p.municipality || "")} (${esc(p.state || "")})`)}`];
+    if (p.tons != null) lines.push(tr("<b>{0} milhões de t</b> movimentadas em {1}", br(p.tons / 1e6), esc(p.year)));
+    if (p.teu != null) lines.push(tr("{0} TEU em contêineres", int(p.teu)));
+    if (p.grain_export_t != null) lines.push(tr("{0} milhões de t de milho e soja exportadas", br(p.grain_export_t / 1e6)));
+    lines.push(muted(tr("ANTAQ, Anuário {0}; na sede do município (o anuário não traz coordenadas).", esc(p.year))));
     return lines.join("<br>");
   },
   airport(a) {
     const lines = [`<b>${esc(a.id)} · ${esc(a.name)}</b> ${muted(esc([a.city, a.state].filter(Boolean).join(", ")))}`];
-    lines.push(a.hub ? esc(HUB_NAME[a.hub] || a.hub) : "Aeroporto de carga");
-    if (a.pax != null) lines.push(`<b>${num(a.pax)}</b> passageiros em ${esc(a.year)}${a.intl_pax ? ` (${num(a.intl_pax)} internacionais)` : ""}`);
-    if (a.cargo_kg != null && a.cargo_kg >= 1e6) lines.push(`${num(a.cargo_kg / 1000)} t de carga e correio`);
-    lines.push(muted("ANAC, Dados Estatísticos do Transporte Aéreo: embarques e desembarques."));
+    lines.push(a.hub ? esc(HUB_NAME[a.hub] || a.hub) : tr("Aeroporto de carga"));
+    if (a.pax != null) lines.push(`<b>${num(a.pax)}</b> ${tr("passageiros em {0}{1}", esc(a.year), a.intl_pax ? tr(" ({0} internacionais)", num(a.intl_pax)) : "")}`);
+    if (a.cargo_kg != null && a.cargo_kg >= 1e6) lines.push(tr("{0} t de carga e correio", num(a.cargo_kg / 1000)));
+    lines.push(muted(tr("ANAC, Dados Estatísticos do Transporte Aéreo: embarques e desembarques.")));
     return lines.join("<br>");
   },
   fort(f, m) {
@@ -48,7 +49,7 @@ export const tips = {
       `${esc(name)}${f.joint ? " · joint base" : ""} · ${esc(tier)}${esc(status)}`,
     ];
     if (f.area_km2 != null) lines.push(`Boundary ${int(f.area_km2)} km²`);
-    lines.push(muted("DoD MIRTA. Sized by boundary area: no per-base headcount is published."));
+    lines.push(muted(tr("DoD MIRTA. Sized by boundary area: no per-base headcount is published.")));
     return lines.join("<br>");
   },
   range(r, m) {
@@ -62,9 +63,9 @@ export const tips = {
   wonder(x, m) {
     const rule = m.data.wonders?.rules?.find((r) => r.id === x.rule);
     const mt = x.metrics || {};
-    const cat = { natural: "natural", cultural: "cultural", misto: "misto" }[mt.category] || mt.category || "";
+    const cat = { natural: "natural", cultural: "cultural", misto: tr("misto") }[mt.category] || mt.category || "";
     const lines = [`<b>${esc(x.name)}</b> ${muted(esc(x.state || ""))}`];
-    lines.push(`Patrimônio Mundial ${esc(cat)}${mt.inscribed ? `, inscrito em ${esc(mt.inscribed)}` : ""}${mt.danger ? " · em perigo" : ""}`);
+    lines.push(tr("Patrimônio Mundial {0}{1}{2}", esc(cat), mt.inscribed ? tr(", inscrito em {0}", esc(mt.inscribed)) : "", mt.danger ? tr(" · em perigo") : ""));
     if (rule?.text) lines.push(muted(esc(rule.text)));
     return lines.join("<br>");
   },
@@ -73,8 +74,8 @@ export const tips = {
     const t = m.data.trade || {};
     const a = rt.a?.short || rt.a?.name || r.a, b = rt.b?.short || rt.b?.name || r.b;
     return [
-      `<b>${esc(a)} ⇄ ${esc(b)}</b> ${muted(`rota aérea ${esc(r.rank)}ª`)}`,
-      `<b>${num(r.pax)}</b> passageiros em ${esc(t.year ?? "")}, nos dois sentidos · ${int(r.dist_km)} km`,
+      `<b>${esc(a)} ⇄ ${esc(b)}</b> ${muted(tr("rota aérea {0}ª", esc(r.rank)))}`,
+      tr("<b>{0}</b> passageiros em {1}, nos dois sentidos · {2} km", num(r.pax), esc(t.year ?? ""), int(r.dist_km)),
       muted(esc(t.path_note || "")),
     ].join("<br>");
   },

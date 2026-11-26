@@ -13,6 +13,10 @@ Guidance for coding agents working on Terra à Vista.
   without saying so (`curated: true`).
 - **`uv run python -m pipeline check` must have no FAIL**, and `uv run python -m unittest discover -s tests`
   must pass. A test counts only if breaking the code it protects turns it red.
-- **Text people read is Brazilian Portuguese; identifiers, files and comments are English.**
+- **Text people read is Brazilian Portuguese; identifiers, files and comments are English.** Portuguese is the source
+  and the key: wrap every text in `tr("...")` from `web/js/i18n.js` (`{0}`, `{1}` for values), and the map also reads
+  in English from `web/i18n/en.json`. After adding or changing text, run `uv run python tools/i18n.py`; it lists what
+  has no English yet, and `tests/test_i18n.py` fails on any interface text without it. Place names are never
+  translated (`web/i18n/skip.json`). Numbers go through `web/js/format.js` (`dec`, `UNIT`, `DEC`), never a hard comma.
 - **No name, art or trademark of an existing game.** The genre is fine; a specific game is not.
 - Big downloads (the first full `pipeline all`) belong on a CI runner, not on a laptop.

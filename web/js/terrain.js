@@ -1,40 +1,41 @@
 // Terrain tables. world.json v2 ships its own `tables` (water / relief / cover); these are the fallbacks used
 // when a field is missing, and the v1 `terrain` codes, which are translated into the v2 arrays.
 import { parseHex } from "./color.js";
+import { tr } from "./i18n.js";
 
 // v1 terrain codes (pipeline/build/world.py before v2). Only used to derive water/relief from old files.
 export const V1_TERRAIN = [
-  { id: 0, name: "Oceano", water: 1 }, { id: 1, name: "Costa", water: 2 }, { id: 2, name: "Lago", water: 3 },
-  { id: 3, name: "Baixada" }, { id: 4, name: "Planície" }, { id: 5, name: "Planície alta" }, { id: 6, name: "Planalto" },
-  { id: 7, name: "Morros", relief: 1 }, { id: 8, name: "Serras", relief: 2 }, { id: 9, name: "Picos", relief: 3 },
+  { id: 0, name: tr("Oceano"), water: 1 }, { id: 1, name: tr("Costa"), water: 2 }, { id: 2, name: tr("Lago"), water: 3 },
+  { id: 3, name: tr("Baixada") }, { id: 4, name: tr("Planície") }, { id: 5, name: tr("Planície alta") }, { id: 6, name: tr("Planalto") },
+  { id: 7, name: tr("Morros"), relief: 1 }, { id: 8, name: tr("Serras"), relief: 2 }, { id: 9, name: tr("Picos"), relief: 3 },
 ];
 
 export const DEFAULT_TABLES = {
   water: [
-    { id: 0, name: "Terra" },
-    { id: 1, name: "Oceano", color: "#1b4266", rule: "Água com mais de ~200 m de profundidade, longe da terra." },
-    { id: 2, name: "Costa", color: "#2d6d97", rule: "Água ao lado da terra ou com menos de 200 m." },
-    { id: 3, name: "Lago", color: "#3a80b0", rule: "O centro do hexágono fica num lago do Natural Earth." },
+    { id: 0, name: tr("Terra") },
+    { id: 1, name: tr("Oceano"), color: "#1b4266", rule: tr("Água com mais de ~200 m de profundidade, longe da terra.") },
+    { id: 2, name: tr("Costa"), color: "#2d6d97", rule: tr("Água ao lado da terra ou com menos de 200 m.") },
+    { id: 3, name: tr("Lago"), color: "#3a80b0", rule: tr("O centro do hexágono fica num lago do Natural Earth.") },
   ],
   relief: [
-    { id: 0, name: "Plano", rule: "Terreno suave." },
-    { id: 1, name: "Morros", rule: "Terreno acidentado dentro do hexágono." },
-    { id: 2, name: "Serras", rule: "Terreno muito acidentado ou alto." },
-    { id: 3, name: "Picos", rule: "Grandes altitudes." },
+    { id: 0, name: tr("Plano"), rule: tr("Terreno suave.") },
+    { id: 1, name: tr("Morros"), rule: tr("Terreno acidentado dentro do hexágono.") },
+    { id: 2, name: tr("Serras"), rule: tr("Terreno muito acidentado ou alto.") },
+    { id: 3, name: tr("Picos"), rule: tr("Grandes altitudes.") },
   ],
   cover: [
-    { id: 0, key: "none", name: "Desconhecido" },
-    { id: 1, key: "forest_deciduous", name: "Floresta", color: "#4f7a35" },
-    { id: 2, key: "forest_evergreen", name: "Floresta de coníferas", color: "#2f5f3a" },
-    { id: 3, key: "forest_mixed", name: "Floresta mista", color: "#436d36" },
-    { id: 4, key: "scrub", name: "Caatinga e arbustos", color: "#b8a26a" },
-    { id: 5, key: "grassland", name: "Campo", color: "#9fb35a" },
-    { id: 6, key: "pasture", name: "Pasto", color: "#a8b862" },
-    { id: 7, key: "cropland", name: "Lavoura", color: "#c2b65c" },
-    { id: 8, key: "wetland", name: "Área úmida", color: "#4f7f68" },
-    { id: 9, key: "urban", name: "Urbano", color: "#8c8780" },
-    { id: 10, key: "barren", name: "Solo exposto", color: "#b9ab94" },
-    { id: 11, key: "ice", name: "Gelo e neve", color: "#e8eef2" },
+    { id: 0, key: "none", name: tr("Desconhecido") },
+    { id: 1, key: "forest_deciduous", name: tr("Floresta"), color: "#4f7a35" },
+    { id: 2, key: "forest_evergreen", name: tr("Floresta de coníferas"), color: "#2f5f3a" },
+    { id: 3, key: "forest_mixed", name: tr("Floresta mista"), color: "#436d36" },
+    { id: 4, key: "scrub", name: tr("Caatinga e arbustos"), color: "#b8a26a" },
+    { id: 5, key: "grassland", name: tr("Campo"), color: "#9fb35a" },
+    { id: 6, key: "pasture", name: tr("Pasto"), color: "#a8b862" },
+    { id: 7, key: "cropland", name: tr("Lavoura"), color: "#c2b65c" },
+    { id: 8, key: "wetland", name: tr("Área úmida"), color: "#4f7f68" },
+    { id: 9, key: "urban", name: tr("Urbano"), color: "#8c8780" },
+    { id: 10, key: "barren", name: tr("Solo exposto"), color: "#b9ab94" },
+    { id: 11, key: "ice", name: tr("Gelo e neve"), color: "#e8eef2" },
   ],
 };
 

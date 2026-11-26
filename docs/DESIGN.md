@@ -30,6 +30,8 @@ monotone in lightness, low values light on the dark map only when "low" is the s
   per screen.
 - **Segmented control**: buttons joined, the current one lit (timeline themes, Cidades / Estados).
 - **Chip**: a small rounded pill for a filter or a fact.
+- **Language switch**: a segmented control, PT | EN, the current one filled with `--gold-bright` and dark ink; last in
+  the top bar and in the header of the standalone pages.
 - **Table**: tabular numbers right-aligned, the label left with a thin gold bar under it showing the share.
 - **Source line**: `--ink-dim`, smaller, at the end of every block that shows a number: the rule and the source.
 - **Icon**: inline SVG in `currentColor` (`web/js/ui/icon.js`), never an emoji or a text symbol (the repository's
@@ -39,7 +41,9 @@ monotone in lightness, low values light on the dark map only when "low" is the s
 ## Rules
 
 1. Every number on screen says where it comes from and what it cannot show, near it.
-2. Portuguese on screen, English in code and files.
+2. Portuguese on screen by default, English when the visitor picks it (the PT | EN switch at the end of the top bar,
+   or `?lang=en`); English in code and files. Every text goes through `tr()` (`web/js/i18n.js`), every number through
+   `web/js/format.js`, so both languages read naturally: 1,2 mi and 2,9× in Portuguese, 1.2M and 2.9× in English.
 3. One primary action per screen; everything else is a hairline button or a link.
 4. Nothing waits in the dark: a block that loads shows "Lendo…" and then the answer or the reason it has none.
 5. Works at 390 px wide: panels become full width, rows wrap, nothing scrolls sideways.

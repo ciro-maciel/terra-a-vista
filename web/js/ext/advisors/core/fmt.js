@@ -1,8 +1,9 @@
 // Number formatting for the advisor kit, built on web/js/format.js.
 // Formats follow lenses.json / counties.json: int | usd | pct (0..1 fraction) | float | minutes | years | km2 | text,
 // plus a few of our own: money (compact $), signed (signed %), lq (×1.23), mw, count, ratio (×4.2).
-import { compact, dec, dollars, int, money, pct } from "../../../format.js";
+import { compact, dec, dollars, int, money, pct, UNIT } from "../../../format.js";
 import { fin } from "./util.js";
+import { tr, DEC } from "../../../i18n.js";
 
 export { compact, dollars, int, money, pct };
 
@@ -13,10 +14,10 @@ export function count3(n) {
   if (!fin(n)) return "–";
   const a = Math.abs(n);
   const sig = (d, unit) => dec(n / d, a / d >= 100 ? 0 : a / d >= 10 ? 1 : 2) + unit;
-  if (a >= 1e12) return sig(1e12, " tri");
-  if (a >= 1e9) return sig(1e9, " bi");
-  if (a >= 1e6) return sig(1e6, " mi");
-  if (a >= 1e4) return sig(1e3, " mil");
+  if (a >= 1e12) return sig(1e12, UNIT.t);
+  if (a >= 1e9) return sig(1e9, UNIT.b);
+  if (a >= 1e6) return sig(1e6, UNIT.m);
+  if (a >= 1e4) return sig(1e3, UNIT.k);
   return int(n);
 }
 
@@ -35,7 +36,7 @@ export function fmtValue(format, v, unit) {
     case "lq": return `×${dec(v, 2)}`;
     case "ratio": return `×${dec(v, 1)}`;
     case "minutes": return `${dec(v, 1)} min`;
-    case "years": return `${dec(v, 1)} anos`;
+    case "years": return tr("{0} anos", dec(v, 1));
     case "km2": return `${int(v)} km²`;
     case "mw": return mw(v);
     case "float": return Math.abs(v) >= 100 ? int(v) : Math.abs(v) >= 10 ? dec(v, 1) : dec(v, 2);
@@ -65,12 +66,12 @@ export function fmtShort(format, v) {
   if (!fin(v)) return "–";
   switch (format) {
     case "usd": case "money": return money(v);
-    case "pct": return `${String(+(v * 100).toFixed(Math.abs(v) < 0.1 && v !== 0 ? 1 : 0)).replace(".", ",")}%`;
-    case "signed": return `${v > 0 ? "+" : v < 0 ? "−" : ""}${String(+Math.abs(v * 100).toFixed(1)).replace(".", ",")}%`;
-    case "lq": case "ratio": return `×${String(+v.toFixed(1)).replace(".", ",")}`;
+    case "pct": return `${String(+(v * 100).toFixed(Math.abs(v) < 0.1 && v !== 0 ? 1 : 0)).replace(".", DEC)}%`;
+    case "signed": return `${v > 0 ? "+" : v < 0 ? "−" : ""}${String(+Math.abs(v * 100).toFixed(1)).replace(".", DEC)}%`;
+    case "lq": case "ratio": return `×${String(+v.toFixed(1)).replace(".", DEC)}`;
     case "mw": return mw(v);
     case "minutes": case "years": return String(+v.toFixed(0));
-    default: return Math.abs(v) >= 1000 ? compact(v) : String(+v.toPrecision(3)).replace(".", ",");
+    default: return Math.abs(v) >= 1000 ? compact(v) : String(+v.toPrecision(3)).replace(".", DEC);
   }
 }
 
@@ -79,7 +80,8 @@ export function parseNum(text, format) {
   if (text == null) return null;
   let s = String(text).trim().toLowerCase().replace(/r\$/g, "").replace(/\s/g, "").replace(/^−/, "-")
     .replace(/tri$/, "t").replace(/bi$/, "b").replace(/mil$/, "k").replace(/mi$/, "m");
-  s = s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
+  // Portuguese writes 1.500,5; English writes 1,500.5. A lone comma in English is a thousands separator.
+  s = DEC === "," && s.includes(",") ? s.replace(/\./g, "").replace(",", ".") : s.replace(/,/g, "");
   if (!s) return null;
   let isPct = false;
   if (s.endsWith("%")) { isPct = true; s = s.slice(0, -1); }

@@ -6,6 +6,8 @@
   <title>Como contamos | Terra à Vista</title>
   <meta name="description" content="Como o índice semanal do Terra à Vista conta o que o Brasil pesquisa sem saber quem perguntou: o que guardamos, o que nunca guardamos, o mínimo de 10 pessoas e o código aberto para conferir.">
   <link rel="canonical" href="https://ciro-maciel.github.io/terra-a-vista/como-contamos/">
+  <link rel="alternate" hreflang="pt-BR" href="https://ciro-maciel.github.io/terra-a-vista/como-contamos/">
+  <link rel="alternate" hreflang="en" href="https://ciro-maciel.github.io/terra-a-vista/como-contamos/?lang=en">
   <link rel="icon" type="image/svg+xml" href="../favicon.svg">
   <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png">
   <link rel="apple-touch-icon" href="../apple-touch-icon.png">
@@ -20,6 +22,7 @@
       <a href="../pergunte/">Pergunte ao mapa</a>
       <a href="./" aria-current="page">Como contamos</a>
     </nav>
+    <span id="lang-slot"></span>
   </header>
   <main>
     <p class="kicker">O índice da semana</p>
@@ -54,22 +57,28 @@
 
     <h2>Como uma pessoa vira um número</h2>
     <ol>
-      <li><strong>Um carimbo da semana.</strong> Para contar pessoas diferentes, e não a mesma pessoa mil vezes, cada consulta leva um carimbo: o endereço da conexão embaralhado (SHA-256) com uma chave sorteada para aquela semana. O endereço em si não é guardado.</li>
-      <li><strong>A chave some no fim da semana.</strong> Na segunda-feira de madrugada a semana fecha: a contagem é publicada e a chave e todos os carimbos são apagados. Depois disso ninguém, nem nós, consegue ligar um carimbo a uma conexão, nem a semana passada à atual.</li>
-      <li><strong>Só aparece o que 10 pessoas ou mais consultaram.</strong> Uma caixa (um lugar, uma pergunta, um tema) com menos de 10 pessoas diferentes não aparece de jeito nenhum, nem como "menos de 10".</li>
-      <li><strong>Um pouco de ruído no número.</strong> Cada contagem publicada leva um ruído aleatório pequeno, para que ninguém descubra uma pessoa comparando duas semanas. O número publicado nunca fica abaixo de 10.</li>
-      <li><strong>Um limite contra robôs.</strong> Mais de 60 consultas por minuto da mesma conexão são recusadas, e um robô que pergunta mil vezes conta como uma pessoa.</li>
+      <li data-i18n-html><strong>Um carimbo da semana.</strong> Para contar pessoas diferentes, e não a mesma pessoa mil vezes, cada consulta leva um carimbo: o endereço da conexão embaralhado (SHA-256) com uma chave sorteada para aquela semana. O endereço em si não é guardado.</li>
+      <li data-i18n-html><strong>A chave some no fim da semana.</strong> Na segunda-feira de madrugada a semana fecha: a contagem é publicada e a chave e todos os carimbos são apagados. Depois disso ninguém, nem nós, consegue ligar um carimbo a uma conexão, nem a semana passada à atual.</li>
+      <li data-i18n-html><strong>Só aparece o que 10 pessoas ou mais consultaram.</strong> Uma caixa (um lugar, uma pergunta, um tema) com menos de 10 pessoas diferentes não aparece de jeito nenhum, nem como "menos de 10".</li>
+      <li data-i18n-html><strong>Um pouco de ruído no número.</strong> Cada contagem publicada leva um ruído aleatório pequeno, para que ninguém descubra uma pessoa comparando duas semanas. O número publicado nunca fica abaixo de 10.</li>
+      <li data-i18n-html><strong>Um limite contra robôs.</strong> Mais de 60 consultas por minuto da mesma conexão são recusadas, e um robô que pergunta mil vezes conta como uma pessoa.</li>
     </ol>
 
     <h2>O que sai</h2>
-    <p>Os lugares mais consultados, as perguntas mais feitas, os temas e os que mais subiram em relação às semanas anteriores. Está em <a href="../pergunte/#indice">Pergunte ao mapa</a>, na ferramenta <code>trends</code> do próprio conector e em <a href="https://terra-a-vista.mcp.myagents.click/trends/latest.json">um arquivo aberto</a>. Nunca sai uma lista de quem pesquisou o quê, porque essa lista não existe.</p>
+    <p data-i18n-html>Os lugares mais consultados, as perguntas mais feitas, os temas e os que mais subiram em relação às semanas anteriores. Está em <a href="../pergunte/#indice">Pergunte ao mapa</a>, na ferramenta <code>trends</code> do próprio conector e em <a href="https://terra-a-vista.mcp.myagents.click/trends/latest.json">um arquivo aberto</a>. Nunca sai uma lista de quem pesquisou o quê, porque essa lista não existe.</p>
 
     <h2>Confira no código</h2>
-    <p>Tudo isto está no repositório aberto: as regras em <a href="https://github.com/ciro-maciel/terra-a-vista/blob/main/mcp/src/tally.js"><code>mcp/src/tally.js</code></a>, a contagem e o fechamento em <a href="https://github.com/ciro-maciel/terra-a-vista/blob/main/mcp/src/tally-object.js"><code>mcp/src/tally-object.js</code></a>, e os testes que ficam vermelhos se alguém baixar o mínimo ou guardar texto em <a href="https://github.com/ciro-maciel/terra-a-vista/blob/main/mcp/test/tally.test.js"><code>mcp/test/tally.test.js</code></a>.</p>
+    <p data-i18n-html>Tudo isto está no repositório aberto: as regras em <a href="https://github.com/ciro-maciel/terra-a-vista/blob/main/mcp/src/tally.js"><code>mcp/src/tally.js</code></a>, a contagem e o fechamento em <a href="https://github.com/ciro-maciel/terra-a-vista/blob/main/mcp/src/tally-object.js"><code>mcp/src/tally-object.js</code></a>, e os testes que ficam vermelhos se alguém baixar o mínimo ou guardar texto em <a href="https://github.com/ciro-maciel/terra-a-vista/blob/main/mcp/test/tally.test.js"><code>mcp/test/tally.test.js</code></a>.</p>
     <p class="src">Dado que não identifica ninguém e não pode ser revertido não é dado pessoal (Lei Geral de Proteção de Dados, artigo 12). O desenho acima existe para que o índice fique nesse caso. Uma dúvida ou um problema: abra uma issue no repositório.</p>
   </main>
-  <footer>
+  <footer data-i18n-html>
     Terra à Vista é aberto: <a href="https://github.com/ciro-maciel/terra-a-vista">código e dados no GitHub</a>. Feito por <a href="https://ciromaciel.click/?ref=oss-terra-a-vista">Ciro Cesar Maciel</a>.
   </footer>
+  <script type="module">
+    import { translateDocument, langSwitchHtml, wireLangSwitch } from "../js/i18n.js";
+    translateDocument();
+    document.getElementById("lang-slot").outerHTML = langSwitchHtml();
+    wireLangSwitch(document.querySelector("header.top"));
+  </script>
 </body>
 </html>

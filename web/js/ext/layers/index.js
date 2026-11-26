@@ -10,16 +10,17 @@ import { createModel } from "./model.js";
 import { makeLayers } from "./layers.js";
 import { tips } from "./tips.js";
 import { prepareCellSet } from "../../render/art/sites.js";
-import { esc } from "../../format.js";
+import { esc, UNIT } from "../../format.js";
+import { tr, DEC } from "../../i18n.js";
 
 // Terra à Vista: only the layers that have Brazilian data; the military layer is out of scope.
 const TOGGLES = [
-  { id: "roads", label: "Rodovias", icon: "t-road", def: true, title: "Rodovias principais (Natural Earth, como arte do mapa)", layers: ["roads"] },
-  { id: "rail", label: "Ferrovias", icon: "t-rail", def: true, title: "Linhas férreas principais e secundárias (Natural Earth, como arte do mapa)", layers: ["rail"] },
-  { id: "hubs", label: "Portos e aeroportos", icon: "d-harbor", def: true, title: "Portos e terminais do Anuário da ANTAQ e aeroportos pelo movimento da ANAC", layers: ["hubs"] },
-  { id: "wonders", label: "Maravilhas", icon: "w-landmark", def: true, title: "Os sítios do Patrimônio Mundial da UNESCO no Brasil", layers: ["wonders", "plates"] },
-  { id: "protected", label: "Áreas protegidas", icon: "l-forest", def: false, title: "Terras indígenas (Funai) e unidades de conservação (cadastro nacional)", layers: ["areas"] },
-  { id: "trade", label: "Rotas aéreas", icon: "t-trade", def: false, title: "As 40 maiores ligações aéreas de passageiros entre cidades (ANAC)", layers: ["trade"] },
+  { id: "roads", label: tr("Rodovias"), icon: "t-road", def: true, title: tr("Rodovias principais (Natural Earth, como arte do mapa)"), layers: ["roads"] },
+  { id: "rail", label: tr("Ferrovias"), icon: "t-rail", def: true, title: tr("Linhas férreas principais e secundárias (Natural Earth, como arte do mapa)"), layers: ["rail"] },
+  { id: "hubs", label: tr("Portos e aeroportos"), icon: "d-harbor", def: true, title: tr("Portos e terminais do Anuário da ANTAQ e aeroportos pelo movimento da ANAC"), layers: ["hubs"] },
+  { id: "wonders", label: tr("Maravilhas"), icon: "w-landmark", def: true, title: tr("Os sítios do Patrimônio Mundial da UNESCO no Brasil"), layers: ["wonders", "plates"] },
+  { id: "protected", label: tr("Áreas protegidas"), icon: "l-forest", def: false, title: tr("Terras indígenas (Funai) e unidades de conservação (cadastro nacional)"), layers: ["areas"] },
+  { id: "trade", label: tr("Rotas aéreas"), icon: "t-trade", def: false, title: tr("As 40 maiores ligações aéreas de passageiros entre cidades (ANAC)"), layers: ["trade"] },
 ];
 
 export function install(app) {
@@ -104,9 +105,9 @@ function protectedLayer(app, on) {
       const p = prep();
       const kinds = Object.fromEntries(p.d.kinds.map((k) => [k.id, k]));
       const items = it.data.list.map((k) => p.d.areas[k]).sort((a, b) => (b.ha || 0) - (a.ha || 0));
-      const ha = (v) => (v >= 1e6 ? `${(v / 1e6).toFixed(1).replace(".", ",")} mi ha` : v >= 1e3 ? `${Math.round(v / 1e3)} mil ha` : `${Math.round(v)} ha`);
+      const ha = (v) => (v >= 1e6 ? `${(v / 1e6).toFixed(1).replace(".", DEC)}${UNIT.m} ha` : v >= 1e3 ? `${Math.round(v / 1e3)}${UNIT.k} ha` : `${Math.round(v)} ha`);
       return items.slice(0, 4).map((a) => `<b>${esc(a.n)}</b><br><span class="muted"><i style="display:inline-block;width:8px;height:8px;border-radius:2px;background:${kinds[a.k]?.color}"></i> ${esc(kinds[a.k]?.name || "")}${a.s ? ` · ${esc(a.s.replace(/,(?=\S)/g, ", "))}` : ""}${a.ha ? ` · ${ha(a.ha)}` : ""}</span>`).join("<br>")
-        + (items.length > 4 ? `<br><span class="muted">e mais ${items.length - 4}</span>` : "");
+        + (items.length > 4 ? tr("<br><span class=\"muted\">e mais {0}</span>", items.length - 4) : "");
     },
   };
 }

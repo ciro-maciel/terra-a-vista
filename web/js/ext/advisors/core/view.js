@@ -1,6 +1,7 @@
 // Layout helpers shared by the advisor views: sections, controls, stat tiles, sources and caveats.
 import { esc, el, fin } from "./util.js";
 import { icon } from "../../../ui/icon.js";
+import { tr } from "../../../i18n.js";
 
 /** Append a titled section; returns its body element. opts: {title, note, kicker, collapsed, cls} */
 export function section(parent, { title, note = "", kicker = "", cls = "", open = true } = {}) {
@@ -97,7 +98,7 @@ export function lensButton(app, lensId, label) {
   const sync = () => {
     const on = app.state.lens?.id === lensId;
     b.setAttribute("aria-pressed", String(on));
-    b.innerHTML = `${icon(lens.icon || "layers", lens.emoji || "🗺️", { size: 14 })}<span>${esc(on ? `Mostrando a lente ${lens.name}` : label || `Mostrar a lente ${lens.name} no mapa`)}</span>`;
+    b.innerHTML = `${icon(lens.icon || "layers", lens.emoji || "🗺️", { size: 14 })}<span>${esc(on ? tr("Mostrando a lente {0}", lens.name) : label || tr("Mostrar a lente {0} no mapa", lens.name))}</span>`;
   };
   sync();
   b.addEventListener("click", () => {
@@ -113,7 +114,7 @@ export function lensButton(app, lensId, label) {
  * ctx.setLens). options: [{value, label, lens: () => lens id | lens object | null}]. Follows lens changes made
  * elsewhere (the lens dock, L): when the map shows none of the options, no button is pressed.
  */
-export function mapPicker(ctx, parent, { options, value, label = "Mapa" }) {
+export function mapPicker(ctx, parent, { options, value, label = tr("Mapa") }) {
   const row = el("div", "adv-mappick");
   row.innerHTML = `<span class="k">${icon("layers", "▤", { size: 13 })}${esc(label)}</span>`;
   const resolve = (o) => {
@@ -126,7 +127,7 @@ export function mapPicker(ctx, parent, { options, value, label = "Mapa" }) {
     busy = true;
     try { ctx.setLens(resolve(o)); } finally { busy = false; }
   };
-  const seg = segmented(row, { label: `Cor do ${label.toLowerCase()}`, options, value, onChange: (v) => pick(v) });
+  const seg = segmented(row, { label: tr("Cor do {0}", label.toLowerCase()), options, value, onChange: (v) => pick(v) });
   const sync = (lens) => {
     const o = options.find((x) => resolve(x) === (lens || null));
     seg.set(o ? o.value : "__none");
@@ -145,17 +146,12 @@ export function mapPicker(ctx, parent, { options, value, label = "Mapa" }) {
 }
 
 /** A "Frame on map" button for a selection (handled by the advisors shell: flies to the view's highlight). */
-export const frameBtn = () => `<button type="button" class="adv-mini adv-framebtn" data-frame title="Levar o mapa até a seleção"><svg width="12" height="12" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2.6" fill="currentColor"/></svg>Enquadrar no mapa</button>`;
+export const frameBtn = () => tr("<button type=\"button\" class=\"adv-mini adv-framebtn\" data-frame title=\"Levar o mapa até a seleção\"><svg width=\"12\" height=\"12\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><circle cx=\"12\" cy=\"12\" r=\"2.6\" fill=\"currentColor\"/></svg>Enquadrar no mapa</button>");
 
 /** Sources and caveats footer. ids: source ids from sources.json; caveats: [string] */
 export function sourcesHtml(data, ids, caveats = []) {
   const list = [...new Set(ids)].map((id) => data.source(id)).filter(Boolean);
-  return `<footer class="adv-sources">
-    ${caveats.length ? `<h4>Leia com cuidado</h4><ul class="adv-caveats">${caveats.map((c) => `<li>${c}</li>`).join("")}</ul>` : ""}
-    <h4>Fontes</h4>
-    <ul>${list.map((s) => `<li><b>${esc(s.title)}</b>, ${esc(s.publisher || "")}${s.vintage ? ` <span class="v">${esc(s.vintage)}</span>` : ""}</li>`).join("")}</ul>
-    <button type="button" class="adv-link" data-pedia="Fontes">Todas as fontes, arquivos e somas de verificação no Almanaque</button>
-  </footer>`;
+  return tr("<footer class=\"adv-sources\">\n    {0}\n    <h4>Fontes</h4>\n    <ul>{1}</ul>\n    <button type=\"button\" class=\"adv-link\" data-pedia=\"Fontes\">Todas as fontes, arquivos e somas de verificação no Almanaque</button>\n  </footer>", caveats.length ? tr("<h4>Leia com cuidado</h4><ul class=\"adv-caveats\">{0}</ul>", caveats.map((c) => `<li>${c}</li>`).join("")) : "", list.map((s) => `<li><b>${esc(s.title)}</b>, ${esc(s.publisher || "")}${s.vintage ? ` <span class="v">${esc(s.vintage)}</span>` : ""}</li>`).join(""));
 }
 
 /** Top-N helper: rows sorted by f desc (or asc), skipping non-finite, optional population floor. */

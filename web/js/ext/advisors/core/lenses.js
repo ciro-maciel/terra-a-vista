@@ -2,6 +2,7 @@
 // Each is an ordinary lens object ({id, name, ramp, domain, scale, format, values: per cell}) that app.setLens()
 // accepts; they are built once per data model and cached, so the lens dock's histogram cache stays valid.
 import { fin, quantile } from "./util.js";
+import { tr } from "../../../i18n.js";
 
 // Diverging: shrinking (brick) ← no change (parchment) → growing (teal). Dark ends so the extremes read on the map.
 const GROWTH_RAMP = ["#7a1f2b", "#c2463d", "#e8a07a", "#efe6d2", "#8fcbb8", "#2e9c8a", "#0f5e57"];
@@ -44,12 +45,12 @@ export function growthLens(data, by = "metros") {
       vals = data.levels.metros.rows.map((r) => r.v.growth);
     }
     return {
-      id: `adv-growth-${by}`, group: "people", name: by === "states" ? "Crescimento por estado" : "Crescimento por cidade",
-      icon: "l-people", emoji: "📈", unit: "variação da população", format: "pct", scale: "linear",
+      id: `adv-growth-${by}`, group: "people", name: by === "states" ? tr("Crescimento por estado") : tr("Crescimento por cidade"),
+      icon: "l-people", emoji: "📈", unit: tr("variação da população"), format: "pct", scale: "linear",
       domain: symDomain(vals), ramp: GROWTH_RAMP, higher_is: "neutral", source: "ibge_estimates",
       description: by === "states"
-        ? `Variação da população de ${yrs} por estado (estimativas do IBGE).`
-        : `Variação da população de ${yrs} por cidade (estimativas do IBGE). Os hexágonos cinza ficam fora das cidades.`,
+        ? tr("Variação da população de {0} por estado (estimativas do IBGE).", yrs)
+        : tr("Variação da população de {0} por cidade (estimativas do IBGE). Os hexágonos cinza ficam fora das cidades.", yrs),
       values,
     };
   });
@@ -65,10 +66,10 @@ export function scienceLens(data) {
     for (const [cell, city] of cellMetro) if (owner[cell] >= 0) values[cell] = share(city);
     const sci = app.data.nation?.yields?.find((y) => y.key === "science");
     return {
-      id: "adv-science-share", group: "knowledge", name: "Empregos de Ciência",
-      icon: "l-degrees", emoji: "🔬", unit: "dos empregos formais", format: "pct", scale: "linear",
+      id: "adv-science-share", group: "knowledge", name: tr("Empregos de Ciência"),
+      icon: "l-degrees", emoji: "🔬", unit: tr("dos empregos formais"), format: "pct", scale: "linear",
       domain: robust(data.levels.metros.rows.map((r) => share(r.ref))), ramp: SCIENCE_RAMP, higher_is: "neutral", source: "ibge_cempre",
-      description: `Empregos formais de ${sci?.label || "Ciência"} ÷ todos os empregos formais, por cidade (CEMPRE 2024, onde fica o empregador). Os hexágonos cinza ficam fora das cidades.`,
+      description: tr("Empregos formais de {0} ÷ todos os empregos formais, por cidade (CEMPRE 2024, onde fica o empregador). Os hexágonos cinza ficam fora das cidades.", sci?.label || tr("Ciência")),
       values,
     };
   });

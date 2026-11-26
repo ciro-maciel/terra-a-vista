@@ -10,6 +10,7 @@ import { esc, int, pct } from "../../format.js";
 import { compact, money } from "./fmt.js";
 import { icon } from "../../ui/icon.js";
 import { hasIcon } from "../../icons.js";
+import { tr, DEC } from "../../i18n.js";
 
 // Icons the district catalog names (d-*) are not drawn yet; until they are, a near icon from the set stands in,
 // and canvas plaques without any icon get the letter in `mark`.
@@ -20,9 +21,9 @@ const FALLBACK = {
   aqueduct: ["i-utilities", "💧"],
 };
 const SHORT = {
-  campus: "Campus", commercial_hub: "Finanças", industrial_zone: "Indústria", harbor: "Porto", theater_square: "Artes",
-  entertainment_complex: "Lazer", aerodrome: "Aeródromo", government_plaza: "Governo", encampment: "Quartel", agro: "Agro",
-  aqueduct: "Usina",
+  campus: "Campus", commercial_hub: tr("Finanças"), industrial_zone: tr("Indústria"), harbor: tr("Porto"), theater_square: tr("Artes"),
+  entertainment_complex: tr("Lazer"), aerodrome: tr("Aeródromo"), government_plaza: tr("Governo"), encampment: tr("Quartel"), agro: tr("Agro"),
+  aqueduct: tr("Usina"),
 };
 const TIER = { garrison: "Garrison", fortress: "Fortress" };
 
@@ -85,7 +86,7 @@ export function badgeOf(ddata, id) {
   if (!ddata) return ddata; // undefined (loading) or null (missing)
   const row = ddata.cities?.[id];
   if (!row) return null;
-  if (!row.badge) return { label: "Diversificada", text: "Nenhum distrito passa pela regra: nenhuma atividade se destaca.", color: "#6a7484", icon: null, district: null };
+  if (!row.badge) return { label: tr("Diversificada"), text: tr("Nenhum distrito passa pela regra: nenhuma atividade se destaca."), color: "#6a7484", icon: null, district: null };
   const c = catalog(ddata).get(row.badge.district) || {};
   return { ...row.badge, color: c.color || "#6a7484", icon: iconFor(row.badge.district, c), emoji: FALLBACK[row.badge.district]?.[1] };
 }
@@ -93,7 +94,7 @@ export function badgeOf(ddata, id) {
 export function badgeHtml(m, ddata) {
   const b = badgeOf(ddata, m.city.id);
   if (!b) return "";
-  return `<span class="cv-type${b.district ? "" : " plain"}" style="--tc:${esc(b.color)}" title="Tipo de cidade: ${esc(b.text || b.label)} (IBGE CEMPRE ${esc(String(ddata.year || ""))})">
+  return `<span class="cv-type${b.district ? "" : " plain"}" style="--tc:${esc(b.color)}" title="${tr("Tipo de cidade: {0} (IBGE CEMPRE {1})", esc(b.text || b.label), esc(String(ddata.year || "")))}">
     <span class="cv-type-ic">${icon(b.icon, b.emoji || "◆", { size: 13 })}</span>${esc(b.label)}</span>`;
 }
 
@@ -103,31 +104,31 @@ const signed = (x) => (x == null ? "–" : `${x >= 0 ? "+" : "−"}${Math.abs(x 
 function lqTag(lq, lb, tip) {
   if (lq == null) return "";
   const cls = lq >= 1.25 ? "hi" : lq <= 0.75 ? "lo" : "mid";
-  return `<span class="cv-lq ${cls}" title="${esc(tip || `Quociente locacional: ${lq.toFixed(2).replace(".", ",")}× a parcela nacional dos empregos`)}">×${ge(lb)}${lq.toFixed(1).replace(".", ",")}</span>`;
+  return `<span class="cv-lq ${cls}" title="${esc(tip || tr("Quociente locacional: {0}× a parcela nacional dos empregos", lq.toFixed(2).replace(".", DEC)))}">×${ge(lb)}${lq.toFixed(1).replace(".", DEC)}</span>`;
 }
 
 function districtCard(d, row, ddata, mil) {
   const nat = ddata?.national || {};
   const c = d.cat || {};
   const lb = !!d.lower_bound;
-  const supTip = lb ? ` O IBGE suprimiu parte disto em ${d.suppressed} ${d.suppressed === 1 ? "município" : "municípios"}, então é um piso.` : "";
+  const supTip = lb ? tr(" O IBGE suprimiu parte disto em {0} {1}, então é um piso.", d.suppressed, d.suppressed === 1 ? tr("município") : tr("municípios")) : "";
   const facts = [];
   if (d.emp != null) {
-    facts.push(`<div><span>Empregos</span><b>${ge(lb)}${compact(d.emp)}</b><small>${d.share != null ? `${pct(d.share, 1)} da cidade` : ""}</small></div>`);
+    facts.push(`<div><span>${tr("Empregos")}</span><b>${ge(lb)}${compact(d.emp)}</b><small>${d.share != null ? tr("{0} da cidade", pct(d.share, 1)) : ""}</small></div>`);
   }
   if (d.avg_pay != null) {
-    facts.push(`<div><span>Salário médio</span><b>${money(d.avg_pay)}</b><small>${row?.avg_pay != null ? `cidade ${money(row.avg_pay)}` : ""}</small></div>`);
+    facts.push(tr("<div><span>Salário médio</span><b>{0}</b><small>{1}</small></div>", money(d.avg_pay), row?.avg_pay != null ? tr("cidade {0}", money(row.avg_pay)) : ""));
   }
   if (d.strength != null) {
-    facts.push(`<div title="Empregos acima da norma nacional: empregos − empregos ÷ QL (é como os distritos se ordenam)"><span>Acima da norma</span><b>${ge(lb)}${compact(Math.max(0, d.strength))}</b><small>empregos</small></div>`);
+    facts.push(tr("<div title=\"Empregos acima da norma nacional: empregos − empregos ÷ QL (é como os distritos se ordenam)\"><span>Acima da norma</span><b>{0}{1}</b><small>empregos</small></div>", ge(lb), compact(Math.max(0, d.strength))));
   }
   let spec = "";
   if (d.sub && d.subName) {
     // the speciality's own withheld flag (districts.json sub_lower_bound; older files: the top-industries row)
     const slb = d.sub_lower_bound ?? !!(row?.top || []).find((t) => t.naics === d.sub)?.lower_bound;
-    spec = `<p class="cv-dc-sub">${d.via === "specialty" ? "Entra pela especialidade" : "Especialidade mais forte"}: <b>${esc(d.subName)}</b> ${lqTag(d.sub_lq, slb, slb ? `Quociente locacional: pelo menos ${d.sub_lq.toFixed(2).replace(".", ",")}× a parcela nacional (o IBGE suprimiu parte, então é um piso)` : undefined)}${
-      d.sub_emp != null ? ` <small>${ge(slb)}${compact(d.sub_emp)} empregos</small>` : ""}${
-      d.via === "specialty" && d.lq != null ? `<br><small>As atividades do distrito, somadas, são ${d.lq.toFixed(2).replace(".", ",")}× a parcela nacional; só esta especialidade passa pela regra.</small>` : ""}</p>`;
+    spec = `<p class="cv-dc-sub">${d.via === "specialty" ? tr("Entra pela especialidade") : tr("Especialidade mais forte")}: <b>${esc(d.subName)}</b> ${lqTag(d.sub_lq, slb, slb ? tr("Quociente locacional: pelo menos {0}× a parcela nacional (o IBGE suprimiu parte, então é um piso)", d.sub_lq.toFixed(2).replace(".", DEC)) : undefined)}${
+      d.sub_emp != null ? ` <small>${tr("{0}{1} empregos", ge(slb), compact(d.sub_emp))}</small>` : ""}${
+      d.via === "specialty" && d.lq != null ? tr("<br><small>As atividades do distrito, somadas, são {0}× a parcela nacional; só esta especialidade passa pela regra.</small>", d.lq.toFixed(2).replace(".", DEC)) : ""}</p>`;
   }
   let milHtml = "";
   if (d.military) {
@@ -135,9 +136,9 @@ function districtCard(d, row, ddata, mil) {
     const inst = installationsById(mil);
     const names = (mc.installations || []).map((i) => inst.get(i)?.name).filter(Boolean);
     milHtml = `<div class="cv-dc-mil">
-      <p><b>${esc(d.tierLabel)}</b>${mc.naval ? " (naval)" : ""}: ${int(mc.armed_forces)} residents in the armed forces, ${pct(mc.share, mc.share < 0.01 ? 2 : 1)} of people 16 and over.</p>
+      <p><b>${esc(d.tierLabel)}</b>${tr("{0}: {1} residents in the armed forces, {2} of people 16 and over.", mc.naval ? " (naval)" : "", int(mc.armed_forces), pct(mc.share, mc.share < 0.01 ? 2 : 1))}</p>
       ${names.length ? `<p class="cv-dc-inst">${names.slice(0, 5).map((n) => `<span>${esc(n)}</span>`).join("")}${
-        mc.installation_count > Math.min(5, names.length) ? `<small>+${mc.installation_count - Math.min(5, names.length)} more</small>` : ""}</p>` : ""}
+        mc.installation_count > Math.min(5, names.length) ? `<small>${tr("+{0} more", mc.installation_count - Math.min(5, names.length))}</small>` : ""}</p>` : ""}
     </div>`;
   }
   const caveat = c.caveat ? `<p class="cv-dc-cav">${esc(c.caveat)}</p>` : "";
@@ -145,7 +146,7 @@ function districtCard(d, row, ddata, mil) {
   return `<div class="cv-dc" style="--dc:${esc(d.color)}" title="${esc(c.description || "")}${esc(supTip)}">
     <div class="cv-dc-h"><span class="cv-dc-hex">${icon(d.icon, d.emoji, { size: 18 })}</span>
       <div class="cv-dc-t"><b>${title}</b><small>${esc(c.description || "")}</small></div>
-      ${d.lq != null ? lqTag(d.lq, lb, `Quociente locacional: a parcela dos empregos da cidade nestas atividades é ${d.lq.toFixed(2).replace(".", ",")}× a parcela nacional.${supTip}`) : ""}</div>
+      ${d.lq != null ? lqTag(d.lq, lb, tr("Quociente locacional: a parcela dos empregos da cidade nestas atividades é {0}× a parcela nacional.{1}", d.lq.toFixed(2).replace(".", DEC), supTip)) : ""}</div>
     ${facts.length ? `<div class="cv-dc-f">${facts.join("")}</div>` : ""}
     ${spec}${milHtml}${caveat}
   </div>`;
@@ -155,52 +156,38 @@ function topTable(row, ddata) {
   const top = row?.top || [];
   if (!top.length) return "";
   const max = Math.max(...top.map((t) => t.lq || 0), 1);
-  return `<h4 class="cv-h4">Atividades mais especializadas <span class="muted">pelo quociente locacional</span></h4>
-  <div class="cv-top" role="table" aria-label="Atividades mais especializadas">
-    <div class="cv-top-r cv-top-hd" role="row"><span role="columnheader">Atividade</span><span role="columnheader">Empregos</span><span role="columnheader">×BR</span><span role="columnheader">Salário</span><span role="columnheader">1 ano</span></div>
-    ${top.map((t) => {
+  return tr("<h4 class=\"cv-h4\">Atividades mais especializadas <span class=\"muted\">pelo quociente locacional</span></h4>\n  <div class=\"cv-top\" role=\"table\" aria-label=\"Atividades mais especializadas\">\n    <div class=\"cv-top-r cv-top-hd\" role=\"row\"><span role=\"columnheader\">Atividade</span><span role=\"columnheader\">Empregos</span><span role=\"columnheader\">×BR</span><span role=\"columnheader\">Salário</span><span role=\"columnheader\">1 ano</span></div>\n    {0}\n  </div>", top.map((t) => {
       const title = ddata.industries?.[t.naics]?.title || `NAICS ${t.naics}`;
       const lb = !!t.lower_bound;
-      return `<div class="cv-top-r" role="row" title="${esc(title)} (CNAE ${esc(t.naics)})${lb ? `. Piso: o IBGE suprimiu o valor em ${t.suppressed} ${t.suppressed === 1 ? "município" : "municípios"}.` : ""}">
+      return `<div class="cv-top-r" role="row" title="${tr("{0} (CNAE {1}){2}", esc(title), esc(t.naics), lb ? tr(". Piso: o IBGE suprimiu o valor em {0} {1}.", t.suppressed, t.suppressed === 1 ? tr("município") : tr("municípios")) : "")}">
         <span role="cell" class="cv-top-n">${esc(title)}<i style="width:${((Math.log(1 + (t.lq || 0)) / Math.log(1 + max)) * 100).toFixed(1)}%"></i></span>
         <span role="cell">${ge(lb)}${compact(t.emp)}</span>
         <span role="cell"><b>${t.lq != null ? `${ge(lb)}${t.lq.toFixed(1)}` : "–"}</b></span>
         <span role="cell">${money(t.avg_pay)}</span>
         <span role="cell" class="${t.oty_pct == null ? "" : t.oty_pct >= 0 ? "good" : "bad"}">${signed(t.oty_pct)}</span></div>`;
-    }).join("")}
-  </div>`;
+    }).join(""));
 }
 
 /** The Districts section body. ddata: districts.json (undefined while loading, null when missing). */
 export function districtsHtml(m, ddata, mil) {
-  if (ddata === undefined) return `<p class="muted cv-note">Carregando os distritos…</p>`;
-  if (!ddata) return `<p class="muted cv-note">Os distritos não estão disponíveis.</p>`;
+  if (ddata === undefined) return tr("<p class=\"muted cv-note\">Carregando os distritos…</p>");
+  if (!ddata) return tr("<p class=\"muted cv-note\">Os distritos não estão disponíveis.</p>");
   const id = m.city.id;
   const row = ddata.cities?.[id] || null;
   const list = cityDistricts(ddata, mil, id);
   const b = badgeOf(ddata, id);
   let lead;
   if (!row) {
-    lead = `<p class="cv-lead">O IBGE não publica empregos para os municípios de ${esc(m.city.name)}, então ela não tem distritos.</p>`;
+    lead = tr("<p class=\"cv-lead\">O IBGE não publica empregos para os municípios de {0}, então ela não tem distritos.</p>", esc(m.city.name));
   } else {
-    const cnt = row.counties ? ` em ${row.counties[0]} de ${row.counties[1]} ${row.counties[1] === 1 ? "município" : "municípios"}` : "";
-    lead = `<p class="cv-lead">${b?.district ? `<b class="cv-type-l" style="--tc:${esc(b.color)}">${esc(b.label)}</b> · ${esc(b.text || "")}. ` : ""}${
-      int(row.emp)} empregos formais contados${esc(cnt)}.</p>`;
+    const cnt = row.counties ? tr(" em {0} de {1} {2}", row.counties[0], row.counties[1], row.counties[1] === 1 ? tr("município") : tr("municípios")) : "";
+    lead = `<p class="cv-lead">${tr("{0}{1} empregos formais contados{2}.", b?.district ? `<b class="cv-type-l" style="--tc:${esc(b.color)}">${esc(b.label)}</b> · ${esc(b.text || "")}. ` : "", 
+      int(row.emp), esc(cnt))}</p>`;
   }
   const cards = list.length
     ? `<div class="cv-dcs">${list.map((d) => districtCard(d, row, ddata, mil)).join("")}</div>`
-    : row ? `<p class="muted cv-note">Nenhum distrito passa pela regra aqui: os empregos da cidade se distribuem como os do país.</p>` : "";
-  const milRule = mil?.rule && list.some((d) => d.military) ? `<p><b>Encampment tier</b> (military.json): ${esc(mil.rule)}</p>` : "";
-  return `${lead}
-    ${cards}
-    ${topTable(row, ddata)}
-    <div class="cv-schematic">
-      <p><b>◆ No mapa</b>, cada distrito é uma placa num hexágono da cidade, perto dela. As posições são esquemáticas: mostram no que a cidade se especializa, não onde ficam os empregos.</p>
-    </div>
-    <details class="cv-more cv-rule"><summary>Como os distritos são escolhidos</summary>
-      <p>${esc(ddata.rule?.text || "")}</p>${milRule}
-      <p>O Cadastro Central de Empresas conta os empregos onde fica a empresa, não onde o trabalhador mora; deixa de fora os autônomos, o trabalho informal e os militares.</p>
-    </details>
-    <p class="cv-note">${esc(ddata.vintage || "IBGE CEMPRE")}, empregos formais assalariados. ×N = quociente locacional; ≥ = um piso (o IBGE suprimiu o valor de um município).${
-      mil && list.some((d) => d.military) ? ` Encampment tier: ${esc(typeof mil.vintage === "object" ? [mil.vintage.installations, mil.vintage.acs].filter(Boolean).join("; ") : mil.vintage || "")}.` : ""}</p>`;
+    : row ? tr("<p class=\"muted cv-note\">Nenhum distrito passa pela regra aqui: os empregos da cidade se distribuem como os do país.</p>") : "";
+  const milRule = mil?.rule && list.some((d) => d.military) ? `<p><b>${tr("Encampment tier")}</b> ${tr("(military.json): {0}", esc(mil.rule))}</p>` : "";
+  return tr("{0}\n    {1}\n    {2}\n    <div class=\"cv-schematic\">\n      <p><b>◆ No mapa</b>, cada distrito é uma placa num hexágono da cidade, perto dela. As posições são esquemáticas: mostram no que a cidade se especializa, não onde ficam os empregos.</p>\n    </div>\n    <details class=\"cv-more cv-rule\"><summary>Como os distritos são escolhidos</summary>\n      <p>{3}</p>{4}\n      <p>O Cadastro Central de Empresas conta os empregos onde fica a empresa, não onde o trabalhador mora; deixa de fora os autônomos, o trabalho informal e os militares.</p>\n    </details>\n    <p class=\"cv-note\">{5}, empregos formais assalariados. ×N = quociente locacional; ≥ = um piso (o IBGE suprimiu o valor de um município).{6}</p>", lead, cards, topTable(row, ddata), esc(ddata.rule?.text || ""), milRule, esc(ddata.vintage || tr("IBGE CEMPRE")), 
+      mil && list.some((d) => d.military) ? ` Encampment tier: ${esc(typeof mil.vintage === "object" ? [mil.vintage.installations, mil.vintage.acs].filter(Boolean).join("; ") : mil.vintage || "")}.` : "");
 }

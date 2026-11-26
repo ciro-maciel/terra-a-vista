@@ -7,6 +7,9 @@ o chão é o relevo e a cobertura do solo de verdade. Cada número leva a uma fo
 **No ar: [ciro-maciel.github.io/terra-a-vista](https://ciro-maciel.github.io/terra-a-vista/?ref=oss-terra-a-vista)** ·
 [Read in English](README.md)
 
+O mapa fala português do Brasil e inglês: escolha em PT | EN, no fim da barra do topo, ou abra com `?lang=en`. Os
+nomes de lugares ficam como são.
+
 ![Terra à Vista: BRASIL em dourado sobre o mapa de hexágonos do país, com a bandeirinha redonda, "como jogo de estratégia, feito de dados públicos" e uma faixa com as fontes (IBGE, MapBiomas, Comex Stat, Datasus, Inep, Anatel, Tesouro Nacional) e o endereço](docs/images/capa.png)
 
 ## O que tem no mapa

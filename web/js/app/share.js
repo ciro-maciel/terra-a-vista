@@ -1,11 +1,12 @@
 // Share popover: copy a link to the current view, or download a 1600×900 PNG of it with a caption strip.
 import { drawIcon, hasIcon } from "../icons.js";
 import { icon } from "../ui/icon.js";
+import { tr } from "../i18n.js";
 
 // The address printed on shared images. Set it to the published site (e.g. "example.com/us-atlas"); when left
 // empty, the page's own host and path are used, except on a local dev server, where SITE_FALLBACK is printed.
 export const SITE_URL = "ciro-maciel.github.io/terra-a-vista";
-const SITE_FALLBACK = "Terra à Vista";
+const SITE_FALLBACK = tr("Terra à Vista");
 
 export function siteLabel() {
   if (SITE_URL) return SITE_URL;
@@ -25,7 +26,7 @@ export const IMG_H = 900;
 export const CAPTION_H = 118;
 const SERIF = '"Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif';
 const SANS = '-apple-system, "Segoe UI", system-ui, sans-serif';
-const CREDIT = "Dados: IBGE, ESA WorldCover, NOAA, Natural Earth";
+const CREDIT = tr("Dados: IBGE, ESA WorldCover, NOAA, Natural Earth");
 
 async function copyText(text) {
   try {
@@ -119,7 +120,7 @@ export function composeImage(info, { height = IMG_H } = {}) {
   spaced(ctx, 0);
   ctx.fillStyle = "#b9ab88";
   ctx.font = `italic 17px ${SERIF}`;
-  ctx.fillText("Terra à Vista: o Brasil como mapa de estratégia", 114, cy + 28);
+  ctx.fillText(tr("Terra à Vista: o Brasil como mapa de estratégia"), 114, cy + 28);
 
   // Lens + legend ramp
   const mx = 640;
@@ -130,7 +131,7 @@ export function composeImage(info, { height = IMG_H } = {}) {
   ctx.fillStyle = "#ecd08e";
   ctx.font = `24px ${SERIF}`;
   spaced(ctx, 1.5);
-  ctx.fillText((lens ? "LENTE " + lens.name : "Terreno").toUpperCase(), mx + 50, cy - 8);
+  ctx.fillText((lens ? tr("LENTE ") + lens.name : tr("Terreno")).toUpperCase(), mx + 50, cy - 8);
   spaced(ctx, 0);
   if (lens?.ramp?.length) {
     const rx = mx + 50, ry = cy + 4, rw = 330, rh = 12;
@@ -150,7 +151,7 @@ export function composeImage(info, { height = IMG_H } = {}) {
   } else {
     ctx.font = `15px ${SANS}`;
     ctx.fillStyle = "#b9ab88";
-    ctx.fillText("Cobertura do solo, relevo, rios e recursos", mx + 50, cy + 16);
+    ctx.fillText(tr("Cobertura do solo, relevo, rios e recursos"), mx + 50, cy + 16);
   }
 
   // Selection, credits, site
@@ -212,12 +213,7 @@ export function initShare(opts) {
   if (!btn || !pop) return { close() {}, get isOpen() { return false; } };
   let restore = null;
 
-  pop.innerHTML = `
-    <div class="sp-title">Compartilhar esta vista</div>
-    <button class="sp-item" data-act="copy">${icon("share", "🔗", { size: 16 })}<span>Copiar o link</span></button>
-    <button class="sp-item" data-act="image">${icon("terrain", "🖼️", { size: 16 })}<span>Baixar a imagem <span class="muted">PNG 1600×900</span></span></button>
-    <div class="sp-status" role="status" aria-live="polite"></div>
-    <input class="sp-url" type="text" readonly hidden aria-label="Link desta vista">`;
+  pop.innerHTML = tr("\n    <div class=\"sp-title\">Compartilhar esta vista</div>\n    <button class=\"sp-item\" data-act=\"copy\">{0}<span>Copiar o link</span></button>\n    <button class=\"sp-item\" data-act=\"image\">{1}<span>Baixar a imagem <span class=\"muted\">PNG 1600×900</span></span></button>\n    <div class=\"sp-status\" role=\"status\" aria-live=\"polite\"></div>\n    <input class=\"sp-url\" type=\"text\" readonly hidden aria-label=\"Link desta vista\">", icon("share", "🔗", { size: 16 }), icon("terrain", "🖼️", { size: 16 }));
   const status = pop.querySelector(".sp-status");
   const urlBox = pop.querySelector(".sp-url");
 
@@ -255,17 +251,17 @@ export function initShare(opts) {
       opts.beforeCopy?.();
       const link = location.href;
       if (await copyText(link)) {
-        status.textContent = "Link copiado";
-        opts.onToast?.("Link copiado");
+        status.textContent = tr("Link copiado");
+        opts.onToast?.(tr("Link copiado"));
       } else {
-        status.textContent = "Copie este link:";
+        status.textContent = tr("Copie este link:");
         urlBox.hidden = false;
         urlBox.value = link;
         urlBox.focus();
         urlBox.select();
       }
     } else if (b.dataset.act === "image") {
-      status.textContent = "Desenhando o mapa…";
+      status.textContent = tr("Desenhando o mapa…");
       await new Promise((r) => setTimeout(r, 30)); // let the status paint
       try {
         const cv = composeImage(opts.getInfo());
@@ -281,7 +277,7 @@ export function initShare(opts) {
         status.textContent = `Salvo: ${a.download}`;
       } catch (err) {
         console.warn(err);
-        status.textContent = "Não foi possível criar a imagem neste navegador.";
+        status.textContent = tr("Não foi possível criar a imagem neste navegador.");
       }
     }
   });

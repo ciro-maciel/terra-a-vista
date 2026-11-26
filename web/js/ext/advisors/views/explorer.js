@@ -7,6 +7,7 @@ import { createTable } from "../core/table.js";
 import { createScatter } from "../core/scatter.js";
 import { section, segmented, selectBox, sourcesHtml, frameBtn } from "../core/view.js";
 import { rowsHighlight, extendData } from "../core/data.js";
+import { tr } from "../../../i18n.js";
 
 const DEFAULT_COLS = {
   states: ["population", "growth", "gdp_pc", "median_income", "unemployment"],
@@ -18,12 +19,12 @@ const DEFAULT_XY = {
 };
 // Table headers: short enough for a ~60 px column (they wrap to two lines; &shy; marks where a long word may break).
 const SHORT = {
-  population: "Pessoas", gdp_pc: "PIB por hab.", median_income: "Renda", unemployment: "Desocu&shy;pação", growth: "Cresci&shy;mento",
-  density: "Densi&shy;dade", area_km2: "Área", median_age: "Idade", ageing: "Envelhe&shy;cimento", employed: "Empregos formais",
-  energy_mw: "Potência mapeada", literacy: "Alfabe&shy;tização", degrees: "Superior", science_share: "Ciência",
-  sec_agriculture: "Agro no PIB", sec_industry: "Indústria no PIB", sec_services: "Serviços no PIB", sec_public: "Adm. pública no PIB", sec_taxes: "Impostos no PIB",
-  city_type: "Tipo de cidade", n_districts: "Distritos (n)", top_industry: "Atividade líder", top_lq: "QL líder", cz_specialist: "Cidadão líder",
-  cz_drove_alone: "Carro", cz_transit: "Transporte público", cz_walk: "A pé", cz_elder: "Idosos",
+  population: tr("Pessoas"), gdp_pc: tr("PIB por hab."), median_income: tr("Renda"), unemployment: tr("Desocu&shy;pação"), growth: tr("Cresci&shy;mento"),
+  density: tr("Densi&shy;dade"), area_km2: tr("Área"), median_age: tr("Idade"), ageing: tr("Envelhe&shy;cimento"), employed: tr("Empregos formais"),
+  energy_mw: tr("Potência mapeada"), literacy: tr("Alfabe&shy;tização"), degrees: tr("Superior"), science_share: tr("Ciência"),
+  sec_agriculture: tr("Agro no PIB"), sec_industry: tr("Indústria no PIB"), sec_services: tr("Serviços no PIB"), sec_public: tr("Adm. pública no PIB"), sec_taxes: tr("Impostos no PIB"),
+  city_type: tr("Tipo de cidade"), n_districts: tr("Distritos (n)"), top_industry: tr("Atividade líder"), top_lq: tr("QL líder"), cz_specialist: tr("Cidadão líder"),
+  cz_drove_alone: tr("Carro"), cz_transit: tr("Transporte público"), cz_walk: tr("A pé"), cz_elder: tr("Idosos"),
 };
 const OPS = { num: [">", "≥", "<", "≤", "="], text: ["=", "contém", "≠"] };
 
@@ -51,12 +52,12 @@ export async function mount(ctx) {
   const L = () => data.levels[st.level];
 
   // --- controls -------------------------------------------------------------------------------------------------
-  const top = section(el, { title: "Explore os dados", note: "Escolha o que comparar, filtre, ordene a tabela e cruze duas colunas quaisquer no gráfico. Passe o mouse numa linha ou num ponto para vê-lo no mapa; arraste no gráfico para selecionar um grupo." });
+  const top = section(el, { title: tr("Explore os dados"), note: tr("Escolha o que comparar, filtre, ordene a tabela e cruze duas colunas quaisquer no gráfico. Passe o mouse numa linha ou num ponto para vê-lo no mapa; arraste no gráfico para selecionar um grupo.") });
   const lvRow = document.createElement("div");
   lvRow.className = "adv-row";
   top.appendChild(lvRow);
   segmented(lvRow, {
-    label: "Nível", value: st.level,
+    label: tr("Nível"), value: st.level,
     options: avail.map((k) => ({ value: k, label: data.levels[k].label })),
     onChange: (v) => { st.level = v; st.filters = st.filters.filter((f) => L().field(f.key)); st.sel = null; persist(); rebuild(); },
   });
@@ -75,7 +76,7 @@ export async function mount(ctx) {
   top.appendChild(summary);
 
   // --- table ----------------------------------------------------------------------------------------------------
-  const tBody = section(el, { title: "Tabela" });
+  const tBody = section(el, { title: tr("Tabela") });
   const selRow = document.createElement("div");
   selRow.className = "adv-row";
   tBody.appendChild(selRow);
@@ -84,7 +85,7 @@ export async function mount(ctx) {
   let table = null;
 
   // --- chart ----------------------------------------------------------------------------------------------------
-  const cBody = section(el, { title: "Gráfico" });
+  const cBody = section(el, { title: tr("Gráfico") });
   const axes = document.createElement("div");
   axes.className = "adv-axes";
   cBody.appendChild(axes);
@@ -110,7 +111,7 @@ export async function mount(ctx) {
   // --- logic ----------------------------------------------------------------------------------------------------
   const fieldOpts = (withNone = false, numeric = true) => {
     const fs = L().fields.filter((f) => (numeric ? f.format !== "text" : f.key !== "name"));
-    return [...(withNone ? [{ value: "", label: "Nenhuma" }] : []), ...fs.map((f) => ({ value: f.key, label: f.label, group: f.group }))];
+    return [...(withNone ? [{ value: "", label: tr("Nenhuma") }] : []), ...fs.map((f) => ({ value: f.key, label: f.label, group: f.group }))];
   };
   const numeric = (f) => f && f.format !== "text";
   const val = (r, k) => r.v[k] ?? null;
@@ -148,7 +149,7 @@ export async function mount(ctx) {
       if (!groups.has(f.group)) groups.set(f.group, []);
       groups.get(f.group).push(f);
     }
-    colsBox.innerHTML = `<summary class="adv-mini">Colunas (${on.size})</summary><div class="adv-cols-pop">${[...groups].map(([g, list]) => `<fieldset><legend>${esc(g)}</legend>${list.map((f) => `<label title="${esc(f.description)}"><input type="checkbox" value="${esc(f.key)}"${on.has(f.key) ? " checked" : ""}> ${esc(f.label)}</label>`).join("")}</fieldset>`).join("")}</div>`;
+    colsBox.innerHTML = `<summary class="adv-mini">${tr("Colunas ({0})", on.size)}</summary><div class="adv-cols-pop">${[...groups].map(([g, list]) => `<fieldset><legend>${esc(g)}</legend>${list.map((f) => `<label title="${esc(f.description)}"><input type="checkbox" value="${esc(f.key)}"${on.has(f.key) ? " checked" : ""}> ${esc(f.label)}</label>`).join("")}</fieldset>`).join("")}</div>`;
   }
   colsBox.addEventListener("change", (e) => {
     const k = e.target.value;
@@ -163,21 +164,21 @@ export async function mount(ctx) {
   function renderFilterBuilder() {
     fRow.innerHTML = "";
     const fs = L().fields;
-    const fsel = selectBox(fRow, { label: "Filtro", value: fs.find((f) => f.key === "population")?.key || fs[0].key, options: fs.map((f) => ({ value: f.key, label: f.label, group: f.group })) });
+    const fsel = selectBox(fRow, { label: tr("Filtro"), value: fs.find((f) => f.key === "population")?.key || fs[0].key, options: fs.map((f) => ({ value: f.key, label: f.label, group: f.group })) });
     const ops = document.createElement("select");
-    ops.setAttribute("aria-label", "Comparação");
+    ops.setAttribute("aria-label", tr("Comparação"));
     const valIn = document.createElement("input");
     valIn.type = "text";
-    valIn.placeholder = "e.g. 1M, 25%, TX";
-    valIn.setAttribute("aria-label", "Valor");
+    valIn.placeholder = tr("e.g. 1M, 25%, TX");
+    valIn.setAttribute("aria-label", tr("Valor"));
     const add = document.createElement("button");
     add.type = "button";
     add.className = "adv-mini";
-    add.textContent = "Adicionar";
+    add.textContent = tr("Adicionar");
     const syncOps = () => {
       const f = L().field(fsel.value);
       ops.innerHTML = (numeric(f) ? OPS.num : OPS.text).map((o) => `<option>${esc(o)}</option>`).join("");
-      valIn.placeholder = numeric(f) ? (f.format === "pct" || f.format === "signed" ? "ex.: 25%" : f.format === "usd" || f.format === "money" ? "ex.: 80 mil" : "ex.: 1 mi") : "texto";
+      valIn.placeholder = numeric(f) ? (f.format === "pct" || f.format === "signed" ? tr("ex.: 25%") : f.format === "usd" || f.format === "money" ? tr("ex.: 80 mil") : tr("ex.: 1 mi")) : tr("texto");
     };
     fsel.select.addEventListener("change", syncOps);
     syncOps();
@@ -185,7 +186,7 @@ export async function mount(ctx) {
       const f = L().field(fsel.value);
       if (!f || !valIn.value.trim()) return;
       const v = numeric(f) ? parseNum(valIn.value, f.format) : valIn.value.trim();
-      if (v == null) { valIn.setCustomValidity("Não é um número"); valIn.reportValidity(); return; }
+      if (v == null) { valIn.setCustomValidity(tr("Não é um número")); valIn.reportValidity(); return; }
       valIn.setCustomValidity("");
       st.filters.push({ key: f.key, op: ops.value, value: v });
       valIn.value = "";
@@ -197,7 +198,7 @@ export async function mount(ctx) {
     // quick presets
     const presets = document.createElement("span");
     presets.className = "adv-presets";
-    const P = st.level === "states" ? [["population", "≥", 5e6, "5 mi+ pessoas"]] : [["population", "≥", 1e6, "1 mi+ pessoas"], ["population", "≥", 1e5, "100 mil+"]];
+    const P = st.level === "states" ? [["population", "≥", 5e6, tr("5 mi+ pessoas")]] : [["population", "≥", 1e6, tr("1 mi+ pessoas")], ["population", "≥", 1e5, tr("100 mil+")]];
     presets.innerHTML = P.map((p, i) => `<button type="button" class="adv-mini" data-preset="${i}">${esc(p[3])}</button>`).join("");
     presets.addEventListener("click", (e) => {
       const i = e.target.closest("[data-preset]")?.dataset.preset;
@@ -214,8 +215,8 @@ export async function mount(ctx) {
     chipsRow.innerHTML = st.filters.map((f, i) => {
       const fd = L().field(f.key);
       const txt = `${fd?.label || f.key} ${f.op} ${numeric(fd) ? fmtShort(fd.format, f.value) : f.value}`;
-      return `<span class="adv-fchip">${esc(txt)}<button type="button" data-rm="${i}" aria-label="Tirar o filtro ${esc(txt)}">✕</button></span>`;
-    }).join("") + (st.filters.length > 1 ? `<button type="button" class="adv-mini" data-rm="all">Limpar tudo</button>` : "") + (st.filters.length && filterHighlight() ? frameBtn() : "");
+      return `<span class="adv-fchip">${esc(txt)}<button type="button" data-rm="${i}" aria-label="${tr("Tirar o filtro {0}", esc(txt))}">✕</button></span>`;
+    }).join("") + (st.filters.length > 1 ? `<button type="button" class="adv-mini" data-rm="all">${tr("Limpar tudo")}</button>` : "") + (st.filters.length && filterHighlight() ? frameBtn() : "");
   }
   chipsRow.addEventListener("click", (e) => {
     const i = e.target.closest("[data-rm]")?.dataset.rm;
@@ -231,10 +232,10 @@ export async function mount(ctx) {
     const sortKey = keys.includes("population") ? "population" : keys[0] || "name";
     const maxOf = (k) => { const e = extent(lv.rows.map((r) => val(r, k))); return e ? Math.max(Math.abs(e[0]), Math.abs(e[1])) : 1; };
     const cols = [
-      { key: "name", label: lv.field("name")?.label || "Nome", align: "l", width: "minmax(92px,1.7fr)", value: (r) => r.name, html: (r) => `${esc(r.name)}${st.level !== "states" && r.sub ? ` <span class="sub">${esc(r.sub)}</span>` : ""}` },
+      { key: "name", label: lv.field("name")?.label || tr("Nome"), align: "l", width: "minmax(92px,1.7fr)", value: (r) => r.name, html: (r) => `${esc(r.name)}${st.level !== "states" && r.sub ? ` <span class="sub">${esc(r.sub)}</span>` : ""}` },
       ...keys.map((k) => {
         const f = lv.field(k);
-        const title = `${f.label}${f.unit ? ` (${f.unit})` : ""}. Clique para ordenar.`;
+        const title = tr("{0}{1}. Clique para ordenar.", f.label, f.unit ? ` (${f.unit})` : "");
         const short = SHORT[k] || (k.startsWith("y_") ? esc(f.label.replace(/ workers$/, "")) : null);
         // The name column already carries the state as a suffix, so a state column goes first when space is short.
         const isState = k === "state" || k === "states";
@@ -245,8 +246,8 @@ export async function mount(ctx) {
     ];
     if (!table) {
       table = createTable(tableHost, {
-        caption: `Tabela de ${lv.label.toLowerCase()}`, columns: cols, rows: [], sort: { key: sortKey, dir: "desc" }, rank: true, maxHeight: 360,
-        search: `Buscar ${lv.noun}`,
+        caption: tr("Tabela de {0}", lv.label.toLowerCase()), columns: cols, rows: [], sort: { key: sortKey, dir: "desc" }, rank: true, maxHeight: 360,
+        search: tr("Buscar {0}", lv.noun),
         onHover: (r) => { link.hover(r ? rowsHighlight(L(), [r]) : null); scatter.setHot(r ? r.key : null); },
         onClick: (r) => L().focus(r),
       });
@@ -268,11 +269,11 @@ export async function mount(ctx) {
     });
     mk("x", "X", false);
     mk("y", "Y", false);
-    mk("s", "Tamanho", true);
-    mk("c", "Cor", true);
+    mk("s", tr("Tamanho"), true);
+    mk("c", tr("Cor"), true);
     const logs = document.createElement("span");
     logs.className = "adv-logs";
-    logs.innerHTML = `<label class="adv-check"><input type="checkbox" data-log="x"> X logarítmico</label><label class="adv-check"><input type="checkbox" data-log="y"> Y logarítmico</label>`;
+    logs.innerHTML = tr("<label class=\"adv-check\"><input type=\"checkbox\" data-log=\"x\"> X logarítmico</label><label class=\"adv-check\"><input type=\"checkbox\" data-log=\"y\"> Y logarítmico</label>");
     axes.appendChild(logs);
     logs.addEventListener("change", (e) => {
       const a = e.target.dataset.log;
@@ -339,17 +340,17 @@ export async function mount(ctx) {
       b.className = "adv-lensbtn";
       const on = app.state.lens?.id === lens.id;
       b.setAttribute("aria-pressed", String(on));
-      b.textContent = on ? `Mostrando a lente ${lens.name}` : `Mostrar ${f.label} no mapa como lente`;
+      b.textContent = on ? tr("Mostrando a lente {0}", lens.name) : tr("Mostrar {0} no mapa como lente", f.label);
       b.addEventListener("click", () => { app.setLens(app.state.lens?.id === lens.id ? null : lens.id); drawScatter(); });
       lensRow.appendChild(b);
     }
-    if (!lensFields.length) lensRow.innerHTML = `<span class="adv-note">Nenhuma destas colunas tem lente: passe o mouse ou arraste para ver os lugares no mapa.</span>`;
+    if (!lensFields.length) lensRow.innerHTML = tr("<span class=\"adv-note\">Nenhuma destas colunas tem lente: passe o mouse ou arraste para ver os lugares no mapa.</span>");
     fieldInfo.innerHTML = [fx, fy, fs, fc].filter((f, i, a) => f && a.indexOf(f) === i).map((f) => `<p><b>${esc(f.label)}</b>${f.unit ? ` <span class="sub">${esc(f.unit)}</span>` : ""}: ${esc(f.description || "")}</p>`).join("");
     const srcIds = [fx, fy, fs, fc].filter(Boolean).map((f) => f.source).filter(Boolean);
     srcEl.innerHTML = sourcesHtml(data, [...srcIds, "ibge_census"], [
-      "As colunas marcadas com ≈ são médias dos municípios ponderadas pela população: um bom guia, não o valor exato da cidade.",
-      `A população é do ${esc(data.vintage)}, o PIB de 2023 (contado onde a produção acontece) e os empregos formais do CEMPRE 2024 (contados onde fica o empregador).`,
-      "Os números que faltam ficam em branco, nunca viram zero.",
+      tr("As colunas marcadas com ≈ são médias dos municípios ponderadas pela população: um bom guia, não o valor exato da cidade."),
+      tr("A população é do {0}, o PIB de 2023 (contado onde a produção acontece) e os empregos formais do CEMPRE 2024 (contados onde fica o empregador).", esc(data.vintage)),
+      tr("Os números que faltam ficam em branco, nunca viram zero."),
     ]);
   }
 
@@ -358,8 +359,7 @@ export async function mount(ctx) {
     const sel = st.sel ? lv.rows.filter((r) => st.sel.has(r.key)) : [];
     link.base(sel.length ? rowsHighlight(lv, sel, { dim: true }) : filterHighlight(), { frame: sel.length > 1 || (!sel.length && st.filters.length > 0) });
     table?.setSelected(st.sel);
-    selRow.innerHTML = st.sel ? `<span class="adv-fchip">${int(st.sel.size)} selecionados no gráfico<button type="button" data-clear-sel aria-label="Limpar a seleção">✕</button></span>${frameBtn()}
-      <label class="adv-check"><input type="checkbox" data-only${st.onlySel ? " checked" : ""}> Mostrar só a seleção</label>` : `<span class="adv-note">Dica: arraste no gráfico abaixo para selecionar um grupo.</span>`;
+    selRow.innerHTML = st.sel ? tr("<span class=\"adv-fchip\">{0} selecionados no gráfico<button type=\"button\" data-clear-sel aria-label=\"Limpar a seleção\">✕</button></span>{1}\n      <label class=\"adv-check\"><input type=\"checkbox\" data-only{2}> Mostrar só a seleção</label>", int(st.sel.size), frameBtn(), st.onlySel ? " checked" : "") : tr("<span class=\"adv-note\">Dica: arraste no gráfico abaixo para selecionar um grupo.</span>");
     refreshRows();
     updateSummary();
   }
@@ -383,7 +383,7 @@ export async function mount(ctx) {
   function updateSummary() {
     const rows = filtered();
     const pop = rows.reduce((a, r) => a + (val(r, "population") || 0), 0);
-    summary.innerHTML = `<b>${int(rows.length)}</b> de ${int(L().rows.length)} ${esc(L().label.toLowerCase())} · ${count3(pop)} pessoas${st.sel ? ` · <b>${int(st.sel.size)}</b> selecionados` : ""}`;
+    summary.innerHTML = tr("<b>{0}</b> de {1} {2} · {3} pessoas{4}", int(rows.length), int(L().rows.length), esc(L().label.toLowerCase()), count3(pop), st.sel ? ` · <b>${int(st.sel.size)}</b> ${tr("selecionados")}` : "");
   }
   function refresh() {
     renderChips();

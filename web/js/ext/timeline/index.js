@@ -7,32 +7,33 @@
 //   top-bar button "Linha do tempo" · URL hash #year=1991&tema=land (the arrow keys stay with the map)
 // Panels and data stay on today's numbers; only the banners and the lens change (app.setBannerCities, app.setLens).
 // A theme whose file is missing simply does not show.
-import { esc } from "../../format.js";
+import { esc, UNIT } from "../../format.js";
 import { icon } from "../../ui/icon.js";
+import { tr, LOCALE } from "../../i18n.js";
 
 const RAMP = ["#7a1f2b", "#c2463d", "#e8a07a", "#efe6d2", "#8fcbb8", "#2e9c8a", "#0f5e57"];
 const DOMAIN = [-0.05, 0.05]; // yearly growth, the same for every decade
 const BIG = 100000;
 // id, button label, series file (none = the Census theme). Order = order on the bar.
 const THEMES = [
-  { id: "people", label: "Gente" },
-  { id: "land", label: "Terra", file: "series_land", icon: "l-forest" },
-  { id: "farm", label: "Lavoura", file: "series_farm", icon: "l-farmland" },
-  { id: "health", label: "Saúde", file: "series_health", icon: "l-age" },
-  { id: "school", label: "Escola", file: "series_school", icon: "l-degrees" },
-  { id: "net", label: "Conexão", file: "series_net", icon: "l-developed" },
-  { id: "disasters", label: "Desastres", file: "series_disasters", icon: "unemployment" },
-  { id: "idhm", label: "IDH", file: "series_idhm", icon: "l-income" },
+  { id: "people", label: tr("Gente") },
+  { id: "land", label: tr("Terra"), file: "series_land", icon: "l-forest" },
+  { id: "farm", label: tr("Lavoura"), file: "series_farm", icon: "l-farmland" },
+  { id: "health", label: tr("Saúde"), file: "series_health", icon: "l-age" },
+  { id: "school", label: tr("Escola"), file: "series_school", icon: "l-degrees" },
+  { id: "net", label: tr("Conexão"), file: "series_net", icon: "l-developed" },
+  { id: "disasters", label: tr("Desastres"), file: "series_disasters", icon: "unemployment" },
+  { id: "idhm", label: tr("IDH"), file: "series_idhm", icon: "l-income" },
 ];
-const nf = (d) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: d, minimumFractionDigits: d });
+const nf = (d) => new Intl.NumberFormat(LOCALE, { maximumFractionDigits: d, minimumFractionDigits: d });
 const rate = (a, b, years) => (a > 0 && b > 0 && years > 0 ? (b / a) ** (1 / years) - 1 : null);
-const pctY = (g) => (Number.isFinite(g) ? `${g >= 0 ? "+" : "−"}${nf(1).format(Math.abs(g * 100))}% ao ano` : "–");
+const pctY = (g) => (Number.isFinite(g) ? tr("{0}{1}% ao ano", g >= 0 ? "+" : "−", nf(1).format(Math.abs(g * 100))) : "–");
 const pts = (d, m) => m.digits != null && m.format !== "pct"
   ? `${d >= 0 ? "+" : "−"}${nf(m.digits).format(Math.abs(d))}`
   : m.format === "pct"
-  ? `${d >= 0 ? "+" : "−"}${nf(1).format(Math.abs(d * 100))} ${Math.abs(d * 100) >= 0.95 && Math.abs(d * 100) < 1.05 ? "ponto" : "pontos"}`
+  ? `${d >= 0 ? "+" : "−"}${nf(1).format(Math.abs(d * 100))} ${Math.abs(d * 100) >= 0.95 && Math.abs(d * 100) < 1.05 ? tr("ponto") : tr("pontos")}`
   : `${d >= 0 ? "+" : "−"}${nf(m.format === "int" ? 0 : 1).format(Math.abs(d))}`;
-const people = (v) => (v >= 1e6 ? `${nf(v >= 1e7 ? 1 : 2).format(v / 1e6)} mi` : v >= 1e4 ? `${nf(0).format(v / 1e3)} mil` : nf(0).format(v));
+const people = (v) => (v >= 1e6 ? `${nf(v >= 1e7 ? 1 : 2).format(v / 1e6)}${UNIT.m}` : v >= 1e4 ? `${nf(0).format(v / 1e3)}${UNIT.k}` : nf(0).format(v));
 const PLAY = `<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M3 1.5v9l7-4.5z" fill="currentColor"/></svg>`;
 const PAUSE = `<svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.5h2.6v9H2.5zM6.9 1.5h2.6v9H6.9z" fill="currentColor"/></svg>`;
 
@@ -93,15 +94,15 @@ export function install(app) {
   bar.className = "tl-bar";
   bar.hidden = true;
   bar.setAttribute("role", "region");
-  bar.setAttribute("aria-label", "Linha do tempo");
+  bar.setAttribute("aria-label", tr("Linha do tempo"));
   document.body.appendChild(bar);
 
   const btn = app.ui.addTopButton({
-    id: "btn-timeline", label: "Linha do tempo", title: "Linha do tempo: a gente desde 1970, a terra desde 1985, a lavoura e o gado desde 1975",
+    id: "btn-timeline", label: tr("Linha do tempo"), title: tr("Linha do tempo: a gente desde 1970, a terra desde 1985, a lavoura e o gado desde 1975"),
     onClick: () => (open ? close() : show()),
   });
   if (btn) {
-    btn.innerHTML = `<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 7v5.2l3.4 2.1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span class="lbl">Linha do tempo</span>`;
+    btn.innerHTML = tr("<svg class=\"icon\" width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" aria-hidden=\"true\" focusable=\"false\"><circle cx=\"12\" cy=\"12\" r=\"8.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"M12 7v5.2l3.4 2.1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/></svg><span class=\"lbl\">Linha do tempo</span>");
     btn.setAttribute("aria-pressed", "false");
   }
 
@@ -119,7 +120,7 @@ export function install(app) {
   async function show(y, t) {
     await Promise.all(THEMES.map((x) => load(x.id)));
     t = t || theme; // the hash may set the theme while the files load
-    if (!hist && !available().length) { app.ui.toast?.("A linha do tempo não carregou (faltam os arquivos de dados)."); return; }
+    if (!hist && !available().length) { app.ui.toast?.(tr("A linha do tempo não carregou (faltam os arquivos de dados).")); return; }
     if (!available().some((x) => x.id === t)) t = available()[0].id;
     if (!open) savedLens = app.state.lens;
     open = true;
@@ -190,9 +191,9 @@ export function install(app) {
       for (const [cell, c] of cellCity) if (owner[cell] >= 0 && Number.isFinite(g.get(c.id))) values[cell] = g.get(c.id);
     }
     ourLens = {
-      id: `tl-growth-${by}-${ys[i]}`, group: "people", name: `Crescimento de ${ys[i - 1]} a ${ys[i]}`, icon: "l-people",
-      unit: "ao ano", format: "pct", scale: "linear", domain: DOMAIN, ramp: RAMP, higher_is: "neutral", source: "ibge_history",
-      description: `Crescimento médio por ano da população entre os Censos de ${ys[i - 1]} e ${ys[i]}, ${by === "states" ? "por estado" : "por cidade (os hexágonos cinza ficam fora das cidades)"}. A mesma escala vale para todas as décadas.`,
+      id: `tl-growth-${by}-${ys[i]}`, group: "people", name: tr("Crescimento de {0} a {1}", ys[i - 1], ys[i]), icon: "l-people",
+      unit: tr("ao ano"), format: "pct", scale: "linear", domain: DOMAIN, ramp: RAMP, higher_is: "neutral", source: "ibge_history",
+      description: tr("Crescimento médio por ano da população entre os Censos de {0} e {1}, {2}. A mesma escala vale para todas as décadas.", ys[i - 1], ys[i], by === "states" ? tr("por estado") : tr("por cidade (os hexágonos cinza ficam fora das cidades)")),
       note: hist.rule, values,
     };
     app.setLens(ourLens);
@@ -220,10 +221,10 @@ export function install(app) {
       }
     }
     ourLens = {
-      id: `tl-${theme}-${m.id}-${by}-${d.years[i]}`, group: theme, name: `${m.name} em ${d.years[i]}`, icon: themeOf(theme).icon || "l-people",
+      id: `tl-${theme}-${m.id}-${by}-${d.years[i]}`, group: theme, name: tr("{0} em {1}", m.name, d.years[i]), icon: themeOf(theme).icon || "l-people",
       unit: m.unit, format: m.format, scale: m.scale, domain: m.domain, ramp: m.ramp, higher_is: m.higher_is,
       source: d.sources[0],
-      description: `${m.description} ${by === "states" ? "Por estado." : "Cada hexágono tem a cor do município que mais o ocupa."} A mesma escala vale para todos os anos.`,
+      description: tr("{0} {1} A mesma escala vale para todos os anos.", m.description, by === "states" ? tr("Por estado.") : tr("Cada hexágono tem a cor do município que mais o ocupa.")),
       note: d.rule, values,
     };
     app.setLens(ourLens);
@@ -260,26 +261,7 @@ export function install(app) {
     const f0 = firstOf(d, m);
     const { up, down } = i > 0 ? movers(m, i) : {};
     const lo = m.domain?.[0], hi = m.domain?.[1];
-    bar.innerHTML = `
-      ${themeBar()}
-      <div class="tl-row">
-        <span class="tl-title">${esc(themeOf(theme).label)}</span>
-        <button type="button" class="tl-play" data-play>${timer ? `${PAUSE}Pausar` : `${PLAY}Tocar`}</button>
-        ${ys.map((y) => `<button type="button" class="tl-year" data-year="${y}" aria-pressed="${y === year}">${y}</button>`).join("")}
-        <span class="tl-seg" role="group" aria-label="Colorir por">
-          <button type="button" data-by="munis" aria-pressed="${by !== "states"}">Municípios</button><button type="button" data-by="states" aria-pressed="${by === "states"}">Estados</button>
-        </span>
-        <button type="button" class="tl-x" data-close aria-label="Fechar a linha do tempo" title="Fechar">${icon("close", "x", { size: 12 })}</button>
-      </div>
-      <div class="tl-metrics" role="group" aria-label="Medida">
-        ${d.metrics.map((x) => `<button type="button" class="tl-metric" data-metric="${esc(x.id)}" aria-pressed="${x.id === m.id}" title="${esc(x.description)}">${esc(x.name)}</button>`).join("")}
-      </div>
-      <div class="tl-info">
-        <b>Brasil em ${year}: ${esc(fmtValue(m, br[i]))} ${esc(m.unit || "")}</b>${i > f0 && Number.isFinite(br[f0]) && Number.isFinite(br[i]) ? ` · ${pts(br[i] - br[f0], m)} desde ${ys[f0]}` : ""}.
-        ${up && down ? `<br>${d.fixed_borders === false ? `De ${ys[i - 1]} a ${year}` : `Desde ${ys[f0]}`}, ${d.movers ? `entre os municípios de ${people(d.movers_min_pop)} habitantes ou mais, ` : ""}${up.dv >= 0 ? "a maior alta" : "a menor queda"} foi em <b>${esc(muniName(up.k))}</b> (${pts(up.dv, m)}) e ${down.dv <= 0 ? "a maior queda" : "a menor alta"}, em <b>${esc(muniName(down.k))}</b> (${pts(down.dv, m)}).` : ""}
-        ${i <= f0 ? `<br>${br[i] == null ? `Esta medida começa em ${ys[f0]}.` : `Escolha um ano depois de ${ys[f0]} para ver quem mais mudou.`}` : ""}
-      </div>
-      <div class="tl-legend"><span>${esc(fmtValue(m, lo))}</span><i style="background:linear-gradient(90deg, ${m.ramp.join(",")})"></i><span>${esc(fmtValue(m, hi))}</span><span>· ${esc(m.name)}, ${by === "states" ? "por estado" : "por município"}, na mesma escala para todos os anos · ${esc(d.vintage)}</span></div>`;
+    bar.innerHTML = tr("\n      {0}\n      <div class=\"tl-row\">\n        <span class=\"tl-title\">{1}</span>\n        <button type=\"button\" class=\"tl-play\" data-play>{2}</button>\n        {3}\n        <span class=\"tl-seg\" role=\"group\" aria-label=\"Colorir por\">\n          <button type=\"button\" data-by=\"munis\" aria-pressed=\"{4}\">Municípios</button><button type=\"button\" data-by=\"states\" aria-pressed=\"{5}\">Estados</button>\n        </span>\n        <button type=\"button\" class=\"tl-x\" data-close aria-label=\"Fechar a linha do tempo\" title=\"Fechar\">{6}</button>\n      </div>\n      <div class=\"tl-metrics\" role=\"group\" aria-label=\"Medida\">\n        {7}\n      </div>\n      <div class=\"tl-info\">\n        <b>Brasil em {8}: {9} {10}</b>{11}.\n        {12}\n        {13}\n      </div>\n      <div class=\"tl-legend\"><span>{14}</span><i style=\"background:linear-gradient(90deg, {15})\"></i><span>{16}</span><span>· {17}, {18}, na mesma escala para todos os anos · {19}</span></div>", themeBar(), esc(themeOf(theme).label), timer ? tr("{0}Pausar", PAUSE) : tr("{0}Tocar", PLAY), ys.map((y) => `<button type="button" class="tl-year" data-year="${y}" aria-pressed="${y === year}">${y}</button>`).join(""), by !== "states", by === "states", icon("close", "x", { size: 12 }), d.metrics.map((x) => `<button type="button" class="tl-metric" data-metric="${esc(x.id)}" aria-pressed="${x.id === m.id}" title="${esc(x.description)}">${esc(x.name)}</button>`).join(""), year, esc(fmtValue(m, br[i])), esc(m.unit || ""), i > f0 && Number.isFinite(br[f0]) && Number.isFinite(br[i]) ? tr(" · {0} desde {1}", pts(br[i] - br[f0], m), ys[f0]) : "", up && down ? tr("<br>{0}, {1}{2} foi em <b>{3}</b> ({4}) e {5}, em <b>{6}</b> ({7}).", d.fixed_borders === false ? tr("De {0} a {1}", ys[i - 1], year) : tr("Desde {0}", ys[f0]), d.movers ? tr("entre os municípios de {0} habitantes ou mais, ", people(d.movers_min_pop)) : "", up.dv >= 0 ? tr("a maior alta") : tr("a menor queda"), esc(muniName(up.k)), pts(up.dv, m), down.dv <= 0 ? tr("a maior queda") : tr("a menor alta"), esc(muniName(down.k)), pts(down.dv, m)) : "", i <= f0 ? `<br>${br[i] == null ? tr("Esta medida começa em {0}.", ys[f0]) : tr("Escolha um ano depois de {0} para ver quem mais mudou.", ys[f0])}` : "", esc(fmtValue(m, lo)), m.ramp.join(","), esc(fmtValue(m, hi)), esc(m.name), by === "states" ? tr("por estado") : tr("por município"), esc(d.vintage));
   }
 
   function fmtValue(m, v) {
@@ -291,7 +273,7 @@ export function install(app) {
   function themeBar() {
     const list = available();
     if (list.length < 2) return "";
-    return `<div class="tl-themes" role="group" aria-label="Tema">${list.map((t) => `<button type="button" class="tl-theme" data-theme="${t.id}" aria-pressed="${t.id === theme}">${esc(t.label)}</button>`).join("")}</div>`;
+    return `<div class="tl-themes" role="group" aria-label="${tr("Tema")}">${list.map((t) => `<button type="button" class="tl-theme" data-theme="${t.id}" aria-pressed="${t.id === theme}">${esc(t.label)}</button>`).join("")}</div>`;
   }
 
   function renderPeople(i, list) {
@@ -309,24 +291,7 @@ export function install(app) {
       }
     }
     const top = list[0];
-    bar.innerHTML = `
-      ${themeBar()}
-      <div class="tl-row">
-        <span class="tl-title">Gente</span>
-        <button type="button" class="tl-play" data-play>${timer ? `${PAUSE}Pausar` : `${PLAY}Tocar`}</button>
-        ${ys.map((y) => `<button type="button" class="tl-year" data-year="${y}" aria-pressed="${y === year}">${y}</button>`).join("")}
-        <span class="tl-seg" role="group" aria-label="Colorir por">
-          <button type="button" data-by="cities" aria-pressed="${by !== "states"}">Cidades</button><button type="button" data-by="states" aria-pressed="${by === "states"}">Estados</button>
-        </span>
-        <button type="button" class="tl-x" data-close aria-label="Fechar a linha do tempo" title="Fechar">${icon("close", "x", { size: 12 })}</button>
-      </div>
-      <div class="tl-info">
-        <b>Brasil em ${year}: ${people(br[i])} de pessoas</b>${i > 0 ? ` · ${pctY(gBr)} desde ${ys[i - 1]}` : " · o primeiro Censo da série"}.
-        ${top ? `Maior cidade: <b>${esc(top.name)}</b>, ${people(top.population)}.` : ""}
-        ${fastest ? `<br>Na década, entre as cidades de 100 mil ou mais, quem mais cresceu foi <b>${esc(fastest.c.name)}</b> (${pctY(fastest.g)}) e quem menos cresceu, <b>${esc(slowest.c.name)}</b> (${pctY(slowest.g)}).` : ""}
-        ${i > 0 ? "" : `<br>${list.length} das ${cities.length} cidades já existiam como município. Escolha 1980 ou depois para ver o crescimento.`}
-      </div>
-      ${i > 0 ? `<div class="tl-legend"><span>−5% ao ano</span><i></i><span>+5% ao ano</span><span>· crescimento por ano na década, ${by === "states" ? "por estado" : "por cidade"}, na mesma escala para todas</span></div>` : ""}`;
+    bar.innerHTML = tr("\n      {0}\n      <div class=\"tl-row\">\n        <span class=\"tl-title\">Gente</span>\n        <button type=\"button\" class=\"tl-play\" data-play>{1}</button>\n        {2}\n        <span class=\"tl-seg\" role=\"group\" aria-label=\"Colorir por\">\n          <button type=\"button\" data-by=\"cities\" aria-pressed=\"{3}\">Cidades</button><button type=\"button\" data-by=\"states\" aria-pressed=\"{4}\">Estados</button>\n        </span>\n        <button type=\"button\" class=\"tl-x\" data-close aria-label=\"Fechar a linha do tempo\" title=\"Fechar\">{5}</button>\n      </div>\n      <div class=\"tl-info\">\n        <b>Brasil em {6}: {7} de pessoas</b>{8}.\n        {9}\n        {10}\n        {11}\n      </div>\n      {12}", themeBar(), timer ? tr("{0}Pausar", PAUSE) : tr("{0}Tocar", PLAY), ys.map((y) => `<button type="button" class="tl-year" data-year="${y}" aria-pressed="${y === year}">${y}</button>`).join(""), by !== "states", by === "states", icon("close", "x", { size: 12 }), year, people(br[i]), i > 0 ? tr(" · {0} desde {1}", pctY(gBr), ys[i - 1]) : tr(" · o primeiro Censo da série"), top ? tr("Maior cidade: <b>{0}</b>, {1}.", esc(top.name), people(top.population)) : "", fastest ? tr("<br>Na década, entre as cidades de 100 mil ou mais, quem mais cresceu foi <b>{0}</b> ({1}) e quem menos cresceu, <b>{2}</b> ({3}).", esc(fastest.c.name), pctY(fastest.g), esc(slowest.c.name), pctY(slowest.g)) : "", i > 0 ? "" : tr("<br>{0} das {1} cidades já existiam como município. Escolha 1980 ou depois para ver o crescimento.", list.length, cities.length), i > 0 ? tr("<div class=\"tl-legend\"><span>−5% ao ano</span><i></i><span>+5% ao ano</span><span>· crescimento por ano na década, {0}, na mesma escala para todas</span></div>", by === "states" ? tr("por estado") : tr("por cidade")) : "");
   }
 
   bar.addEventListener("click", (e) => {

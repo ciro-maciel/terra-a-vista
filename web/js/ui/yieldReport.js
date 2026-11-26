@@ -7,6 +7,7 @@ import { compact, dollars, esc, int, money, pct } from "../format.js";
 import { hasIcon } from "../icons.js";
 import { icon, glyph } from "./icon.js";
 import { DISTRICT_ICON } from "./infoPanel.js";
+import { tr, DEC } from "../i18n.js";
 
 export const METRO_MIN = 250000; // metros in growth / specialisation / per-person rankings
 export const BIG_METRO_MIN = 500000; // metros in the unemployment rankings
@@ -18,13 +19,13 @@ const LENS_FOR = { population: "density", gold: "income", food: "farmland", unem
 // The advisor dashboard (ext/advisors) that explores each report further; `industry` preselects the Economy
 // advisor's specialisation ranking. Buttons show only when the advisors extension is installed.
 const ADVISOR_FOR = {
-  population: [{ id: "people", label: "Pessoas" }],
-  gold: [{ id: "economy", label: "Economia" }],
-  food: [{ id: "land", label: "Terra" }, { id: "economy", label: "Economia (agropecuária)", industry: "agriculture" }],
-  production: [{ id: "economy", label: "Economia (indústria)", industry: "manufacturing" }, { id: "energy", label: "Energia e recursos" }],
-  science: [{ id: "knowledge", label: "Conhecimento" }],
+  population: [{ id: "people", label: tr("Pessoas") }],
+  gold: [{ id: "economy", label: tr("Economia") }],
+  food: [{ id: "land", label: tr("Terra") }, { id: "economy", label: tr("Economia (agropecuária)"), industry: "agriculture" }],
+  production: [{ id: "economy", label: tr("Economia (indústria)"), industry: "manufacturing" }, { id: "energy", label: tr("Energia e recursos") }],
+  science: [{ id: "knowledge", label: tr("Conhecimento") }],
   culture: [{ id: "economy", label: "Economia (artes)", industry: "arts" }],
-  unemployment: [{ id: "prosperity", label: "Prosperidade" }],
+  unemployment: [{ id: "prosperity", label: tr("Prosperidade") }],
 };
 const advisorApp = () => (typeof window !== "undefined" && window.__app?.hasMode?.("advisor") ? window.__app : null);
 
@@ -58,7 +59,7 @@ export function statDefs(nation) {
   const yields = (nation?.yields || []).map((y) => ({
     key: y.key,
     label: y.label,
-    name: y.key === "gold" ? `${y.label} (PIB)` : y.label,
+    name: y.key === "gold" ? tr("{0} (PIB)", y.label) : y.label,
     color: y.color,
     yield: y,
     unit: y.unit,
@@ -68,19 +69,19 @@ export function statDefs(nation) {
   }));
   return [
     {
-      key: "population", label: "População", name: "População", color: "#e8dcc0", iconId: "pop", emoji: "👥", unit: "people",
-      description: "Residentes contados pelo Censo 2022 (IBGE).", source: nation?.vintage || "", value: n.population ?? null,
+      key: "population", label: tr("População"), name: tr("População"), color: "#e8dcc0", iconId: "pop", emoji: "👥", unit: "people",
+      description: tr("Residentes contados pelo Censo 2022 (IBGE)."), source: nation?.vintage || "", value: n.population ?? null,
     },
     ...yields,
     {
-      key: "unemployment", label: "Desocupação", name: "Taxa de desocupação", color: "#e8dcc0", iconId: "unemployment", emoji: "😐",
-      unit: "rate", description: "Desocupados ÷ força de trabalho.", source: nation?.vintage || "", value: n.unemployment ?? null,
+      key: "unemployment", label: tr("Desocupação"), name: tr("Taxa de desocupação"), color: "#e8dcc0", iconId: "unemployment", emoji: "😐",
+      unit: "rate", description: tr("Desocupados ÷ força de trabalho."), source: nation?.vintage || "", value: n.unemployment ?? null,
     },
   ];
 }
 
 const industryLabel = (nation, k, gdp = false) => {
-  const full = (gdp ? nation.gdp_industries?.[k] : null) || nation.industries?.[k] || (k === "government" ? "Governo" : k);
+  const full = (gdp ? nation.gdp_industries?.[k] : null) || nation.industries?.[k] || (k === "government" ? tr("Governo") : k);
   return { label: full.replace(/\s*\(.*\)\s*$/, ""), full };
 };
 const industryIcon = (k) => (hasIcon(`i-${k}`) ? `i-${k}` : k === "government" && hasIcon("i-public_admin") ? "i-public_admin" : null);
@@ -115,14 +116,14 @@ function stateScope(n, st) {
   const hasDC = abbrs.has("DC");
   const sum = st.reduce((a, r) => a + (fin(r.o.population) ? r.o.population : 0), 0);
   const gap = fin(n.population) && n.population > 0 ? (n.population - sum) / n.population : 0;
-  const label = "Estados";
+  const label = tr("Estados");
   if (!st.length || gap < 0.001) return { label, note: "" };
   const missing = [];
   const outside = missing.length ? missing.join(" and ") : `${compact(n.population - sum)} residentes`;
-  const what = `${st.length} estados do mapa`;
+  const what = tr("{0} estados do mapa", st.length);
   return {
-    label, inMap: "Estados do mapa",
-    note: `Posições entre os ${what}; ${outside} entram no total do país, mas não na classificação.`,
+    label, inMap: tr("Estados do mapa"),
+    note: tr("Posições entre os {0}; {1} entram no total do país, mas não na classificação.", what, outside),
   };
 }
 
@@ -171,31 +172,31 @@ export function buildReport(key, { nation, states, cities, lenses, lensVintage }
 function reportPopulation(rep, n, st, metros) {
   const yrs = Array.isArray(n.growth_years) && n.growth_years.length === 2 ? n.growth_years : null;
   const since = yrs ? ` desde ${yrs[0]}` : "";
-  if (fin(n.growth)) rep.context.push(`${signedPct(n.growth)}${since} (estimativas de população do IBGE)`);
+  if (fin(n.growth)) rep.context.push(tr("{0}{1} (estimativas de população do IBGE)", signedPct(n.growth), since));
   const emp = ratio(n.employed, n.population);
-  if (emp != null) rep.context.push(`${compact(n.employed)} empregos formais, ${pct(emp)} da população`);
+  if (emp != null) rep.context.push(tr("{0} empregos formais, {1} da população", compact(n.employed), pct(emp)));
 
   const g = (o) => o.growth;
   const row = (x, prefix = "") => ({
     label: `${prefix}${x.r.name}`, sub: x.r.kind === "city" ? x.r.sub : "", value: x.v, text: signedPct(x.v), tone: x.v >= 0 ? "good" : "bad",
   });
   const groups = [];
-  if (fin(n.growth)) groups.push({ rows: [{ label: "Brasil", value: n.growth, text: signedPct(n.growth), tone: n.growth >= 0 ? "good" : "bad", strong: true }] });
+  if (fin(n.growth)) groups.push({ rows: [{ label: tr("Brasil"), value: n.growth, text: signedPct(n.growth), tone: n.growth >= 0 ? "good" : "bad", strong: true }] });
   const extremes = (list, what) => {
     if (list.length < 2) return;
     const k = Math.min(3, Math.floor(list.length / 2));
     const top = list.slice(0, k), bottom = list.slice(-k).reverse();
-    groups.push({ title: `${what} que mais crescem`, rows: top.map((x) => row(x)) });
-    groups.push({ title: bottom.every((x) => x.v < 0) ? `${what} que encolhem` : `${what} que menos crescem`, rows: bottom.map((x) => row(x)) });
+    groups.push({ title: tr("{0} que mais crescem", what), rows: top.map((x) => row(x)) });
+    groups.push({ title: bottom.every((x) => x.v < 0) ? tr("{0} que encolhem", what) : tr("{0} que menos crescem", what), rows: bottom.map((x) => row(x)) });
   };
-  extremes(sorted(st, g), "Estados");
-  extremes(sorted(metros, g, METRO_MIN), `Cidades (${compact(METRO_MIN)}+)`);
-  if (groups.length) rep.breakdown = { title: yrs ? `Variação da população ${yrs[0]}–${yrs[1]}` : "Variação da população", note: rep.scope.note, groups };
+  extremes(sorted(st, g), tr("Estados"));
+  extremes(sorted(metros, g, METRO_MIN), tr("Cidades ({0}+)", compact(METRO_MIN)));
+  if (groups.length) rep.breakdown = { title: yrs ? tr("Variação da população {0}–{1}", yrs[0], yrs[1]) : tr("Variação da população"), note: rep.scope.note, groups };
 
   rep.boards.modes = [
-    { id: "abs", label: "Maiores", states: rank(st, (o) => o.population), metros: rank(metros, (o) => o.population) },
+    { id: "abs", label: tr("Maiores"), states: rank(st, (o) => o.population), metros: rank(metros, (o) => o.population) },
     {
-      id: "rel", label: "Crescem mais", hint: `Variação da população${since}; cidades com ${compact(METRO_MIN)}+ habitantes.`,
+      id: "rel", label: tr("Crescem mais"), hint: tr("Variação da população{0}; cidades com {1}+ habitantes.", since, compact(METRO_MIN)),
       states: rank(st, g, { fmt: signedPct, exact: (v) => signedPct(v, 2) }), metros: rank(metros, g, { fmt: signedPct, exact: (v) => signedPct(v, 2), min: METRO_MIN }),
     },
   ];
@@ -203,25 +204,25 @@ function reportPopulation(rep, n, st, metros) {
 
 function reportUnemployment(rep, n, st, metros) {
   const u = (o) => o.unemployment;
-  if (fin(n.unemployment) && n.unemployment > 0) rep.context.push(`Cerca de 1 em cada ${Math.round(1 / n.unemployment)} pessoas da força de trabalho está sem trabalho`);
+  if (fin(n.unemployment) && n.unemployment > 0) rep.context.push(tr("Cerca de 1 em cada {0} pessoas da força de trabalho está sem trabalho", Math.round(1 / n.unemployment)));
   const ss = sorted(st, u);
-  if (ss.length >= 2) rep.context.push(`${rep.scope.note ? rep.scope.inMap : rep.scope.label} vão de ${pct(ss.at(-1).v)} a ${pct(ss[0].v)}`);
+  if (ss.length >= 2) rep.context.push(tr("{0} vão de {1} a {2}", rep.scope.note ? rep.scope.inMap : rep.scope.label, pct(ss.at(-1).v), pct(ss[0].v)));
 
   const tone = (v) => (!fin(n.unemployment) || Math.abs(v / n.unemployment - 1) < 0.03 ? null : v > n.unemployment ? "bad" : "good");
   const row = (label, x) => ({ label: `${label}: ${x.r.name}`, sub: x.r.kind === "city" ? x.r.sub : "", value: x.v, text: pct(x.v), tone: tone(x.v) });
-  const spread = (list) => (list.length >= 3 ? [row("Maior", list[0]), row("Mediana", list[Math.floor(list.length / 2)]), row("Menor", list.at(-1))] : []);
+  const spread = (list) => (list.length >= 3 ? [row(tr("Maior"), list[0]), row(tr("Mediana"), list[Math.floor(list.length / 2)]), row(tr("Menor"), list.at(-1))] : []);
   const groups = [];
-  if (fin(n.unemployment)) groups.push({ rows: [{ label: "Brasil", value: n.unemployment, text: pct(n.unemployment), strong: true }] });
+  if (fin(n.unemployment)) groups.push({ rows: [{ label: tr("Brasil"), value: n.unemployment, text: pct(n.unemployment), strong: true }] });
   const sRows = spread(ss), mRows = spread(sorted(metros, u, BIG_METRO_MIN));
   if (sRows.length) groups.push({ title: rep.scope.label, rows: sRows });
-  if (mRows.length) groups.push({ title: `Cidades grandes (${compact(BIG_METRO_MIN)}+)`, rows: mRows });
-  if (groups.length) rep.breakdown = { title: "Dispersão", note: rep.scope.note, groups };
+  if (mRows.length) groups.push({ title: tr("Cidades grandes ({0}+)", compact(BIG_METRO_MIN)), rows: mRows });
+  if (groups.length) rep.breakdown = { title: tr("Dispersão"), note: rep.scope.note, groups };
 
-  const hint = `Cidades com ${compact(BIG_METRO_MIN)}+ habitantes.`;
+  const hint = tr("Cidades com {0}+ habitantes.", compact(BIG_METRO_MIN));
   const o = { fmt: pct, exact: (v) => pct(v, 2) };
   rep.boards.modes = [
-    { id: "abs", label: "Maiores", hint, states: rank(st, u, o), metros: rank(metros, u, { ...o, min: BIG_METRO_MIN }) },
-    { id: "rel", label: "Menores", hint, states: rank(st, u, { ...o, asc: true }), metros: rank(metros, u, { ...o, asc: true, min: BIG_METRO_MIN }) },
+    { id: "abs", label: tr("Maiores"), hint, states: rank(st, u, o), metros: rank(metros, u, { ...o, min: BIG_METRO_MIN }) },
+    { id: "rel", label: tr("Menores"), hint, states: rank(st, u, { ...o, asc: true }), metros: rank(metros, u, { ...o, asc: true, min: BIG_METRO_MIN }) },
   ];
 }
 
@@ -230,9 +231,9 @@ function reportGold(rep, nation, n, st, metros) {
   const pp = ratio(rep.total, n.population);
   // GDP and population can come from different years (BEA GDP lags the ACS by a year): say which.
   const popYear = fin(nation.year) ? nation.year : null;
-  const years = n.gdp_year && popYear && n.gdp_year !== popYear ? `PIB de ${n.gdp_year} ÷ população de ${popYear}` : "PIB ÷ população";
-  if (pp != null) rep.context.push(`${money(pp)} por habitante (${years})`);
-  if (n.gdp_year) rep.context.push(`Ano ${n.gdp_year}, a preços correntes`);
+  const years = n.gdp_year && popYear && n.gdp_year !== popYear ? tr("PIB de {0} ÷ população de {1}", n.gdp_year, popYear) : tr("PIB ÷ população");
+  if (pp != null) rep.context.push(tr("{0} por habitante ({1})", money(pp), years));
+  if (n.gdp_year) rep.context.push(tr("Ano {0}, a preços correntes", n.gdp_year));
 
   const rows = Object.entries(n.gdp_by_industry || {})
     .filter(([, v]) => fin(v))
@@ -242,13 +243,13 @@ function reportGold(rep, nation, n, st, metros) {
       const s = ratio(v, rep.total);
       return { label, full, iconId: industryIcon(k), emoji: DISTRICT_ICON[k] || "•", value: v, text: money(v), sub: s != null ? pct(s) : "" };
     });
-  if (rows.length) rep.breakdown = { title: "GDP by industry", groups: [{ rows }], collapseAfter: GDP_ROWS };
+  if (rows.length) rep.breakdown = { title: tr("GDP by industry"), groups: [{ rows }], collapseAfter: GDP_ROWS };
 
   const perPerson = (o) => ratio(gdp(o), o.population);
   rep.boards.modes = [
-    { id: "abs", label: "Maior PIB", states: rank(st, gdp, { fmt: money, exact: dollars }), metros: rank(metros, gdp, { fmt: money, exact: dollars }) },
+    { id: "abs", label: tr("Maior PIB"), states: rank(st, gdp, { fmt: money, exact: dollars }), metros: rank(metros, gdp, { fmt: money, exact: dollars }) },
     {
-      id: "rel", label: "Por habitante", hint: `${years}; cidades com ${compact(METRO_MIN)}+ habitantes.`,
+      id: "rel", label: tr("Por habitante"), hint: tr("{0}; cidades com {1}+ habitantes.", years, compact(METRO_MIN)),
       states: rank(st, perPerson, { fmt: money, exact: dollars }), metros: rank(metros, perPerson, { fmt: money, exact: dollars, min: METRO_MIN }),
     },
   ];
@@ -257,19 +258,19 @@ function reportGold(rep, nation, n, st, metros) {
 function reportJobs(rep, def, nation, n, st, metros) {
   const key = def.key;
   const nShare = ratio(rep.total, n.employed);
-  if (nShare != null) rep.context.push(`${pct(nShare)} dos ${compact(n.employed)} empregos formais`);
+  if (nShare != null) rep.context.push(tr("{0} dos {1} empregos formais", pct(nShare), compact(n.employed)));
   const per1k = ratio(rep.total, n.population);
-  if (per1k != null) rep.context.push(`${Math.round(per1k * 1000)} por 1.000 habitantes`);
+  if (per1k != null) rep.context.push(tr("{0} por 1.000 habitantes", Math.round(per1k * 1000)));
 
   const inds = Array.isArray(def.yield?.industries) ? def.yield.industries : [];
   const gdpOf = inds.map((k) => n.gdp_by_industry?.[k]);
   if (inds.length && gdpOf.every(fin) && fin(n.gdp)) {
     const sum = gdpOf.reduce((a, b) => a + b, 0);
-    rep.context.push(`${inds.length > 1 ? "Estas atividades produzem" : "Esta atividade produz"} ${money(sum)} do PIB (${pct(sum / n.gdp)}${n.gdp_year ? `, ${n.gdp_year}` : ""})`);
+    rep.context.push(tr("{0} {1} do PIB ({2}{3})", inds.length > 1 ? tr("Estas atividades produzem") : tr("Esta atividade produz"), money(sum), pct(sum / n.gdp), n.gdp_year ? `, ${n.gdp_year}` : ""));
   }
   // Worker counts are ACS (where people live); the GDP figures are BEA (where the work is done): credit both.
   if (inds.some((k) => fin(n.gdp_by_industry?.[k])) && nation.gdp_vintage && nation.gdp_vintage !== rep.source) {
-    rep.source = `${rep.source ? `${rep.source} (empregos); ` : ""}${nation.gdp_vintage} (PIB)`;
+    rep.source = tr("{0}{1} (PIB)", rep.source ? `${rep.source} (empregos); ` : "", nation.gdp_vintage);
   }
   const rows = inds
     .map((k) => {
@@ -278,26 +279,26 @@ function reportJobs(rep, def, nation, n, st, metros) {
       const { label, full } = industryLabel(nation, k);
       const s = ratio(v, n.employed);
       const g = n.gdp_by_industry?.[k];
-      const sub = [s != null ? `${pct(s)} de todos os empregos` : "", fin(g) ? `PIB ${money(g)}` : ""].filter(Boolean).join(" · ");
+      const sub = [s != null ? tr("{0} de todos os empregos", pct(s)) : "", fin(g) ? tr("PIB {0}", money(g)) : ""].filter(Boolean).join(" · ");
       return { label, full, iconId: industryIcon(k), emoji: DISTRICT_ICON[k] || "•", value: v, text: compact(v), sub };
     })
     .filter(Boolean)
     .sort((a, b) => b.value - a.value);
-  if (rows.length) rep.breakdown = { title: "Empregos por atividade", note: "Empregos formais assalariados, onde fica a empresa.", groups: [{ rows }] };
+  if (rows.length) rep.breakdown = { title: tr("Empregos por atividade"), note: "Empregos formais assalariados, onde fica a empresa.", groups: [{ rows }] };
 
   const y = (o) => o.yields?.[key];
   const lq = (o) => (nShare ? ratio(ratio(y(o), o.employed), nShare) : null);
   const shareSub = (o) => {
     const s = ratio(y(o), o.employed);
-    return s != null ? `${pct(s)} dos empregos` : "";
+    return s != null ? tr("{0} dos empregos", pct(s)) : "";
   };
-  const fmtLq = (v) => `×${v.toFixed(2).replace(".", ",")}`;
-  const exactLq = (v) => `×${v.toFixed(3).replace(".", ",")}`;
+  const fmtLq = (v) => `×${v.toFixed(2).replace(".", DEC)}`;
+  const exactLq = (v) => `×${v.toFixed(3).replace(".", DEC)}`;
   rep.boards.modes = [
-    { id: "abs", label: "Mais empregos", states: rank(st, y), metros: rank(metros, y) },
+    { id: "abs", label: tr("Mais empregos"), states: rank(st, y), metros: rank(metros, y) },
     {
-      id: "rel", label: "Especialização",
-      hint: `Parcela dos empregos da área em ${def.label.toLowerCase()} ÷ a parcela do país (${pct(nShare)}); cidades com ${compact(METRO_MIN)}+ habitantes.`,
+      id: "rel", label: tr("Especialização"),
+      hint: tr("Parcela dos empregos da área em {0} ÷ a parcela do país ({1}); cidades com {2}+ habitantes.", def.label.toLowerCase(), pct(nShare), compact(METRO_MIN)),
       states: rank(st, lq, { fmt: fmtLq, exact: exactLq, subOf: shareSub }), metros: rank(metros, lq, { fmt: fmtLq, exact: exactLq, subOf: shareSub, min: METRO_MIN }),
     },
   ];
@@ -332,12 +333,12 @@ function barsHtml(bd, expanded) {
     })
     .join("");
   const more = bd.collapseAfter && all.length > bd.collapseAfter
-    ? `<button class="yr-more" data-more aria-expanded="${expanded}">${expanded ? "Mostrar menos" : `Mostrar todos os ${all.length}`}</button>` : "";
+    ? `<button class="yr-more" data-more aria-expanded="${expanded}">${expanded ? tr("Mostrar menos") : tr("Mostrar todos os {0}", all.length)}</button>` : "";
   return groups + more;
 }
 
 function boardHtml(rows) {
-  if (!rows?.length) return `<p class="muted yr-empty">Sem dados.</p>`;
+  if (!rows?.length) return tr("<p class=\"muted yr-empty\">Sem dados.</p>");
   const max = Math.max(0, ...rows.map((r) => Math.abs(r.value)));
   return `<ol class="yr-list">${rows
     .map((r) => {
@@ -399,41 +400,17 @@ export function initYieldReports(opts) {
     const hasStates = modes.some((x) => x.states.length), hasMetros = modes.some((x) => x.metros.length);
     if (tab === "states" && !hasStates && hasMetros) tab = "metros";
     pop.style.setProperty("--yc", def.color || "var(--gold-bright)");
-    pop.innerHTML = `
-      <div class="yr-head">
-        <span class="yr-ic" style="color:${esc(def.color)}">${defIcon(def, 26)}</span>
-        <div class="yr-titles"><div class="yr-kind">Relatório do país</div><h2 id="yr-title">${esc(def.name)}</h2></div>
-        <button class="icon-btn yr-close" aria-label="Fechar o relatório (Esc)" title="Fechar (Esc)">${icon("close", "✕", { size: 12 })}</button>
-      </div>
-      <div class="yr-total"><b style="color:${esc(def.color)}">${esc(rep.totalText)}</b>
-        ${rep.context.length ? `<ul class="yr-ctx">${rep.context.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}</div>
-      ${rep.definition ? `<p class="yr-def">${esc(rep.definition)}</p>` : ""}
-      ${rep.source ? `<div class="yr-src">Fonte: ${esc(rep.source)}</div>` : ""}
-      ${rep.breakdown ? `<section class="yr-sec"><h3>${esc(rep.breakdown.title)}</h3>
+    pop.innerHTML = tr("\n      <div class=\"yr-head\">\n        <span class=\"yr-ic\" style=\"color:{0}\">{1}</span>\n        <div class=\"yr-titles\"><div class=\"yr-kind\">Relatório do país</div><h2 id=\"yr-title\">{2}</h2></div>\n        <button class=\"icon-btn yr-close\" aria-label=\"Fechar o relatório (Esc)\" title=\"Fechar (Esc)\">{3}</button>\n      </div>\n      <div class=\"yr-total\"><b style=\"color:{4}\">{5}</b>\n        {6}</div>\n      {7}\n      {8}\n      {9}\n      {10}\n      {11}\n      {12}", esc(def.color), defIcon(def, 26), esc(def.name), icon("close", "✕", { size: 12 }), esc(def.color), esc(rep.totalText), rep.context.length ? `<ul class="yr-ctx">${rep.context.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : "", rep.definition ? `<p class="yr-def">${esc(rep.definition)}</p>` : "", rep.source ? `<div class="yr-src">${tr("Fonte: {0}", esc(rep.source))}</div>` : "", rep.breakdown ? `<section class="yr-sec"><h3>${esc(rep.breakdown.title)}</h3>
         ${rep.breakdown.note ? `<p class="yr-note">${esc(rep.breakdown.note)}</p>` : ""}
-        <div class="yr-bars">${barsHtml(rep.breakdown, expanded)}</div></section>` : ""}
-      ${modes.length ? `<section class="yr-sec"><h3>Classificação</h3>
-        <div class="yr-controls">
-          <div class="yr-tabs" role="tablist" aria-label="Áreas">
-            <button role="tab" id="yr-tab-states" data-tab="states" aria-controls="yr-board" aria-selected="${tab === "states"}" tabindex="${tab === "states" ? 0 : -1}" ${hasStates ? "" : "disabled"}>Estados</button>
-            <button role="tab" id="yr-tab-metros" data-tab="metros" aria-controls="yr-board" aria-selected="${tab === "metros"}" tabindex="${tab === "metros" ? 0 : -1}" ${hasMetros ? "" : "disabled"}>Cidades</button>
-          </div>
-          ${modes.length > 1 ? `<div class="yr-modes" role="group" aria-label="Classificação">${modes
-            .map((x) => `<button data-mode="${x.id}" aria-pressed="${x.id === mode}">${esc(x.label)}</button>`).join("")}</div>` : ""}
-        </div>
-        <p class="yr-note yr-hint">${esc(hintText(m))}</p>
-        <div id="yr-board" role="tabpanel" aria-labelledby="yr-tab-${tab}">${boardHtml(m?.[tab])}</div></section>` : ""}
-      ${rep.lens ? `<div class="yr-foot"><p class="yr-note yr-lens-note">Medida relacionada, não este total: ${esc(rep.lens.unit || rep.lens.name)}${rep.lens.vintage ? ` (${esc(rep.lens.vintage)})` : ""}.</p>
-        <button class="btn yr-lens" data-lens="${esc(rep.lens.id)}">${icon("layers", "🗺️", { size: 14 })}Related map: ${esc(rep.lens.name)} lens</button></div>` : ""}
-      ${advisorButtons(rep.key)}`;
+        <div class="yr-bars">${barsHtml(rep.breakdown, expanded)}</div></section>` : "", modes.length ? tr("<section class=\"yr-sec\"><h3>Classificação</h3>\n        <div class=\"yr-controls\">\n          <div class=\"yr-tabs\" role=\"tablist\" aria-label=\"Áreas\">\n            <button role=\"tab\" id=\"yr-tab-states\" data-tab=\"states\" aria-controls=\"yr-board\" aria-selected=\"{0}\" tabindex=\"{1}\" {2}>Estados</button>\n            <button role=\"tab\" id=\"yr-tab-metros\" data-tab=\"metros\" aria-controls=\"yr-board\" aria-selected=\"{3}\" tabindex=\"{4}\" {5}>Cidades</button>\n          </div>\n          {6}\n        </div>\n        <p class=\"yr-note yr-hint\">{7}</p>\n        <div id=\"yr-board\" role=\"tabpanel\" aria-labelledby=\"yr-tab-{8}\">{9}</div></section>", tab === "states", tab === "states" ? 0 : -1, hasStates ? "" : "disabled", tab === "metros", tab === "metros" ? 0 : -1, hasMetros ? "" : "disabled", modes.length > 1 ? `<div class="yr-modes" role="group" aria-label="${tr("Classificação")}">${modes
+            .map((x) => `<button data-mode="${x.id}" aria-pressed="${x.id === mode}">${esc(x.label)}</button>`).join("")}</div>` : "", esc(hintText(m)), tab, boardHtml(m?.[tab])) : "", rep.lens ? tr("<div class=\"yr-foot\"><p class=\"yr-note yr-lens-note\">Medida relacionada, não este total: {0}{1}.</p>\n        <button class=\"btn yr-lens\" data-lens=\"{2}\">{3}Related map: {4} lens</button></div>", esc(rep.lens.unit || rep.lens.name), rep.lens.vintage ? ` (${esc(rep.lens.vintage)})` : "", esc(rep.lens.id), icon("layers", "🗺️", { size: 14 }), esc(rep.lens.name)) : "", advisorButtons(rep.key));
   }
 
   // "Open advisor" buttons (ext/advisors): a full dashboard on the report's subject.
   function advisorButtons(key) {
     const list = advisorApp() ? ADVISOR_FOR[key] || [] : [];
     if (!list.length) return "";
-    return `<div class="yr-foot yr-adv">${list.map((a) => `<button class="btn yr-advisor" data-advisor="${esc(a.id)}"${a.industry ? ` data-industry="${esc(a.industry)}"` : ""}
-      title="Abrir o conselheiro de ${esc(a.label.replace(/ \(.*\)$/, ""))}: gráficos, tabelas e o mapa ligados">${icon("g-people", "👥", { size: 14 })}Abrir conselheiro: ${esc(a.label)}</button>`).join("")}</div>`;
+    return `<div class="yr-foot yr-adv">${list.map((a) => tr("<button class=\"btn yr-advisor\" data-advisor=\"{0}\"{1}\n      title=\"Abrir o conselheiro de {2}: gráficos, tabelas e o mapa ligados\">{3}Abrir conselheiro: {4}</button>", esc(a.id), a.industry ? ` data-industry="${esc(a.industry)}"` : "", esc(a.label.replace(/ \(.*\)$/, "")), icon("g-people", "👥", { size: 14 }), esc(a.label))).join("")}</div>`;
   }
 
   // The ranking's hint, plus (on the States tab) which states are ranked.

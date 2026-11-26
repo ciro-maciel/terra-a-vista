@@ -11,6 +11,7 @@ import { drawRoads, drawRail, drawPort, drawAirport, drawTradeRoutes, hitRoute, 
 import { drawFort, drawRestricted, drawProtected, drawWonder, drawPlaque } from "../../render/art/sites.js";
 import { visibleSites, siteSize, hitSites } from "./model.js";
 import { esc } from "../../format.js";
+import { tr } from "../../i18n.js";
 
 const inVp = (it, vp, padKm) => it.x > vp.x0 - padKm && it.x < vp.x1 + padKm && it.y > vp.y0 - padKm && it.y < vp.y1 + padKm;
 
@@ -33,8 +34,8 @@ export function makeLayers(model, on, { tips = {}, app = null } = {}) {
   const moved = (it, html) => {
     if (!html || !it.nudged || typeof html !== "string") return html;
     const city = m.w.cityByCell.get(it.cell);
-    const where = city ? `no hexágono da cidade de ${esc(city.name)}` : "num hexágono de cidade";
-    return `${html}<br><span class="muted">Desenhado no hexágono vizinho para continuar visível; o local de verdade fica ${where}.</span>`;
+    const where = city ? tr("no hexágono da cidade de {0}", esc(city.name)) : tr("num hexágono de cidade");
+    return tr("{0}<br><span class=\"muted\">Desenhado no hexágono vizinho para continuar visível; o local de verdade fica {1}.</span>", html, where);
   };
   const ver = () => `v${m.version}`;
   const grid = () => m.w.grid;

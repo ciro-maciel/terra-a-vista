@@ -1,5 +1,6 @@
 // Small inline-SVG charts for the city screen (no libraries). All return HTML strings.
 import { esc } from "../../format.js";
+import { tr } from "../../i18n.js";
 
 let uid = 0;
 
@@ -8,7 +9,7 @@ let uid = 0;
  * series = [{year, value}], fmt(value) → text. Width scales with the container (viewBox).
  */
 export function sparkline(series, { fmt, color = "#ecd08e", height = 92, title = "" } = {}) {
-  if (series.length < 2) return `<p class="muted cv-note">Sem estimativas anuais para esta cidade.</p>`;
+  if (series.length < 2) return tr("<p class=\"muted cv-note\">Sem estimativas anuais para esta cidade.</p>");
   const W = 400, H = height, padL = 6, padR = 6, padT = 22, padB = 20;
   const vals = series.map((p) => p.value);
   let lo = Math.min(...vals), hi = Math.max(...vals);
@@ -64,5 +65,5 @@ export function meter(v, us, max, better = null) {
 export function bar(frac, color, tick = null) {
   const f = Math.max(0, Math.min(1, frac || 0));
   return `<div class="cv-bar"><i style="width:${(f * 100).toFixed(1)}%;background:${color}"></i>${
-    tick != null ? `<b style="left:${(Math.max(0, Math.min(1, tick)) * 100).toFixed(1)}%" title="U.S. share"></b>` : ""}</div>`;
+    tick != null ? `<b style="left:${(Math.max(0, Math.min(1, tick)) * 100).toFixed(1)}%" title="${tr("U.S. share")}"></b>` : ""}</div>`;
 }

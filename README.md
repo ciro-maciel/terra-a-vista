@@ -4,8 +4,11 @@
 people and its GDP, its districts come from what its people actually do for work, and the land under it is the real
 relief and land cover. Every number traces back to a public source, listed in the in-app Almanac.
 
-**Live: [ciro-maciel.github.io/terra-a-vista](https://ciro-maciel.github.io/terra-a-vista/?ref=oss-terra-a-vista)** ·
-[Leia em português](README.pt-BR.md)
+**Live: [ciro-maciel.github.io/terra-a-vista](https://ciro-maciel.github.io/terra-a-vista/?ref=oss-terra-a-vista)**
+([in English](https://ciro-maciel.github.io/terra-a-vista/?lang=en&ref=oss-terra-a-vista)) · [Leia em português](README.pt-BR.md)
+
+The map reads in Brazilian Portuguese and in English: the PT | EN switch at the end of the top bar, or `?lang=en`.
+Place names stay as they are.
 
 ![Terra à Vista: BRASIL in gold over the hex strategy map of the country, with the round Brazilian flag emblem, "como jogo de estratégia, feito de dados públicos", and a band with the sources (IBGE, MapBiomas, Comex Stat, Datasus, Inep, Anatel, Tesouro Nacional) and the address](docs/images/capa.png)
 

@@ -5,6 +5,7 @@
 //   URL hash #ia=1 opens it · goals ask:open, ask:copy, ask:question (Operations Analytics, see ext/analytics)
 import { esc } from "../../format.js";
 import { icon } from "../../ui/icon.js";
+import { tr } from "../../i18n.js";
 
 const SERVER = "https://terra-a-vista.mcp.myagents.click/mcp";
 const TRENDS = "https://terra-a-vista.mcp.myagents.click/trends/latest.json";
@@ -17,16 +18,16 @@ const goal = (name) => { try { window.analytics?.trackGoal(name); } catch { /* m
 const GLYPH = `<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M4 5.5h16v10.5H10l-4.5 3.5V16H4z" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M12 7.6l2.6 1.5v3l-2.6 1.5-2.6-1.5v-3z" fill="currentColor"/></svg>`;
 
 const CLIENTS = [
-  { id: "claude", name: "Claude", steps: ["Abra Configurações e depois Conectores.", "Escolha Adicionar conector personalizado.", "Cole o endereço e salve. Pronto: pergunte na conversa."] },
-  { id: "chatgpt", name: "ChatGPT", steps: ["Nos planos que aceitam conectores personalizados, abra Configurações e a área de conectores (modo desenvolvedor).", "Crie um conector com o endereço, sem autenticação.", "Ative-o na conversa e pergunte."] },
-  { id: "code", name: "Cursor e outros", steps: ["Qualquer ferramenta que aceite um servidor MCP remoto: Cursor, Claude Code, VS Code e outras.", "Na configuração de MCP, acrescente:"], code: `{ "mcpServers": { "terra-a-vista": {\n  "url": "${SERVER}" } } }` },
+  { id: "claude", name: "Claude", steps: [tr("Abra Configurações e depois Conectores."), tr("Escolha Adicionar conector personalizado."), tr("Cole o endereço e salve. Pronto: pergunte na conversa.")] },
+  { id: "chatgpt", name: "ChatGPT", steps: [tr("Nos planos que aceitam conectores personalizados, abra Configurações e a área de conectores (modo desenvolvedor)."), tr("Crie um conector com o endereço, sem autenticação."), tr("Ative-o na conversa e pergunte.")] },
+  { id: "code", name: tr("Cursor e outros"), steps: [tr("Qualquer ferramenta que aceite um servidor MCP remoto: Cursor, Claude Code, VS Code e outras."), tr("Na configuração de MCP, acrescente:")], code: `{ "mcpServers": { "terra-a-vista": {\n  "url": "${SERVER}" } } }` },
 ];
 
 const QUESTIONS = [
-  "Que cidades de 50 a 150 mil habitantes do Centro-Oeste mais crescem, e o que elas exportam?",
-  "Compare o Ideb, a mortalidade infantil e a banda larga do Ceará e de São Paulo.",
-  "Onde a soja mais avançou desde 1985, e quanto de vegetação nativa sobrou ali?",
-  "Quais prefeituras de Minas Gerais mais dependem do FPM?",
+  tr("Que cidades de 50 a 150 mil habitantes do Centro-Oeste mais crescem, e o que elas exportam?"),
+  tr("Compare o Ideb, a mortalidade infantil e a banda larga do Ceará e de São Paulo."),
+  tr("Onde a soja mais avançou desde 1985, e quanto de vegetação nativa sobrou ali?"),
+  tr("Quais prefeituras de Minas Gerais mais dependem do FPM?"),
 ];
 
 const CSS = `
@@ -79,10 +80,10 @@ export function install(app) {
   style.textContent = CSS;
   document.head.appendChild(style);
 
-  const btn = app.ui.addTopButton({ id: "btn-ask", label: "Pergunte à sua IA", title: "Pergunte à sua IA: ligue este mapa ao Claude, ao ChatGPT ou ao Cursor", onClick: () => (modal ? close() : show()) });
+  const btn = app.ui.addTopButton({ id: "btn-ask", label: tr("Pergunte à sua IA"), title: tr("Pergunte à sua IA: ligue este mapa ao Claude, ao ChatGPT ou ao Cursor"), onClick: () => (modal ? close() : show()) });
   if (btn) {
     btn.classList.add("ask-btn");
-    btn.innerHTML = `${GLYPH}<span class="lbl">Pergunte à sua IA</span><span class="ask-new">novo</span>`;
+    btn.innerHTML = tr("{0}<span class=\"lbl\">Pergunte à sua IA</span><span class=\"ask-new\">novo</span>", GLYPH);
   }
 
   let modal = null, client = "claude";
@@ -99,7 +100,7 @@ export function install(app) {
   function questions() {
     const place = here();
     const out = QUESTIONS.map((q) => ({ q }));
-    if (place) out.unshift({ q: `Me fale de ${place}: quem mora, do que vive, o que exporta e como está a escola e a saúde.`, here: true });
+    if (place) out.unshift({ q: tr("Me fale de {0}: quem mora, do que vive, o que exporta e como está a escola e a saúde.", place), here: true });
     return out;
   }
 
@@ -110,28 +111,7 @@ export function install(app) {
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
     modal.setAttribute("aria-labelledby", "ask-title");
-    modal.innerHTML = `
-      <div class="panel ask-card">
-        <button type="button" class="close icon-btn" data-close aria-label="Fechar">${icon("close", "x", { size: 13 })}</button>
-        <p class="ask-kicker">Novo · servidor MCP aberto e grátis</p>
-        <h2 id="ask-title">Converse com este mapa pelo seu assistente de IA.</h2>
-        <p class="ask-lede">O <b>MCP</b> é o padrão que deixa um assistente de IA usar ferramentas de fora. Ligue o endereço abaixo no Claude, no ChatGPT ou no Cursor, e ele passa a consultar os dados deste mapa para responder você: qualquer município, cidade ou estado, cruzando o que quiser, com o ano e a fonte de cada número.</p>
-        <div class="ask-flow" aria-label="Como funciona">
-          <div class="ask-node"><b>Você pergunta</b><span>em português, na conversa</span></div>
-          <div class="ask-arrow">${ARROW}</div>
-          <div class="ask-node"><b>O seu assistente</b><span>Claude, ChatGPT, Cursor…</span></div>
-          <div class="ask-arrow">${ARROW}consulta</div>
-          <div class="ask-node map"><b>Terra à Vista</b><span>5.570 municípios, 32 fontes públicas</span></div>
-        </div>
-        <div class="ask-addr"><code data-addr>${esc(SERVER)}</code><button type="button" class="ask-primary" data-copy>Copiar o endereço</button></div>
-        <p class="ask-note">Sem conta e sem chave: os dados são públicos. O assistente só consulta; nada é alterado.</p>
-        <div class="ask-tabs" role="tablist" aria-label="Onde ligar">${CLIENTS.map((c) => `<button type="button" role="tab" data-client="${c.id}" aria-selected="${c.id === client}">${esc(c.name)}</button>`).join("")}</div>
-        <ol class="ask-steps" data-steps></ol>
-        <p class="ask-h3">Perguntas para começar</p>
-        <div class="ask-qs" data-qs>${questions().map((x) => `<button type="button" class="ask-q${x.here ? " here" : ""}" data-q="${esc(x.q)}"><span>"${esc(x.q)}"</span><small>Copiar</small></button>`).join("")}</div>
-        <div class="ask-trends" data-trends>Lendo o índice da semana…</div>
-        <div class="ask-foot"><a href="${PAGE}">Página completa: Pergunte ao mapa</a><a href="${RULES}">Como contamos, sem saber quem perguntou</a><a href="https://github.com/ciro-maciel/terra-a-vista/tree/main/mcp">O código do servidor</a></div>
-      </div>`;
+    modal.innerHTML = tr("\n      <div class=\"panel ask-card\">\n        <button type=\"button\" class=\"close icon-btn\" data-close aria-label=\"Fechar\">{0}</button>\n        <p class=\"ask-kicker\">Novo · servidor MCP aberto e grátis</p>\n        <h2 id=\"ask-title\">Converse com este mapa pelo seu assistente de IA.</h2>\n        <p class=\"ask-lede\">O <b>MCP</b> é o padrão que deixa um assistente de IA usar ferramentas de fora. Ligue o endereço abaixo no Claude, no ChatGPT ou no Cursor, e ele passa a consultar os dados deste mapa para responder você: qualquer município, cidade ou estado, cruzando o que quiser, com o ano e a fonte de cada número.</p>\n        <div class=\"ask-flow\" aria-label=\"Como funciona\">\n          <div class=\"ask-node\"><b>Você pergunta</b><span>em português, na conversa</span></div>\n          <div class=\"ask-arrow\">{1}</div>\n          <div class=\"ask-node\"><b>O seu assistente</b><span>Claude, ChatGPT, Cursor…</span></div>\n          <div class=\"ask-arrow\">{2}consulta</div>\n          <div class=\"ask-node map\"><b>Terra à Vista</b><span>5.570 municípios, 32 fontes públicas</span></div>\n        </div>\n        <div class=\"ask-addr\"><code data-addr>{3}</code><button type=\"button\" class=\"ask-primary\" data-copy>Copiar o endereço</button></div>\n        <p class=\"ask-note\">Sem conta e sem chave: os dados são públicos. O assistente só consulta; nada é alterado.</p>\n        <div class=\"ask-tabs\" role=\"tablist\" aria-label=\"Onde ligar\">{4}</div>\n        <ol class=\"ask-steps\" data-steps></ol>\n        <p class=\"ask-h3\">Perguntas para começar</p>\n        <div class=\"ask-qs\" data-qs>{5}</div>\n        <div class=\"ask-trends\" data-trends>Lendo o índice da semana…</div>\n        <div class=\"ask-foot\"><a href=\"{6}\">Página completa: Pergunte ao mapa</a><a href=\"{7}\">Como contamos, sem saber quem perguntou</a><a href=\"https://github.com/ciro-maciel/terra-a-vista/tree/main/mcp\">O código do servidor</a></div>\n      </div>", icon("close", "x", { size: 13 }), ARROW, ARROW, esc(SERVER), CLIENTS.map((c) => `<button type="button" role="tab" data-client="${c.id}" aria-selected="${c.id === client}">${esc(c.name)}</button>`).join(""), questions().map((x) => `<button type="button" class="ask-q${x.here ? " here" : ""}" data-q="${esc(x.q)}"><span>"${esc(x.q)}"</span><small>${tr("Copiar")}</small></button>`).join(""), PAGE, RULES);
     document.body.appendChild(modal);
     renderSteps();
     loadTrends();
@@ -160,10 +140,10 @@ export function install(app) {
     for (const b of modal.querySelectorAll("[data-client]")) b.setAttribute("aria-selected", String(b.dataset.client === client));
   }
 
-  async function copy(text, button, done = "Copiado") {
+  async function copy(text, button, done = tr("Copiado")) {
     const before = button.innerHTML;
     try { await navigator.clipboard.writeText(text); button.textContent = done; }
-    catch { button.textContent = "Selecione e copie"; }
+    catch { button.textContent = tr("Selecione e copie"); }
     setTimeout(() => { if (button.isConnected) button.innerHTML = before; }, 2000);
   }
 
@@ -174,7 +154,7 @@ export function install(app) {
     if (t.hasAttribute("data-close")) close();
     else if (t.hasAttribute("data-copy")) { goal("ask:copy"); copy(SERVER, t); }
     else if (t.dataset.client) { client = t.dataset.client; renderSteps(); }
-    else if (t.dataset.q != null) { goal("ask:question"); copy(t.dataset.q, t.querySelector("small"), "Copiada"); }
+    else if (t.dataset.q != null) { goal("ask:question"); copy(t.dataset.q, t.querySelector("small"), tr("Copiada")); }
   }
 
   async function loadTrends() {
@@ -185,10 +165,10 @@ export function install(app) {
       if (!box.isConnected) return;
       const top = doc.rankings?.places?.slice(0, 5) || [];
       box.innerHTML = doc.week && top.length
-        ? `<b style="color:var(--gold-bright)">O que o Brasil está pesquisando</b> (semana ${esc(doc.week)}): <ol>${top.map((r) => `<li>${esc(r.name)}</li>`).join("")}</ol>`
-        : `<b style="color:var(--gold-bright)">O que o Brasil está pesquisando</b>: toda semana, os lugares e as perguntas que mais pessoas diferentes fizeram ao mapa, sem saber quem perguntou. O primeiro índice sai quando um lugar passar de 10 pessoas.`;
+        ? tr("<b style=\"color:var(--gold-bright)\">O que o Brasil está pesquisando</b> (semana {0}): <ol>{1}</ol>", esc(doc.week), top.map((r) => `<li>${esc(r.name)}</li>`).join(""))
+        : tr("<b style=\"color:var(--gold-bright)\">O que o Brasil está pesquisando</b>: toda semana, os lugares e as perguntas que mais pessoas diferentes fizeram ao mapa, sem saber quem perguntou. O primeiro índice sai quando um lugar passar de 10 pessoas.");
     } catch {
-      if (box.isConnected) box.textContent = "O índice da semana não respondeu agora.";
+      if (box.isConnected) box.textContent = tr("O índice da semana não respondeu agora.");
     }
   }
 

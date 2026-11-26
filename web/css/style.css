@@ -550,3 +550,16 @@ body.panel-open #lens-area { right: calc(394px + var(--dock-right, 0px)); }
   .yr-total > b { font-size: 30px; }
   .yr-row { padding: 7px 8px; }
 }
+
+/* Language switch (js/i18n.js langSwitchHtml): a segmented control, the current language lit. */
+.lang-switch { display: inline-flex; flex: none; }
+.lang-switch .seg-btn {
+  cursor: pointer; font: 600 12px var(--sans); letter-spacing: .06em; line-height: 18px; padding: 4px 8px;
+  color: var(--ink-dim); background: transparent; border: 1px solid var(--line); border-radius: 0;
+}
+.lang-switch .seg-btn + .seg-btn { border-left: 0; }
+.lang-switch .seg-btn:first-child { border-radius: 4px 0 0 4px; }
+.lang-switch .seg-btn:last-child { border-radius: 0 4px 4px 0; }
+.lang-switch .seg-btn:hover { color: var(--gold-bright); }
+.lang-switch .seg-btn.on { background: var(--gold-bright); border-color: var(--gold-bright); color: #1a1208; }
+.lang-switch .seg-btn:focus-visible { outline: 2px solid var(--gold-bright); outline-offset: 1px; }

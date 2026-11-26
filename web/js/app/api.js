@@ -12,6 +12,7 @@ import { parseHash, formatHash } from "./urlstate.js";
 import { icon } from "../ui/icon.js";
 import { hasIcon } from "../icons.js";
 import { esc } from "../format.js";
+import { tr } from "../i18n.js";
 
 // --- events ------------------------------------------------------------------------------------------------------
 
@@ -434,14 +435,14 @@ export function createMapToggles({ dock, after, area, hash, onChange }) {
     btn.setAttribute("aria-haspopup", "true");
     btn.setAttribute("aria-expanded", "false");
     btn.setAttribute("aria-controls", "map-layers-pop");
-    btn.title = "Camadas do mapa: estradas, ferrovias, portos e mais";
+    btn.title = tr("Camadas do mapa: estradas, ferrovias, portos e mais");
     dock.insertBefore(btn, after && after.parentNode === dock ? after.nextSibling : dock.firstChild);
     pop = document.createElement("div");
     pop.id = "map-layers-pop";
     pop.className = "panel map-layers-pop";
     pop.hidden = true;
     pop.setAttribute("role", "menu");
-    pop.setAttribute("aria-label", "Camadas do mapa");
+    pop.setAttribute("aria-label", tr("Camadas do mapa"));
     (area || document.body).insertBefore(pop, (area || document.body).firstChild);
     btn.onclick = () => (pop.hidden ? open() : close());
     pop.onclick = (e) => {
@@ -475,10 +476,10 @@ export function createMapToggles({ dock, after, area, hash, onChange }) {
     btn.hidden = !list.length;
     const nOn = list.filter(isOn).length;
     btn.classList.toggle("active", nOn > 0);
-    btn.setAttribute("aria-label", `Camadas do mapa (${nOn} de ${list.length} ligadas)`);
-    btn.innerHTML = `${glyph("terrain", 15)}<span>Mapa</span>${nOn ? `<b class="ml-count">${nOn}</b>` : ""}`;
+    btn.setAttribute("aria-label", tr("Camadas do mapa ({0} de {1} ligadas)", nOn, list.length));
+    btn.innerHTML = `${glyph("terrain", 15)}<span>${tr("Mapa")}</span>${nOn ? `<b class="ml-count">${nOn}</b>` : ""}`;
     if (pop.hidden) return;
-    pop.innerHTML = `<div class="ml-head">Camadas do mapa</div>` + list.map((t) => {
+    pop.innerHTML = tr("<div class=\"ml-head\">Camadas do mapa</div>") + list.map((t) => {
       const on = isOn(t);
       return `<button type="button" class="ml-row${on ? " on" : ""}" role="menuitemcheckbox" aria-checked="${on}" data-toggle="${esc(t.id)}"
         ${t.title ? `title="${esc(t.title)}"` : ""}><span class="ml-ic">${glyph(t.icon, 16)}</span><span class="ml-lbl">${esc(t.label)}</span>

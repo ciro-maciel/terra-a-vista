@@ -19,6 +19,7 @@ import { resourceFilterSig, layerActive, layerError, Z as LAYER_Z } from "./rend
 import { installExtensions } from "./ext/index.js";
 import { initShare } from "./app/share.js";
 import { initHelp } from "./app/help.js";
+import { tr, translateData, translateDocument, langSwitchHtml, wireLangSwitch } from "./i18n.js";
 
 const { drawStatic, drawOverlay, OCEAN_BG } = mapRender;
 
@@ -26,7 +27,7 @@ async function loadJSON(name, optional = false) {
   try {
     const r = await fetch(`data/${name}.json`);
     if (!r.ok) throw new Error(`data/${name}.json: HTTP ${r.status}`);
-    return await r.json();
+    return translateData(name, await r.json());
   } catch (err) {
     if (optional) return null;
     throw err;
@@ -530,10 +531,10 @@ async function main() {
     announceEl.textContent = "";
     setTimeout(() => (announceEl.textContent = text), 30);
   };
-  const stateName = (idx) => states?.[idx]?.name || w.raw.states[idx]?.name || "Estado";
+  const stateName = (idx) => states?.[idx]?.name || w.raw.states[idx]?.name || tr("Estado");
 
   function describeCanvas() {
-    const parts = ["Mapa do Brasil em hexágonos", state.lens ? `colorido pela lente ${state.lens.name}` : "mostrando o terreno"];
+    const parts = [tr("Mapa do Brasil em hexágonos"), state.lens ? tr("colorido pela lente {0}", state.lens.name) : tr("mostrando o terreno")];
     if (state.selectedCity) parts.push(`${state.selectedCity.name} selected`);
     else if (state.selectedState != null) parts.push(`${stateName(state.selectedState)} selected`);
     canvas.setAttribute("aria-label", parts.join(", "));
@@ -572,7 +573,7 @@ async function main() {
     state.selectedCity = null;
     state.selectedState = null;
     app.panels.close();
-    if (had) announce("Seleção fechada.");
+    if (had) announce(tr("Seleção fechada."));
     afterSelect();
   }
 
@@ -660,12 +661,15 @@ async function main() {
     if (b) b.innerHTML = html;
     return b;
   };
-  setBtn("btn-share", `${icon("share", "🔗", { size: 15 })}<span class="lbl">Compartilhar</span>`);
+  setBtn("btn-share", `${icon("share", "🔗", { size: 15 })}<span class="lbl">${tr("Compartilhar")}</span>`);
   setBtn("btn-help", icon("help", "?", { size: 15 }));
-  setBtn("btn-pedia", `${icon("pedia", "📖", { size: 16 })}<span class="lbl">Almanaque</span>`);
+  setBtn("btn-pedia", `${icon("pedia", "📖", { size: 16 })}<span class="lbl">${tr("Almanaque")}</span>`);
+  // Language: the last thing in the bar, so the built-in buttons and extensions keep their places.
+  document.querySelector("#topbar .tb-buttons")?.insertAdjacentHTML("beforeend", langSwitchHtml("tb-lang"));
+  wireLangSwitch(document.getElementById("topbar"));
   const searchIc = document.querySelector(".search-ic");
   if (searchIc) searchIc.innerHTML = icon("search", "🔍", { size: 14 });
-  document.querySelector(".search-kbd")?.setAttribute("title", "Aperte / ou Ctrl K para buscar");
+  document.querySelector(".search-kbd")?.setAttribute("title", tr("Aperte / ou Ctrl K para buscar"));
 
   const search = initSearch({
     cities,
@@ -819,7 +823,7 @@ async function main() {
   const resBtn = document.getElementById("btn-res");
   if (resBtn) {
     resBtn.hidden = !w.resources;
-    resBtn.innerHTML = `${icon("resources", "⛏️", { size: 15 })}<span>Recursos</span>`;
+    resBtn.innerHTML = `${icon("resources", "⛏️", { size: 15 })}<span>${tr("Recursos")}</span>`;
     const sync = () => {
       resBtn.classList.toggle("active", state.showResources);
       resBtn.setAttribute("aria-pressed", String(state.showResources));
@@ -838,7 +842,7 @@ async function main() {
       const on = !document.body.classList.contains("minimap-on");
       document.body.classList.toggle("minimap-on", on);
       mmBtn.setAttribute("aria-pressed", String(on));
-      mmBtn.setAttribute("aria-label", on ? "Esconder o minimapa" : "Mostrar o minimapa");
+      mmBtn.setAttribute("aria-label", on ? tr("Esconder o minimapa") : tr("Mostrar o minimapa"));
       minimap.draw();
     };
   }
@@ -1149,7 +1153,7 @@ async function main() {
     return dataLoads.get(name);
   }
   function registerStaticLayer(l) {
-    if (!l || !l.id || typeof l.draw !== "function") throw new Error("registerStaticLayer({id, z, draw(ctx, vp, w, o)})");
+    if (!l || !l.id || typeof l.draw !== "function") throw new Error(tr("registerStaticLayer({id, z, draw(ctx, vp, w, o)})"));
     const k = staticLayers.findIndex((x) => x.id === l.id);
     if (k >= 0) staticLayers.splice(k, 1);
     staticLayers.push(l);
@@ -1278,10 +1282,11 @@ async function main() {
   installExtensions(app);
 }
 
+translateDocument();
 main().catch((err) => {
   console.error(err);
   const el = document.getElementById("loading");
   if (!el) return;
   el.classList.add("error");
-  el.textContent = `Não foi possível carregar os dados do mapa (${err.message}). Rode "uv run python -m pipeline all" e sirva web/ por HTTP.`;
+  el.textContent = tr("Não foi possível carregar os dados do mapa ({0}). Rode \"uv run python -m pipeline all\" e sirva web/ por HTTP.", err.message);
 });

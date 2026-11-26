@@ -1,6 +1,7 @@
 // Shared building blocks for the city and state panels (both render into #city-panel).
 import { compact, dollars, esc, int, money, pct, yieldValue } from "../format.js";
 import { icon, glyph } from "./icon.js";
+import { tr, DEC } from "../i18n.js";
 
 // Industry → a "district" glyph: SVG icons i-<key> from icons.js; these emoji are only the fallback.
 export const DISTRICT_ICON = {
@@ -18,12 +19,12 @@ export function yieldGrid(nation, yields, ranks = null, rankOf = 0) {
     .map((y) => {
       const v = yields?.[y.key];
       const r = ranks?.[y.key];
-      const label = y.key === "gold" ? "PIB" : y.label;
-      return `<div class="yield-tile" title="${esc(y.label)}${y.key === "gold" ? " (PIB)" : ""}: ${esc(y.description || "")}">
+      const label = y.key === "gold" ? tr("PIB") : y.label;
+      return `<div class="yield-tile" title="${esc(y.label)}${y.key === "gold" ? tr(" (PIB)") : ""}: ${esc(y.description || "")}">
         <div class="ico" style="color:${esc(y.color)}">${glyph(y, 20)}</div>
         <div class="val" style="color:${esc(y.color)}">${yieldValue(y, v)}</div>
         <div class="lbl">${esc(label)}</div>
-        ${r ? `<div class="rank" title="Posição entre os ${rankOf} estados do mapa (1 = o maior)">${r}º de ${rankOf}</div>` : ""}</div>`;
+        ${r ? tr("<div class=\"rank\" title=\"Posição entre os {0} estados do mapa (1 = o maior)\">{1}º de {2}</div>", rankOf, r, rankOf) : ""}</div>`;
     })
     .join("");
 }
@@ -43,8 +44,8 @@ export function statRow(ic, fallback, label, v, nv, fmt, higherIsGood) {
 
 export function amenities(o, n) {
   return `
-    ${statRow("unemployment", "😐", "Desocupação", o.unemployment, n.unemployment, (x) => pct(x), false)}
-    ${statRow("l-income", "💵", "Renda média do trabalho", o.median_income, n.median_income, dollars, true)}`;
+    ${statRow("unemployment", "😐", tr("Desocupação"), o.unemployment, n.unemployment, (x) => pct(x), false)}
+    ${statRow("l-income", "💵", tr("Renda média do trabalho"), o.median_income, n.median_income, dollars, true)}`;
 }
 
 // Workforce by industry with location quotients vs. the nation ("specialisation"). limit = max rows (0 = all).
@@ -56,16 +57,16 @@ export function industries(o, nation, limit = 0) {
     .filter(([, v]) => v > 0)
     .sort((a, b) => b[1] - a[1]);
   if (limit) rows = rows.slice(0, limit);
-  if (!rows.length) return `<p class="muted">Sem dados de atividade.</p>`;
+  if (!rows.length) return tr("<p class=\"muted\">Sem dados de atividade.</p>");
   const maxShare = rows[0][1] / total;
   return rows
     .map(([k, v]) => {
       const share = v / total;
       const nShare = (n.jobs?.[k] || 0) / nTotal;
       const lq = nShare > 0 ? share / nShare : 1;
-      const tip = `A parcela dos empregos é ${lq.toFixed(1).replace(".", ",")}× a parcela nacional`;
-      const badge = lq >= 1.3 ? `<span class="lq hi" title="${tip}">×${lq.toFixed(1).replace(".", ",")}</span>`
-        : lq <= 0.6 ? `<span class="lq lo" title="${tip}">×${lq.toFixed(1).replace(".", ",")}</span>` : "";
+      const tip = tr("A parcela dos empregos é {0}× a parcela nacional", lq.toFixed(1).replace(".", DEC));
+      const badge = lq >= 1.3 ? `<span class="lq hi" title="${tip}">×${lq.toFixed(1).replace(".", DEC)}</span>`
+        : lq <= 0.6 ? `<span class="lq lo" title="${tip}">×${lq.toFixed(1).replace(".", DEC)}</span>` : "";
       return `<div class="ind"><span aria-hidden="true">${icon(`i-${k}`, DISTRICT_ICON[k] || "•")}</span>
         <span>${esc(nation.industries?.[k] || k)}${badge}</span><span class="n">${compact(v)} · ${pct(share, 0)}</span>
         <div class="bar"><i style="width:${(share / maxShare) * 100}%;background:${lq >= 1.3 ? "#9fd76a" : "#c9a45c"}"></i></div></div>`;
@@ -75,8 +76,8 @@ export function industries(o, nation, limit = 0) {
 
 export const gdpRow = (o) =>
   o.gdp != null
-    ? `<div class="stat-row"><span class="sl">${icon("y-gold", "💰", { size: 14 })}PIB${o.gdp_year ? ` (${o.gdp_year})` : ""}</span><span><b>${money(o.gdp)}</b>${
-        o.population ? `<span class="cmp">${money(o.gdp / o.population)} por habitante</span>` : ""}</span></div>`
+    ? `<div class="stat-row"><span class="sl">${icon("y-gold", "💰", { size: 14 })}${tr("PIB")}${o.gdp_year ? ` (${o.gdp_year})` : ""}</span><span><b>${money(o.gdp)}</b>${
+        o.population ? tr("<span class=\"cmp\">{0} por habitante</span>", money(o.gdp / o.population)) : ""}</span></div>`
     : "";
 
 // " · ▲ 3.4% since 2021" from growth / growth_years (cities and states), compared with Brazil in the tooltip.
@@ -84,17 +85,17 @@ export const gdpRow = (o) =>
 export function growthSpan(o, n = null) {
   if (!Number.isFinite(o?.growth)) return "";
   const yrs = Array.isArray(o.growth_years) && o.growth_years.length === 2 ? o.growth_years : null;
-  const p = (g) => `${g >= 0 ? "+" : "−"}${Math.abs(g * 100).toFixed(1).replace(".", ",")}%`;
-  const period = yrs ? `de ${yrs[0]} a ${yrs[1]}` : "nos últimos anos";
-  const br = Number.isFinite(n?.growth) ? ` (Brasil ${p(n.growth)})` : "";
-  const tip = `Variação da população ${period}, estimativas do IBGE: ${p(o.growth)}${br}`;
+  const p = (g) => `${g >= 0 ? "+" : "−"}${Math.abs(g * 100).toFixed(1).replace(".", DEC)}%`;
+  const period = yrs ? tr("de {0} a {1}", yrs[0], yrs[1]) : tr("nos últimos anos");
+  const br = Number.isFinite(n?.growth) ? tr(" (Brasil {0})", p(n.growth)) : "";
+  const tip = tr("Variação da população {0}, estimativas do IBGE: {1}{2}", period, p(o.growth), br);
   const cls = o.growth >= 0 ? "good" : "bad";
-  return ` · <span class="growth ${cls}" title="${esc(tip)}">${o.growth >= 0 ? "▲" : "▼"} ${Math.abs(o.growth * 100).toFixed(1).replace(".", ",")}%${
-    yrs ? ` <span class="since">desde ${yrs[0]}</span>` : ""}</span>`;
+  return ` · <span class="growth ${cls}" title="${esc(tip)}">${o.growth >= 0 ? "▲" : "▼"} ${Math.abs(o.growth * 100).toFixed(1).replace(".", DEC)}%${
+    yrs ? ` <span class="since">${tr("desde {0}", yrs[0])}</span>` : ""}</span>`;
 }
 
 export const popLine = (o, extra = "") =>
-  `<div class="cp-pop">${icon("pop", "👥", { size: 16 })} <b>${int(o.population)}</b> habitantes · ${int(o.employed)} empregos formais${extra}</div>`;
+  `<div class="cp-pop">${icon("pop", "👥", { size: 16 })} <b>${int(o.population)}</b> ${tr("habitantes · {0} empregos formais{1}", int(o.employed), extra)}</div>`;
 
 /**
  * Fill and show the panel.
@@ -103,19 +104,19 @@ export const popLine = (o, extra = "") =>
 export function showPanel(spec) {
   const panel = panelEl();
   panel.dataset.kind = spec.kind;
-  panel.setAttribute("aria-label", `${spec.kind === "state" ? "Estado" : "Cidade"}: ${spec.title}`);
+  panel.setAttribute("aria-label", `${spec.kind === "state" ? tr("Estado") : tr("Cidade")}: ${spec.title}`);
   panel.innerHTML = `
     <div class="sheet-grip" aria-hidden="true"></div>
     <div class="cp-head">
       <div class="stripe" style="background:${spec.stripe}"></div>
-      <button class="icon-btn cp-close" aria-label="Fechar o painel (Esc)" title="Fechar (Esc)">${icon("close", "✕", { size: 13 })}</button>
-      <div class="cp-kind">${spec.kind === "state" ? "Estado" : "Cidade"}</div>
+      <button class="icon-btn cp-close" aria-label="${tr("Fechar o painel (Esc)")}" title="${tr("Fechar (Esc)")}">${icon("close", "✕", { size: 13 })}</button>
+      <div class="cp-kind">${spec.kind === "state" ? tr("Estado") : tr("Cidade")}</div>
       <h2 class="cp-name">${spec.titleHtml ?? esc(spec.title)}</h2>
       ${spec.sub ? `<div class="cp-full">${spec.sub}</div>` : ""}
       ${spec.headExtra || ""}
     </div>
     ${spec.sections.filter(Boolean).map((s) => `<section class="cp-section"><h3>${s.title}</h3>${s.html}</section>`).join("")}
-    <div class="cp-foot">${spec.foot || ""} <a href="#" data-pedia>Almanaque ›</a></div>`;
+    <div class="cp-foot">${spec.foot || ""} <a href="#" data-pedia>${tr("Almanaque ›")}</a></div>`;
   panel.hidden = false;
   panel.scrollTop = 0;
   panel.classList.remove("dragging-sheet");
@@ -146,7 +147,7 @@ export function installSheetSwipe(onClose) {
     // Only from the grip/head, or anywhere while the sheet is scrolled to the top.
     const fromHead = e.target.closest(".sheet-grip, .cp-head");
     if (!fromHead && panel.scrollTop > 0) return;
-    if (e.target.closest("button, a, input")) return;
+    if (e.target.closest(tr("button, a, input"))) return;
     start = { y: e.clientY, id: e.pointerId, dy: 0, head: !!fromHead };
   });
   panel.addEventListener("pointermove", (e) => {

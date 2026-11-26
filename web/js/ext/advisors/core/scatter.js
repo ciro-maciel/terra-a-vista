@@ -12,6 +12,7 @@
 //   height = 300, ariaLabel
 //   onHover(point|null), onClick(point), onBrush(Set<key>|null)
 import { esc, fin, clamp, scale, ticks, logTicks, pad, extent, sizeCanvas, onWidth } from "./util.js";
+import { tr, LOCALE } from "../../../i18n.js";
 
 const M = { l: 52, r: 12, t: 10, b: 38 };
 
@@ -55,8 +56,8 @@ export function createScatter(host, opts) {
       r: o.size ? rmin + (rmax - rmin) * Math.sqrt(clamp((fin(p.s) ? p.s : 0) / smax, 0, 1)) : o.radius || 3,
     })).sort((a, b) => b.r - a.r);
     root._count = valid.length;
-    cv.setAttribute("aria-label", o.ariaLabel || `Gráfico de dispersão com ${valid.length} pontos: ${o.y?.label || "y"} contra ${o.x?.label || "x"}`);
-    hint.textContent = o.brush === false ? "" : `${valid.length.toLocaleString("pt-BR")} pontos · arraste para selecionar`;
+    cv.setAttribute("aria-label", o.ariaLabel || tr("Gráfico de dispersão com {0} pontos: {1} contra {2}", valid.length, o.y?.label || "y", o.x?.label || "x"));
+    hint.textContent = o.brush === false ? "" : tr("{0} pontos · arraste para selecionar", valid.length.toLocaleString(LOCALE));
     draw();
   }
 

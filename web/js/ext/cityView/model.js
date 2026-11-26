@@ -1,38 +1,39 @@
+import { tr } from "../../i18n.js";
 // City View data model: everything the city screen and its map layer show, derived from cities.json,
 // nation.json, lenses.json, world.json and resources.json. Pure functions over app.data / app.w (no DOM).
 
 // Industry → short label, district colour (the medallion behind its icon) and icon id (icons.js i-<key>).
 export const INDUSTRY = {
-  agriculture: { short: "Agropecuária", color: "#4f7a2a" },
-  mining: { short: "Extração", color: "#6a5038" },
-  construction: { short: "Construção", color: "#8a5426" },
-  manufacturing: { short: "Indústria", color: "#9a5a22" },
-  wholesale: { short: "Atacado", color: "#7a6420" },
-  retail: { short: "Varejo", color: "#8a6a1e" },
-  transportation: { short: "Logística", color: "#3d5f73" },
-  utilities: { short: "Energia e água", color: "#2a5f86" },
-  information: { short: "Informação", color: "#25557e" },
-  finance: { short: "Finanças", color: "#7a6420" },
-  real_estate: { short: "Imobiliário", color: "#6b4a2f" },
-  professional: { short: "Serviços técnicos", color: "#2b4f8a" },
-  management: { short: "Sedes e consultoria", color: "#4a4a7a" },
-  admin: { short: "Serviços administrativos", color: "#4b5a68" },
-  education: { short: "Educação", color: "#2a3f7a" },
-  health: { short: "Saúde", color: "#7a2f2f" },
-  arts: { short: "Artes", color: "#5b3a7e" },
-  accommodation: { short: "Hotelaria e alimentação", color: "#6e3a5e" },
-  other: { short: "Outros serviços", color: "#4b4b4b" },
-  public_admin: { short: "Governo", color: "#3a5a4a" },
-  government: { short: "Governo", color: "#3a5a4a" },
+  agriculture: { short: tr("Agropecuária"), color: "#4f7a2a" },
+  mining: { short: tr("Extração"), color: "#6a5038" },
+  construction: { short: tr("Construção"), color: "#8a5426" },
+  manufacturing: { short: tr("Indústria"), color: "#9a5a22" },
+  wholesale: { short: tr("Atacado"), color: "#7a6420" },
+  retail: { short: tr("Varejo"), color: "#8a6a1e" },
+  transportation: { short: tr("Logística"), color: "#3d5f73" },
+  utilities: { short: tr("Energia e água"), color: "#2a5f86" },
+  information: { short: tr("Informação"), color: "#25557e" },
+  finance: { short: tr("Finanças"), color: "#7a6420" },
+  real_estate: { short: tr("Imobiliário"), color: "#6b4a2f" },
+  professional: { short: tr("Serviços técnicos"), color: "#2b4f8a" },
+  management: { short: tr("Sedes e consultoria"), color: "#4a4a7a" },
+  admin: { short: tr("Serviços administrativos"), color: "#4b5a68" },
+  education: { short: tr("Educação"), color: "#2a3f7a" },
+  health: { short: tr("Saúde"), color: "#7a2f2f" },
+  arts: { short: tr("Artes"), color: "#5b3a7e" },
+  accommodation: { short: tr("Hotelaria e alimentação"), color: "#6e3a5e" },
+  other: { short: tr("Outros serviços"), color: "#4b4b4b" },
+  public_admin: { short: tr("Governo"), color: "#3a5a4a" },
+  government: { short: tr("Governo"), color: "#3a5a4a" },
 };
 export const industryIcon = (k) => `i-${k === "government" ? "public_admin" : k}`;
 
 // Land-use groups shown as a hex's "tile yield" (world.json pct keys → group). Cover ids give the map colour.
 export const LAND = [
-  { key: "built", label: "Área construída", icon: "l-developed", cover: 9, keys: ["developed"] },
-  { key: "farm", label: "Lavoura e pasto", icon: "l-farmland", cover: 7, keys: ["crop", "pasture"] },
-  { key: "forest", label: "Floresta", icon: "l-forest", cover: 3, keys: ["forest"] },
-  { key: "open", label: "Campo aberto", icon: null, cover: 4, keys: ["grass", "shrub", "wetland"] },
+  { key: "built", label: tr("Área construída"), icon: "l-developed", cover: 9, keys: ["developed"] },
+  { key: "farm", label: tr("Lavoura e pasto"), icon: "l-farmland", cover: 7, keys: ["crop", "pasture"] },
+  { key: "forest", label: tr("Floresta"), icon: "l-forest", cover: 3, keys: ["forest"] },
+  { key: "open", label: tr("Campo aberto"), icon: null, cover: 4, keys: ["grass", "shrub", "wetland"] },
 ];
 
 const sum = (o) => Object.values(o || {}).reduce((a, v) => a + (Number.isFinite(v) ? v : 0), 0);
@@ -73,7 +74,7 @@ export function gdpIndustries(city, nation) {
       const share = value / total, natShare = (ng[key] || 0) / nTotal;
       return {
         key, value, share, natShare, lq: natShare > 0 ? share / natShare : null, estimated: est.has(key),
-        label: key === "government" ? "Governo" : nation.industries?.[key] || key,
+        label: key === "government" ? tr("Governo") : nation.industries?.[key] || key,
         short: INDUSTRY[key]?.short || key, color: INDUSTRY[key]?.color || "#3a4a5e", icon: industryIcon(key),
       };
     })
@@ -85,7 +86,7 @@ export function gdpIndustries(city, nation) {
     const missing = Object.entries(g).filter(([, v]) => v == null).map(([k]) => k);
     rows.push({
       key: "undisclosed", value: und, share: und / total, natShare: 0, lq: null, undisclosed: true, missing,
-      label: "Não divulgado", short: "Não divulgado", color: "#4a5260", icon: "lock",
+      label: tr("Não divulgado"), short: tr("Não divulgado"), color: "#4a5260", icon: "lock",
     });
   }
   return rows;

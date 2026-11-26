@@ -1,15 +1,16 @@
 import { esc } from "../format.js";
 import { icon, glyph } from "./icon.js";
 import { statDefs, fmtStat } from "./yieldReport.js";
+import { tr } from "../i18n.js";
 
 // The national stats are buttons: each opens its report (ui/yieldReport.js, wired in main.js).
 export function renderTopbar(nation) {
   const items = statDefs(nation).map((d) => {
     const ic = d.yield ? glyph(d.yield, 17) : icon(d.iconId, d.emoji, { size: 17 });
     const value = fmtStat(d, d.value);
-    const tip = `${d.name}: ${d.description} Clique para ver o relatório.`;
+    const tip = tr("{0}: {1} Clique para ver o relatório.", d.name, d.description);
     return `<button type="button" class="yield" data-report="${esc(d.key)}" aria-expanded="false" aria-haspopup="dialog" aria-controls="yield-report"
-      title="${esc(tip)}" aria-label="${esc(d.name)}: ${esc(value)}. Abrir o relatório">
+      title="${esc(tip)}" aria-label="${tr("{0}: {1}. Abrir o relatório", esc(d.name), esc(value))}">
       <span class="ico" style="color:${esc(d.color)}">${ic}</span><span style="color:${esc(d.color)}">${esc(value)}</span><span class="caret" aria-hidden="true"></span></button>`;
   });
   const el = document.getElementById("yields");
@@ -20,7 +21,7 @@ export function renderTopbar(nation) {
   if (typeof ResizeObserver === "function") new ResizeObserver(check).observe(el);
   check();
   watchBarOverflow(document.getElementById("topbar"));
-  document.getElementById("turn").innerHTML = `Ano <b>${esc(nation.year ?? "")}</b> · ${esc(nation.vintage || "")}`;
+  document.getElementById("turn").innerHTML = tr("Ano <b>{0}</b> · {1}", esc(nation.year ?? ""), esc(nation.vintage || ""));
 }
 
 // Phones scroll the whole bar sideways. Mark which ends have more to show (.more-l / .more-r) so CSS can fade

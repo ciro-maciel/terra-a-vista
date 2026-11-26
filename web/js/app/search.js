@@ -1,6 +1,7 @@
 // Top-bar search over cities and states: prefix matches first, then word-prefix, then substring; ties by population.
 import { esc, popShort } from "../format.js";
 import { icon } from "../ui/icon.js";
+import { tr } from "../i18n.js";
 
 const norm = (s) => String(s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 const MAX = 8;
@@ -14,7 +15,7 @@ export function initSearch(opts) {
   if (!input || !box) return { focus() {}, close() {}, get isOpen() { return false; } };
   // The full placeholder only fits the wide search box; narrower ones say just "Search".
   const narrow = matchMedia("(max-width: 1120px)");
-  const setPlaceholder = () => (input.placeholder = narrow.matches ? "Buscar" : "Buscar cidades e estados");
+  const setPlaceholder = () => (input.placeholder = narrow.matches ? tr("Buscar") : tr("Buscar cidades e estados"));
   setPlaceholder();
   narrow.addEventListener?.("change", setPlaceholder);
 
@@ -26,7 +27,7 @@ export function initSearch(opts) {
   (opts.states || []).forEach((s, index) => {
     if (!s) return;
     entries.push({ kind: "state", index, name: s.name, n: norm(s.name), full: norm(s.abbr), abbr: (s.abbr || "").toLowerCase(),
-      pop: s.population || 0, sub: "Estado", label: s.name });
+      pop: s.population || 0, sub: tr("Estado"), label: s.name });
   });
 
   let results = [];
@@ -64,7 +65,7 @@ export function initSearch(opts) {
 
   function render() {
     if (!results.length) {
-      box.innerHTML = input.value.trim() ? `<div class="sr-empty">Nenhuma cidade ou estado com “${esc(input.value.trim())}”</div>` : "";
+      box.innerHTML = input.value.trim() ? tr("<div class=\"sr-empty\">Nenhuma cidade ou estado com “{0}”</div>", esc(input.value.trim())) : "";
       box.hidden = !input.value.trim();
       input.setAttribute("aria-expanded", String(!box.hidden));
       input.removeAttribute("aria-activedescendant");

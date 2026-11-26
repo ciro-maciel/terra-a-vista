@@ -12,26 +12,27 @@ import { emblem } from "./core/emblems.js";
 import { frameNation } from "./core/frame.js";
 import { esc, el } from "./core/util.js";
 import { icon } from "../../ui/icon.js";
+import { tr } from "../../i18n.js";
 
 export const ADVISORS = [
-  { id: "economy", name: "Economia", role: "Tesoureiro", color: "#c9a43a", dark: "#3a2c08", blurb: "Quem produz o quê: o PIB por setor e as cidades que lideram.", load: () => import("./views/economy.js") },
-  { id: "people", name: "Pessoas", role: "Guardião do Censo", color: "#c46a4f", dark: "#3a140c", blurb: "Onde o povo mora, para onde está indo e quão velho está.", load: () => import("./views/people.js") },
-  { id: "prosperity", name: "Prosperidade", role: "Guardião do lar", color: "#3f9c82", dark: "#082a22", blurb: "A renda do trabalho, quem está sem trabalho e quem tem esgoto e água.", load: () => import("./views/prosperity.js") },
-  { id: "health", name: "Saúde", role: "Médico da corte", color: "#c2463d", dark: "#3a0e0c", blurb: "Quantos bebês morrem antes de um ano, e onde há médicos e leitos.", load: () => import("./views/health.js") },
-  { id: "knowledge", name: "Conhecimento", role: "Sábio da corte", color: "#4a86d6", dark: "#0a1c3a", blurb: "Quem lê, quem tem diploma e onde estão os empregos de Ciência.", load: () => import("./views/knowledge.js") },
-  { id: "land", name: "Terra", role: "Agrimensor-mor", color: "#6e9a3c", dark: "#18280a", blurb: "Floresta, lavoura, campo e cidade: o que cobre o país.", load: () => import("./views/land.js") },
-  { id: "energy", name: "Energia e recursos", role: "Ministro das minas", color: "#d98a2b", dark: "#3a1f08", blurb: "De onde vem a energia, o que sai do chão e o que se planta.", load: () => import("./views/energy.js") },
-  { id: "commerce", name: "Comércio", role: "Mestre do comércio", color: "#2fa4b8", dark: "#062630", blurb: "As rotas aéreas mais cheias e os portos e aeroportos mais movimentados.", load: () => import("./views/commerce.js") },
-  { id: "culture", name: "Cultura", role: "Guardião das maravilhas", color: "#c25b9a", dark: "#2e0c22", blurb: "O Patrimônio Mundial e as cidades que vivem da cultura.", load: () => import("./views/culture.js") },
-  { id: "explorer", name: "Explorador", role: "Cartógrafo", color: "#9a7bc9", dark: "#1e1236", blurb: "Corte e cruze qualquer número: qualquer nível, quaisquer colunas, qualquer gráfico.", load: () => import("./views/explorer.js") },
+  { id: "economy", name: tr("Economia"), role: tr("Tesoureiro"), color: "#c9a43a", dark: "#3a2c08", blurb: tr("Quem produz o quê: o PIB por setor e as cidades que lideram."), load: () => import("./views/economy.js") },
+  { id: "people", name: tr("Pessoas"), role: tr("Guardião do Censo"), color: "#c46a4f", dark: "#3a140c", blurb: tr("Onde o povo mora, para onde está indo e quão velho está."), load: () => import("./views/people.js") },
+  { id: "prosperity", name: tr("Prosperidade"), role: tr("Guardião do lar"), color: "#3f9c82", dark: "#082a22", blurb: tr("A renda do trabalho, quem está sem trabalho e quem tem esgoto e água."), load: () => import("./views/prosperity.js") },
+  { id: "health", name: tr("Saúde"), role: tr("Médico da corte"), color: "#c2463d", dark: "#3a0e0c", blurb: tr("Quantos bebês morrem antes de um ano, e onde há médicos e leitos."), load: () => import("./views/health.js") },
+  { id: "knowledge", name: tr("Conhecimento"), role: tr("Sábio da corte"), color: "#4a86d6", dark: "#0a1c3a", blurb: tr("Quem lê, quem tem diploma e onde estão os empregos de Ciência."), load: () => import("./views/knowledge.js") },
+  { id: "land", name: tr("Terra"), role: "Agrimensor-mor", color: "#6e9a3c", dark: "#18280a", blurb: tr("Floresta, lavoura, campo e cidade: o que cobre o país."), load: () => import("./views/land.js") },
+  { id: "energy", name: tr("Energia e recursos"), role: tr("Ministro das minas"), color: "#d98a2b", dark: "#3a1f08", blurb: tr("De onde vem a energia, o que sai do chão e o que se planta."), load: () => import("./views/energy.js") },
+  { id: "commerce", name: tr("Comércio"), role: tr("Mestre do comércio"), color: "#2fa4b8", dark: "#062630", blurb: tr("As rotas aéreas mais cheias e os portos e aeroportos mais movimentados."), load: () => import("./views/commerce.js") },
+  { id: "culture", name: tr("Cultura"), role: tr("Guardião das maravilhas"), color: "#c25b9a", dark: "#2e0c22", blurb: tr("O Patrimônio Mundial e as cidades que vivem da cultura."), load: () => import("./views/culture.js") },
+  { id: "explorer", name: tr("Explorador"), role: tr("Cartógrafo"), color: "#9a7bc9", dark: "#1e1236", blurb: tr("Corte e cruze qualquer número: qualquer nível, quaisquer colunas, qualquer gráfico."), load: () => import("./views/explorer.js") },
 ];
 const byId = new Map(ADVISORS.map((a) => [a.id, a]));
 // The council picker groups its advisors (any advisor not listed here is added to the last group).
 const COUNCIL = (() => {
   const g = [
-    { label: "Riqueza e trabalho", ids: ["economy", "prosperity", "commerce", "energy"] },
-    { label: "Povo e terra", ids: ["people", "health", "knowledge", "culture", "land"] },
-    { label: "As suas perguntas", ids: ["explorer"] },
+    { label: tr("Riqueza e trabalho"), ids: ["economy", "prosperity", "commerce", "energy"] },
+    { label: tr("Povo e terra"), ids: ["people", "health", "knowledge", "culture", "land"] },
+    { label: tr("As suas perguntas"), ids: ["explorer"] },
   ];
   const listed = new Set(g.flatMap((x) => x.ids));
   g[g.length - 1].ids.push(...ADVISORS.filter((a) => !listed.has(a.id)).map((a) => a.id));
@@ -68,18 +69,18 @@ export function install(app) {
 
   // --- top-bar button ---------------------------------------------------------------------------------------------
   const btn = app.ui.addTopButton({
-    id: "btn-advisors", icon: "g-people", label: "Conselheiros", title: "Conselheiros: explore os dados por trás do mapa",
+    id: "btn-advisors", icon: "g-people", label: tr("Conselheiros"), title: tr("Conselheiros: explore os dados por trás do mapa"),
     onClick: () => (app.mode === "advisor" ? app.setMode(null) : app.setMode("advisor", { id: lastId })),
   });
   if (btn) {
-    btn.innerHTML = `<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.5 3 7v2h18V7z" fill="currentColor"/><path d="M5 10.5h2.6v7H5zM10.7 10.5h2.6v7h-2.6zM16.4 10.5H19v7h-2.6zM3.5 19h17v2.5h-17z" fill="currentColor"/></svg><span class="lbl">Conselheiros</span>`;
+    btn.innerHTML = `<svg class="icon" width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 2.5 3 7v2h18V7z" fill="currentColor"/><path d="M5 10.5h2.6v7H5zM10.7 10.5h2.6v7h-2.6zM16.4 10.5H19v7h-2.6zM3.5 19h17v2.5h-17z" fill="currentColor"/></svg><span class="lbl">${tr("Conselheiros")}</span>`;
     btn.setAttribute("aria-pressed", "false");
   }
   app.on("mode", ({ name }) => btn?.setAttribute("aria-pressed", String(name === "advisor")));
 
   // --- dock shell -------------------------------------------------------------------------------------------------
   function shell() {
-    dock = app.ui.dock("left", { width: dockW(), label: "Conselheiros" });
+    dock = app.ui.dock("left", { width: dockW(), label: tr("Conselheiros") });
     if (dock.querySelector(".adv-root")) return dock.querySelector(".adv-root");
     dock.innerHTML = "";
     dock.classList.add("adv-dock");
@@ -87,9 +88,9 @@ export function install(app) {
     root.innerHTML = `
       <div class="adv-grip" aria-hidden="true"></div>
       <header class="adv-head">
-        <button type="button" class="adv-council-btn" data-adv="council" title="Todos os conselheiros">${icon("g-people", "", { size: 14 })}<span>Conselho</span></button>
-        <nav class="adv-tabs" role="tablist" aria-label="Conselheiros">${ADVISORS.map((a) => `<button type="button" role="tab" data-adv="${a.id}" aria-selected="false" title="${esc(`${a.name}: ${a.role}`)}" style="--adv:${a.color}">${emblem(a, 30)}<span class="sr-only">${esc(a.name)}</span></button>`).join("")}</nav>
-        <button type="button" class="icon-btn adv-close" aria-label="Fechar os conselheiros (Esc)" title="Fechar (Esc)">${icon("close", "✕", { size: 12 })}</button>
+        <button type="button" class="adv-council-btn" data-adv="council" title="${tr("Todos os conselheiros")}">${icon("g-people", "", { size: 14 })}<span>${tr("Conselho")}</span></button>
+        <nav class="adv-tabs" role="tablist" aria-label="${tr("Conselheiros")}">${ADVISORS.map((a) => `<button type="button" role="tab" data-adv="${a.id}" aria-selected="false" title="${esc(`${a.name}: ${a.role}`)}" style="--adv:${a.color}">${emblem(a, 30)}<span class="sr-only">${esc(a.name)}</span></button>`).join("")}</nav>
+        <button type="button" class="icon-btn adv-close" aria-label="${tr("Fechar os conselheiros (Esc)")}" title="${tr("Fechar (Esc)")}">${icon("close", "✕", { size: 12 })}</button>
       </header>
       <div class="adv-main" tabindex="-1"></div>`;
     dock.appendChild(root);
@@ -163,13 +164,13 @@ export function install(app) {
       main.querySelectorAll(".adv-card").forEach((c) => c.addEventListener("click", () => switchTo(c.dataset.adv)));
       return;
     }
-    main.innerHTML = `${titleHtml(adv)}<div class="adv-body"><div class="adv-loading">O ${esc(adv.role.toLowerCase())} está juntando os números…</div></div>`;
+    main.innerHTML = tr("{0}<div class=\"adv-body\"><div class=\"adv-loading\">O {1} está juntando os números…</div></div>", titleHtml(adv), esc(adv.role.toLowerCase()));
     let mod;
     try {
       [mod] = await Promise.all([adv.load(), ensureData()]);
     } catch (err) {
       console.error(err);
-      if (my === token) main.querySelector(".adv-body").innerHTML = `<p class="adv-empty pad">Este conselheiro não carregou (${esc(err.message || err)}).</p>`;
+      if (my === token) main.querySelector(".adv-body").innerHTML = tr("<p class=\"adv-empty pad\">Este conselheiro não carregou ({0}).</p>", esc(err.message || err));
       return;
     }
     if (my !== token || app.mode !== "advisor") return;
@@ -217,7 +218,7 @@ export function install(app) {
       a.api = (await mod.mount(ctx)) || {};
     } catch (err) {
       console.error(`advisor "${adv.id}" failed`, err);
-      body.insertAdjacentHTML("beforeend", `<p class="adv-empty pad">Algo deu errado ao desenhar este conselheiro.</p>`);
+      body.insertAdjacentHTML("beforeend", tr("<p class=\"adv-empty pad\">Algo deu errado ao desenhar este conselheiro.</p>"));
       a.api = {};
     }
     loading?.remove();
@@ -243,11 +244,8 @@ export function install(app) {
   }
 
   function councilHtml() {
-    return `<div class="adv-title council"><div class="adv-titles"><div class="adv-kind">O seu conselho</div><h2>Conselheiros</h2>
-      <p>Cada conselheiro abre um painel sobre uma parte do Brasil de verdade. Passe o mouse em qualquer coisa para vê-la no mapa; passe o mouse no mapa para achá-la nos gráficos; clique para descer ao detalhe.</p></div></div>
-      ${COUNCIL.map((g) => `<h4 class="adv-council-h">${esc(g.label)}</h4><div class="adv-council">${g.ids.map((id) => byId.get(id)).filter(Boolean).map((a) => `<button type="button" class="adv-card" data-adv="${a.id}" style="--adv:${a.color}">
-        ${emblem(a, 48)}<span class="t"><span class="r">${esc(a.role)}</span><b>${esc(a.name)}</b><span class="d">${esc(a.blurb)}</span></span></button>`).join("")}</div>`).join("")}
-      <p class="adv-note pad">Todos os números são dados públicos: Censo 2022, estimativas de população, PIB dos Municípios e Cadastro Central de Empresas do IBGE, usinas da ANEEL, petróleo e gás da ANP, minas da ANM, lavouras e rebanhos do IBGE, cobertura do solo do ESA WorldCover, portos da ANTAQ, aeroportos e rotas da ANAC e o Patrimônio Mundial da UNESCO. Cada painel lista as suas fontes e ressalvas no fim.</p>`;
+    return tr("<div class=\"adv-title council\"><div class=\"adv-titles\"><div class=\"adv-kind\">O seu conselho</div><h2>Conselheiros</h2>\n      <p>Cada conselheiro abre um painel sobre uma parte do Brasil de verdade. Passe o mouse em qualquer coisa para vê-la no mapa; passe o mouse no mapa para achá-la nos gráficos; clique para descer ao detalhe.</p></div></div>\n      {0}\n      <p class=\"adv-note pad\">Todos os números são dados públicos: Censo 2022, estimativas de população, PIB dos Municípios e Cadastro Central de Empresas do IBGE, usinas da ANEEL, petróleo e gás da ANP, minas da ANM, lavouras e rebanhos do IBGE, cobertura do solo do ESA WorldCover, portos da ANTAQ, aeroportos e rotas da ANAC e o Patrimônio Mundial da UNESCO. Cada painel lista as suas fontes e ressalvas no fim.</p>", COUNCIL.map((g) => `<h4 class="adv-council-h">${esc(g.label)}</h4><div class="adv-council">${g.ids.map((id) => byId.get(id)).filter(Boolean).map((a) => `<button type="button" class="adv-card" data-adv="${a.id}" style="--adv:${a.color}">
+        ${emblem(a, 48)}<span class="t"><span class="r">${esc(a.role)}</span><b>${esc(a.name)}</b><span class="d">${esc(a.blurb)}</span></span></button>`).join("")}</div>`).join(""));
   }
 
   // --- map → dashboard --------------------------------------------------------------------------------------------
