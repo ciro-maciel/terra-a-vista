@@ -26,6 +26,8 @@ o chão é o relevo e a cobertura do solo de verdade. Cada número leva a uma fo
 - **13 lentes** do Censo 2022 e da cobertura do solo: densidade, idade mediana, envelhecimento, renda do trabalho, PIB
   por habitante, desocupação, alfabetização, ensino superior, esgoto, água, floresta, lavoura, área construída.
 - **26 maravilhas**: todos os sítios brasileiros do Patrimônio Mundial da UNESCO.
+- **Áreas protegidas** (menu Mapa): terras indígenas (Funai) e unidades de conservação (cadastro nacional), pelos
+  hexágonos que cobrem, com a pergunta "quanto daqui é área protegida?" em cada painel.
 - **10 conselheiros**: painéis ao lado do mapa (Economia com o PIB por setor, Pessoas, Prosperidade, Saúde, Conhecimento,
   Terra, Energia e recursos, Comércio, Cultura e o Explorador), ligados ao mapa nos dois sentidos. O Comércio mostra o
   que o Brasil e cada cidade exportam, para onde e o quê (Comex Stat 2025), com setas saindo da cidade na direção de

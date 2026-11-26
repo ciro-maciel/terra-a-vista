@@ -7,6 +7,7 @@
 //   city type  → the activities whose share of formal jobs is far above Brazil's
 //   each timeline series theme (series_<id>.json) → its measures in the first and the last year, against Brazil
 //   exports    → the buyers and the products (exports.json), against Brazil
+//   protected  → how much is indigenous land or a conservation unit, and the biggest areas (protected.json)
 // Each answer names its source; a number the data cannot take apart says so instead of guessing.
 import { esc, int, money, pct, dec } from "../../format.js";
 
@@ -80,6 +81,9 @@ export function install(app) {
     app.loadData("exports").then((x) => {
       const b = x && (target.kind === "city" ? x.cities[target.city.id] : x.states[target.st.abbr]);
       if (b && sec.isConnected) add({ title: `Para onde vai o que ${target.kind === "city" ? "a cidade" : "o estado"} exporta?`, series: null, answer: () => whyExports(target, x, b) });
+    }).catch(() => {});
+    app.loadData("protected").then((x) => {
+      if (x && sec.isConnected) add({ title: `Quanto ${target.kind === "city" ? "da cidade" : "do estado"} é área protegida?`, series: null, answer: () => whyProtected(target, x) });
     }).catch(() => {});
     // One question per timeline series theme, once its file is in (it loads in the background, a few hundred kB).
     for (const th of app.timeline?.themes || []) {
@@ -264,6 +268,28 @@ export function install(app) {
     const lead = b.countries[0];
     if (lead && brC.get(lead[0]) && lead[1] / b.fob > 1.5 * brC.get(lead[0])) html += `<p>${esc(lead[0])} pesa aqui ${dec((lead[1] / b.fob) / brC.get(lead[0]), 1)} ${(lead[1] / b.fob) / brC.get(lead[0]) >= 2 ? "vezes" : "vez"} o que pesa nas vendas do Brasil.</p>`;
     return html + `<p class="src">${esc(x.rule)}</p>`;
+  }
+
+  function whyProtected(t, x) {
+    const owner = app.w.raw.owner;
+    const cells = t.kind === "city" ? new Set(t.city.footprint?.length ? t.city.footprint : [t.city.cell]) : null;
+    const st = t.kind === "state" ? app.data.states.indexOf(t.st) : -1;
+    const inside = (c) => (cells ? cells.has(c) : owner[c] === st);
+    let land = 0;
+    if (cells) land = cells.size; else for (let c = 0; c < owner.length; c++) if (owner[c] === st) land++;
+    if (!land) return `<p>Sem hexágonos para contar.</p>`;
+    const any = new Set();
+    const rows = x.kinds.map((k) => {
+      const n = (x.cells[k.id] || []).filter(inside);
+      n.forEach((c) => any.add(c));
+      return { k, n: n.length };
+    });
+    let html = `<p>Cerca de <b>${pct(any.size / land, 0)}</b> ${t.kind === "city" ? "da cidade" : "do estado"} é área protegida, contando os hexágonos que ela cobre em mais da metade (Brasil: ${pct(x.nation.any / x.nation.land, 0)}).</p>`;
+    html += `<table>${rows.map((r) => `<tr><td><i class="bar" style="display:inline-block;width:9px;height:9px;margin-right:5px;background:${r.k.color}"></i>${esc(r.k.name)}</td><td class="n">${pct(r.n / land, 0)}</td><td class="n m">Brasil ${pct((x.nation[r.k.id] || 0) / x.nation.land, 0)}</td></tr>`).join("")}</table>`;
+    const touching = x.areas.filter((a) => a.cells.some(inside)).sort((a, b) => (b.ha || 0) - (a.ha || 0)).slice(0, 6);
+    const ha = (v) => (v >= 1e6 ? `${dec(v / 1e6, 1)} mi ha` : v >= 1e3 ? `${int(v / 1e3)} mil ha` : `${int(v)} ha`);
+    if (touching.length) html += `<p>As maiores:</p><table>${touching.map((a) => `<tr><td>${esc(a.n)}<br><span class="src">${esc((a.s || "").replace(/,(?=\S)/g, ", "))}</span></td><td class="n">${a.ha ? ha(a.ha) : "–"}</td></tr>`).join("")}</table>`;
+    return html + `<p class="src">${esc(x.rule)} ${esc(x.kinds.map((k) => k.rule).join(" "))} Ligue a camada no menu Mapa, em Áreas protegidas.</p>`;
   }
 
   function whyType(t, { districts: d }) {

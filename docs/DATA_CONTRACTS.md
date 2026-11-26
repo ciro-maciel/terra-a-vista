@@ -772,6 +772,20 @@ A city's value in a Census year sums its member municipalities that existed that
 later was counted in the one it split from); `null` when the municipality that names the city did not exist yet.
 GDP follows the same rule and uses Brazil's GDP deflator for every municipality.
 
+### protected.json (lazy)
+
+Built by `pipeline/build/protected.py` from `protected_areas` (Funai indigenous lands and CNUC conservation units).
+
+```js
+{
+  version: 1, vintage, sources: ["protected_areas"], rule: "…",
+  kinds: [{id: "ti" | "pi" | "us", name, color, rule}],
+  cells: {ti: [cell], pi: [cell], us: [cell]},   // hexes the kind's areas cover in at least half of 19 sample points
+  areas: [{k, n, s, ha, x, y, cells}],          // every area; cells = hexes it touches (3+ points), else its centre's
+  states: {abbr: {land, ti, pi, us, any}}, nation: {land, ti, pi, us, any},   // counts of land hexes
+}
+```
+
 ### exports.json (lazy)
 
 Built by `pipeline/build/exports.py` from `comex_stat` (the Comex Stat API, exports by municipality × country and

@@ -26,6 +26,8 @@ relief and land cover. Every number traces back to a public source, listed in th
 - **13 lenses** from the 2022 Census and land cover: density, median age, ageing, earnings, GDP per person,
   unemployment, literacy, degrees, sewer, water, forest, farmland, built-up.
 - **26 wonders**: every Brazilian site on UNESCO's World Heritage List.
+- **Protected areas** (Map menu): indigenous lands (Funai) and conservation units (national register), by the hexes
+  they cover, with a "how much of here is protected?" question in every panel.
 - **10 advisors**: dashboards beside the map (Economy with GDP by sector, People, Prosperity, Health, Knowledge, Land,
   Energy and resources, Commerce, Culture and the Explorer), linked to the map both ways. Commerce shows what Brazil
   and each city export, where to and what (Comex Stat 2025), with arrows leaving the city towards each buyer.
