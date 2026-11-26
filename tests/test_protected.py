@@ -18,5 +18,11 @@ class Kinds(unittest.TestCase):
         self.assertEqual(kind_of("uc", {"grupo": "Uso Sustentável"}), "us")
 
 
+class Names(unittest.TestCase):
+    def test_prepositions_stay_lower_case(self):
+        from pipeline.build.protected import title_pt
+        self.assertEqual(title_pt("PARQUE NACIONAL DA SERRA DO CIPÓ"), "Parque Nacional da Serra do Cipó")
+
+
 if __name__ == "__main__":
     unittest.main()

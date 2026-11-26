@@ -15,6 +15,7 @@ from pathlib import Path
 from ..core.geo import MapProjection, Shape, geojson_rings
 from ..core.hexgrid import HexGrid
 from ..core.store import load_interim, write_web
+from .cities import nearest_land
 
 REQUIRES = ["protected_areas", "_world", "ibge_boundaries"]
 PRODUCES = ["protected.json"]
@@ -39,6 +40,15 @@ def sample_offsets(radius: float) -> list[tuple[float, float]]:
         a = math.pi / 6 * k
         pts.append((0.82 * radius * math.cos(a), 0.82 * radius * math.sin(a)))
     return pts
+
+
+SMALL = {"de", "da", "do", "das", "dos", "e", "a", "o", "em", "na", "no"}
+
+
+def title_pt(name: str) -> str:
+    """'PARQUE NACIONAL DA SERRA DO CIPÓ' → 'Parque Nacional da Serra do Cipó' (prepositions stay lower case)."""
+    words = str(name or "").lower().split()
+    return " ".join(w if (k and w in SMALL) else w[:1].upper() + w[1:] for k, w in enumerate(words))
 
 
 def kind_of(layer: str, props: dict) -> str:
@@ -85,14 +95,18 @@ def build() -> None:
                         cells.append(i)
             mx, my = (x0 + x1) / 2, (y0 + y1) / 2
             if not cells:
+                # small, or at sea: the centre's hex, else the nearest land hex within ~2 hexes (a marine park off
+                # the coast); farther out (Fernando de Noronha, the ocean islands) it has no hex
                 c = grid.cell_at(mx, my)
+                if c >= 0 and owner[c] < 0:
+                    c = nearest_land(grid, owner, c, mx, my, -1, max_rings=2)
                 if c >= 0 and owner[c] >= 0:
                     cells = [c]
             if layer == "ti":
                 name, sub = p.get("terrai_nome"), " · ".join(x for x in [p.get("etnia_nome"), p.get("fase_ti")] if x)
                 ha = p.get("superficie_perimetro_ha")
             else:
-                name, sub = str(p.get("nome_uc") or "").title(), " · ".join(x for x in [p.get("categoria"), p.get("esfera")] if x)
+                name, sub = title_pt(p.get("nome_uc")), " · ".join(x for x in [p.get("categoria"), p.get("esfera")] if x)
                 ha = float(p["ha_total"]) if str(p.get("ha_total") or "").replace(".", "", 1).isdigit() else None
             areas.append({"k": k, "n": name, "s": sub, "ha": round(ha) if ha else None, "x": round(mx, 1), "y": round(my, 1),
                           "cells": cells})
@@ -135,6 +149,7 @@ def check(web_dir) -> list[tuple[str, str]]:
         return [("NOTE", "protected.json: missing (optional, skipped)")]
     d = json.loads(p.read_text())
     lost = sum(1 for a in d["areas"] if not a["cells"])
-    if lost > 0.05 * len(d["areas"]):
+    if lost > 0.02 * len(d["areas"]):
         return [("FAIL", f"protected.json: {lost} of {len(d['areas'])} areas fall in no hex")]
-    return [("PASS", f"protected.json: {len(d['areas'])} areas, {d['nation']['any']} of {d['nation']['land']} land hexes covered")]
+    return [("PASS", f"protected.json: {len(d['areas'])} areas ({lost} far at sea, no hex), "
+                     f"{d['nation']['any']} of {d['nation']['land']} land hexes covered")]
