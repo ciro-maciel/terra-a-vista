@@ -20,6 +20,7 @@ const THEMES = [
   { id: "farm", label: "Lavoura", file: "series_farm", icon: "l-farmland" },
   { id: "health", label: "Saúde", file: "series_health", icon: "l-age" },
   { id: "school", label: "Escola", file: "series_school", icon: "l-degrees" },
+  { id: "net", label: "Conexão", file: "series_net", icon: "l-developed" },
 ];
 const nf = (d) => new Intl.NumberFormat("pt-BR", { maximumFractionDigits: d, minimumFractionDigits: d });
 const rate = (a, b, years) => (a > 0 && b > 0 && years > 0 ? (b / a) ** (1 / years) - 1 : null);
@@ -226,12 +227,15 @@ export function install(app) {
 
   // The municipalities that changed the most: since the first year when every year has today's borders, else since
   // the year before (a municipality that later split would otherwise look like it shrank).
-  const baseOf = (d, i) => (d.fixed_borders === false ? i - 1 : 0);
+  // the first year this measure has a national value (5G coverage starts in 2022, not in 2019)
+  const firstOf = (d, m) => Math.max(0, (d.nation[m.id] || []).findIndex((v) => v != null));
+  const baseOf = (d, i, m) => (d.fixed_borders === false ? i - 1 : firstOf(d, m));
   function movers(m, i) {
     const d = files.get(theme);
     let up = null, down = null;
     const rows = d.munis[m.id] || [];
-    const j = baseOf(d, i);
+    const j = baseOf(d, i, m);
+    if (j >= i) return {};
     for (const k of d.movers || rows.keys()) {
       const a = muniValue(m, k, j), b = muniValue(m, k, i);
       if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
@@ -249,6 +253,7 @@ export function install(app) {
   function renderSeries(i) {
     const d = files.get(theme), m = metric(), ys = d.years;
     const br = d.nation[m.id] || [];
+    const f0 = firstOf(d, m);
     const { up, down } = i > 0 ? movers(m, i) : {};
     const lo = m.domain?.[0], hi = m.domain?.[1];
     bar.innerHTML = `
@@ -266,11 +271,11 @@ export function install(app) {
         ${d.metrics.map((x) => `<button type="button" class="tl-metric" data-metric="${esc(x.id)}" aria-pressed="${x.id === m.id}" title="${esc(x.description)}">${esc(x.name)}</button>`).join("")}
       </div>
       <div class="tl-info">
-        <b>Brasil em ${year}: ${esc(fmtValue(m, br[i]))} ${esc(m.unit || "")}</b>${i > 0 && Number.isFinite(br[0]) && Number.isFinite(br[i]) ? ` · ${pts(br[i] - br[0], m)} desde ${ys[0]}` : ""}.
-        ${up && down ? `<br>${baseOf(d, i) === 0 ? `Desde ${ys[0]}` : `De ${ys[i - 1]} a ${year}`}, ${d.movers ? `entre os municípios de ${people(d.movers_min_pop)} habitantes ou mais, ` : ""}a maior alta foi em <b>${esc(muniName(up.k))}</b> (${pts(up.dv, m)}) e a maior queda, em <b>${esc(muniName(down.k))}</b> (${pts(down.dv, m)}).` : ""}
-        ${i === 0 ? `<br>Escolha um ano depois de ${ys[0]} para ver quem mais mudou.` : ""}
+        <b>Brasil em ${year}: ${esc(fmtValue(m, br[i]))} ${esc(m.unit || "")}</b>${i > f0 && Number.isFinite(br[f0]) && Number.isFinite(br[i]) ? ` · ${pts(br[i] - br[f0], m)} desde ${ys[f0]}` : ""}.
+        ${up && down ? `<br>${d.fixed_borders === false ? `De ${ys[i - 1]} a ${year}` : `Desde ${ys[f0]}`}, ${d.movers ? `entre os municípios de ${people(d.movers_min_pop)} habitantes ou mais, ` : ""}a maior alta foi em <b>${esc(muniName(up.k))}</b> (${pts(up.dv, m)}) e a maior queda, em <b>${esc(muniName(down.k))}</b> (${pts(down.dv, m)}).` : ""}
+        ${i <= f0 ? `<br>${br[i] == null ? `Esta medida começa em ${ys[f0]}.` : `Escolha um ano depois de ${ys[f0]} para ver quem mais mudou.`}` : ""}
       </div>
-      <div class="tl-legend"><span>${esc(fmtValue(m, lo))}</span><i style="background:linear-gradient(90deg, ${m.ramp.join(",")})"></i><span>${esc(fmtValue(m, hi))}</span><span>· ${esc(m.name.toLowerCase())}, ${by === "states" ? "por estado" : "por município"}, na mesma escala para todos os anos · ${esc(d.vintage)}</span></div>`;
+      <div class="tl-legend"><span>${esc(fmtValue(m, lo))}</span><i style="background:linear-gradient(90deg, ${m.ramp.join(",")})"></i><span>${esc(fmtValue(m, hi))}</span><span>· ${esc(m.name)}, ${by === "states" ? "por estado" : "por município"}, na mesma escala para todos os anos · ${esc(d.vintage)}</span></div>`;
   }
 
   function fmtValue(m, v) {
