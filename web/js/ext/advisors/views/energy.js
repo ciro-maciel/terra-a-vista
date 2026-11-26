@@ -1,4 +1,4 @@
-// Energy & Resources advisor: the mapped power sites, mines and oil & gas plays.
+// Energy & Resources advisor: the mapped power plants, oil and gas, mines and farm output.
 import { esc, fin } from "../core/util.js";
 import { fmtValue, mw, int, count3 } from "../core/fmt.js";
 import { barList, shareBar, stackedBars, sizeLegend } from "../core/charts.js";
@@ -8,18 +8,19 @@ import { frameBox, focusPoint } from "../core/frame.js";
 import { glyph } from "../../../ui/icon.js";
 
 const GROUPS = [
-  { id: "thermal", label: "Power plants", types: ["nuclear", "coal_plant", "gas_plant", "geothermal"] },
-  { id: "water", label: "Hydro", types: ["hydro", "pumped_storage"] },
-  { id: "renew", label: "Wind, solar & batteries", types: ["wind", "solar", "battery"] },
-  { id: "mines", label: "Mines", types: ["coal_mine", "gold", "copper", "iron", "silver", "platinum", "molybdenum", "lead_zinc", "rare_earths", "uranium"] },
-  { id: "plays", label: "Oil & gas plays", types: ["oil", "gas"] },
+  { id: "water", label: "Hidrelétricas", types: ["hydro"] },
+  { id: "thermal", label: "Térmicas e nuclear", types: ["nuclear", "gas_plant", "coal_plant", "biomass"] },
+  { id: "renew", label: "Vento e sol", types: ["wind", "solar"] },
+  { id: "oil", label: "Petróleo e gás", types: ["platform", "oil", "gas"] },
+  { id: "mines", label: "Minas", types: ["iron", "gold", "copper", "bauxite", "manganese", "nickel", "tin", "niobium", "phosphate", "potash", "kaolin", "coal_mine", "diamond"] },
+  { id: "agro", label: "Agro", types: ["soy", "corn", "sugarcane", "coffee", "orange", "cotton", "rice", "beans", "cassava", "wheat", "cocoa", "banana", "grape", "tobacco", "cattle", "pigs", "chickens"] },
 ];
 
 export function mount(ctx) {
   const { app, data, el, link } = ctx;
   const res = app.data.resources;
   if (!res) {
-    el.innerHTML = `<p class="adv-empty pad">resources.json is not built, so there is nothing to show here.</p>`;
+    el.innerHTML = `<p class="adv-empty pad">O resources.json não foi gerado, então não há nada para mostrar aqui.</p>`;
     return {};
   }
   const types = res.types;
@@ -34,7 +35,7 @@ export function mount(ctx) {
   const listed = new Set(GROUPS.flatMap((g) => g.types));
   const groups = GROUPS.map((g) => ({ ...g, types: g.types.filter((t) => typeById.has(t)) })).filter((g) => g.types.length);
   const extra = types.filter((t) => !listed.has(t.id)).map((t) => t.id);
-  if (extra.length) groups.push({ id: "other", label: "Other", types: extra });
+  if (extra.length) groups.push({ id: "other", label: "Outros", types: extra });
 
   const st = { on: new Set(types.map((t) => t.id)), min: 0, state: null };
   ctx.setShowResources(true);
@@ -44,13 +45,13 @@ export function mount(ctx) {
   const sites = mwTypes.reduce((a, t) => a + (nat[t.id]?.count || 0), 0);
   const top = el.appendChild(document.createElement("div"));
   top.innerHTML = tiles([
-    { label: "Mapped power", value: mw(totalMW), sub: `${int(sites)} sites` },
-    { label: "Mines", value: int(groups.find((g) => g.id === "mines")?.types.reduce((a, t) => a + (nat[t]?.count || 0), 0) || 0), sub: "above size thresholds" },
-    { label: "Shale plays", value: int((nat.oil?.count || 0) + (nat.gas?.count || 0)), sub: "oil & gas hexes" },
-  ]) + `<p class="adv-callout">${esc(res.summary?.note || "Totals of the mapped sites only.")}</p>`;
+    { label: "Potência mapeada", value: mw(totalMW), sub: `${int(sites)} usinas` },
+    { label: "Plataformas", value: int(nat.platform?.count || 0), sub: "de petróleo no mar" },
+    { label: "Minas", value: int(groups.find((g) => g.id === "mines")?.types.reduce((a, t) => a + (nat[t]?.count || 0), 0) || 0), sub: "concessões de lavra" },
+  ]) + `<p class="adv-callout">${esc(res.summary?.note || "Totais só dos locais mapeados.")}</p>`;
 
   // --- national mix ---------------------------------------------------------------------------------------------
-  const mixBody = section(el, { title: "The national power mix", kicker: "Mapped sites above thresholds", note: "Capacity of the power sites on the map, by type. Small plants are not mapped, so this is <b>not</b> the country's total generating capacity: it shows where the large sites are and what they run on." });
+  const mixBody = section(el, { title: "A matriz elétrica", kicker: "Usinas do mapa, acima do porte mínimo", note: "Potência das usinas do mapa, por tipo. As pequenas não estão no mapa, então isto <b>não</b> é a capacidade instalada do país: mostra onde ficam as grandes usinas e com o que elas geram." });
   const mixParts = mwTypes.map((t) => ({ key: t.id, label: t.name, value: nat[t.id]?.value || 0, color: t.color, text: mw(nat[t.id]?.value), icon: glyph(t, 14) })).sort((a, b) => b.value - a.value);
   const mixHover = (p) => {
     if (!p) { link.hover(null); bubbles.setSelected(null); return; }
@@ -66,24 +67,24 @@ export function mount(ctx) {
   };
   shareBar(mixBody, { parts: mixParts, legend: false, onHover: mixHover, onClick: (p) => solo(p.key) });
   const mixBars = barList(mixBody, {
-    rows: mixParts.map((p) => ({ ...p, sub: `${int(nat[p.key]?.count || 0)} sites` })),
-    onHover: mixHover, onClick: (p) => solo(p.key), ariaLabel: "Mapped capacity by type",
+    rows: mixParts.map((p) => ({ ...p, sub: `${int(nat[p.key]?.count || 0)} usinas` })),
+    onHover: mixHover, onClick: (p) => solo(p.key), ariaLabel: "Potência mapeada por tipo",
   });
 
   // --- filters --------------------------------------------------------------------------------------------------
-  const fBody = section(el, { title: "Filter the map", note: "Toggle types (Alt-click to show only one). The map dims the terrain and draws each power site as a circle sized by its capacity." });
+  const fBody = section(el, { title: "Filtrar o mapa", note: "Ligue e desligue os tipos (Alt e clique mostra só um). O mapa escurece o terreno e desenha cada usina como um círculo do tamanho da sua potência." });
   const typeChips = chips(fBody, {
-    label: "Resource types",
+    label: "Tipos de recurso",
     items: groups.flatMap((g) => g.types.map((t) => {
       const ty = typeById.get(t);
-      return { key: t, label: ty.name.replace(/ \(shale play\)/, ""), color: ty.color, icon: glyph(ty, 13), count: nat[t]?.count ?? null };
+      return { key: t, label: ty.name, color: ty.color, icon: glyph(ty, 13), count: nat[t]?.count ?? null };
     })),
     onChange: (on) => { st.on = on; apply(); },
   });
   const quick = document.createElement("div");
   quick.className = "adv-row";
   quick.innerHTML = groups.map((g) => `<button type="button" class="adv-mini" data-g="${g.id}">${esc(g.label)}</button>`).join("") +
-    `<button type="button" class="adv-mini" data-g="all">All</button><button type="button" class="adv-mini" data-g="none">None</button>`;
+    `<button type="button" class="adv-mini" data-g="all">Todos</button><button type="button" class="adv-mini" data-g="none">Nenhum</button>`;
   fBody.appendChild(quick);
   quick.addEventListener("click", (e) => {
     const g = e.target.closest("[data-g]")?.dataset.g;
@@ -94,13 +95,13 @@ export function mount(ctx) {
   });
   const slider = document.createElement("div");
   slider.className = "adv-slider";
-  slider.innerHTML = `<label><span>Minimum size</span><input type="range" min="0" max="3000" step="100" value="0" aria-label="Minimum power-site capacity in MW"><b>Any size</b></label>
-    <p class="adv-note adv-min-note" hidden>Mines and oil &amp; gas plays are hidden while a minimum is set: they are not measured in MW.</p>`;
+  slider.innerHTML = `<label><span>Porte mínimo</span><input type="range" min="0" max="3000" step="100" value="0" aria-label="Potência mínima da usina em MW"><b>Qualquer porte</b></label>
+    <p class="adv-note adv-min-note" hidden>Petróleo, minas e agro ficam escondidos enquanto houver um mínimo: não se medem em MW.</p>`;
   fBody.appendChild(slider);
   const range = slider.querySelector("input");
   range.addEventListener("input", () => {
     st.min = +range.value;
-    slider.querySelector("b").textContent = st.min ? `≥ ${int(st.min)} MW` : "Any size";
+    slider.querySelector("b").textContent = st.min ? `≥ ${int(st.min)} MW` : "Qualquer porte";
     slider.querySelector(".adv-min-note").hidden = !st.min;
     apply();
   });
@@ -112,18 +113,18 @@ export function mount(ctx) {
   fBody.appendChild(legendBox);
 
   // --- top sites ------------------------------------------------------------------------------------------------
-  const tBody = section(el, { title: "Sites", note: "Every mapped site that passes the filters. Hover to find it on the map; click to fly there." });
+  const tBody = section(el, { title: "Os locais", note: "Todo local do mapa que passa os filtros. Passe o mouse para achá-lo no mapa; clique para voar até lá." });
   const sizeSort = (r) => (isMW(r.type) && fin(r.value) ? r.value : null);
   const table = createTable(tBody, {
-    caption: "Mapped resource sites",
-    search: "Search sites, states, operators",
+    caption: "Recursos do mapa",
+    search: "Buscar local, estado ou município",
     searchText: (r) => `${r.name} ${r.state || ""} ${r.detail || ""} ${typeById.get(r.type)?.name || ""}`,
     rank: true,
     columns: [
-      { key: "name", label: "Site", align: "l", width: "minmax(0,1.7fr)", value: (r) => r.name, html: (r) => `<span class="ic">${glyph(typeById.get(r.type), 13)}</span>${esc(r.name)}` },
-      { key: "type", label: "Type", align: "l", width: "minmax(0,1fr)", value: (r) => typeById.get(r.type)?.name, text: (r) => typeById.get(r.type)?.name.replace(/ \(shale play\)/, "") || r.type },
-      { key: "state", label: "State", align: "l", width: "46px", value: (r) => r.state, text: (r) => r.state || "–" },
-      { key: "value", label: "Size", width: "minmax(0,.95fr)", value: sizeSort, text: (r) => sizeText(r), title: "Sort by capacity (MW; other units sort last)" },
+      { key: "name", label: "Local", align: "l", width: "minmax(0,1.7fr)", value: (r) => r.name, html: (r) => `<span class="ic">${glyph(typeById.get(r.type), 13)}</span>${esc(r.name)}` },
+      { key: "type", label: "Tipo", align: "l", width: "minmax(0,1fr)", value: (r) => typeById.get(r.type)?.name, text: (r) => typeById.get(r.type)?.name || r.type },
+      { key: "state", label: "UF", align: "l", width: "46px", value: (r) => r.state, text: (r) => r.state || "–" },
+      { key: "value", label: "Porte", width: "minmax(0,.95fr)", value: sizeSort, text: (r) => sizeText(r), title: "Ordenar pela potência (MW; as outras unidades vão para o fim)" },
     ],
     rows: [],
     sort: { key: "value", dir: "desc" },
@@ -138,9 +139,10 @@ export function mount(ctx) {
     const t = typeById.get(r.type);
     if (!fin(r.value)) return "–";
     if (t?.unit === "MW") return mw(r.value);
-    if (t?.unit === "employees") return `${int(r.value)} staff`;
-    if (/tons/.test(t?.unit || "")) return `${count3(r.value)} t/yr`;
+    if (t?.unit === "t") return `${count3(r.value)} t`;
+    if (t?.unit === "ha") return `${count3(r.value)} ha`;
     if (/km/.test(t?.unit || "")) return `${count3(r.value)} km²`;
+    if (t?.unit) return `${count3(r.value)} ${t.unit}`;
     return fmtValue("float", r.value);
   }
   function flyTo(r) {
@@ -148,14 +150,14 @@ export function mount(ctx) {
   }
 
   // --- per state ------------------------------------------------------------------------------------------------
-  const sBody = section(el, { title: "Power by state", note: "Mapped capacity per state, by type. Click a state to filter everything to it; click it again to clear." });
+  const sBody = section(el, { title: "Potência por estado", note: "Potência mapeada em cada estado, por tipo. Clique num estado para filtrar tudo por ele; clique de novo para limpar." });
   const stateRows = states
     .map((s, i) => ({ key: s.abbr, label: s.name, idx: i, parts: s.energy?.by_type || {}, total: s.energy?.total || 0, text: mw(s.energy?.total) }))
     .filter((r) => r.total > 0)
     .sort((a, b) => b.total - a.total);
   const stacks = stackedBars(sBody, {
     rows: stateRows, keys: mwTypes.map((t) => ({ key: t.id, label: t.name, color: t.color })), fmt: (v) => mw(v),
-    ariaLabel: "Mapped power capacity by state",
+    ariaLabel: "Potência mapeada por estado",
     onHover: (x) => {
       if (!x) return link.hover(null);
       const sIdx = x.row.idx;
@@ -165,25 +167,25 @@ export function mount(ctx) {
     onClick: (x) => setState(st.state === x.row.key ? null : x.row.key, true),
   });
   const noPower = states.filter((s) => !(s.energy?.total > 0)).map((s) => s.abbr);
-  if (noPower.length) sBody.insertAdjacentHTML("beforeend", `<p class="adv-note">No mapped power site: ${esc(noPower.join(", "))}.</p>`);
+  if (noPower.length) sBody.insertAdjacentHTML("beforeend", `<p class="adv-note">Sem usina no mapa: ${esc(noPower.join(", "))}.</p>`);
 
   // --- explainer ------------------------------------------------------------------------------------------------
-  const eBody = section(el, { title: "What the symbols mean", note: "Each resource type, the threshold a site must pass to be mapped, and where the data comes from." });
+  const eBody = section(el, { title: "O que os símbolos querem dizer", note: "Cada tipo de recurso, o porte que um local precisa ter para entrar no mapa e de onde vem o dado." });
   eBody.innerHTML = groups.map((g) => `<h4 class="adv-h4">${esc(g.label)}</h4>${g.types.map((t) => {
     const ty = typeById.get(t);
     const s = nat[t] || {};
     const src = data.source(ty.source);
-    const total = fin(s.value) ? (ty.unit === "MW" ? mw(s.value) : `${count3(s.value)} ${ty.unit}`) : ty.unit === "km² play area" ? "areas not additive" : "";
+    const total = fin(s.value) ? (ty.unit === "MW" ? mw(s.value) : `${count3(s.value)} ${ty.unit}`) : /km²/.test(ty.unit || "") ? "áreas que não se somam" : "";
     return `<div class="adv-explain" style="--cc:${esc(ty.color)}"><span class="ic">${glyph(ty, 22)}</span><div>
-      <b>${esc(ty.name)}</b> <span class="sub">${int(s.count || 0)} mapped${total ? ` · ${esc(total)}` : ""} · measured in ${esc(ty.unit)}</span>
-      <p>${esc(ty.description)}</p><span class="src">Source: ${esc(src ? `${src.title} (${src.vintage || src.publisher})` : ty.source)}</span></div></div>`;
+      <b>${esc(ty.name)}</b> <span class="sub">${int(s.count || 0)} no mapa${total ? ` · ${esc(total)}` : ""} · medido em ${esc(ty.unit)}</span>
+      <p>${esc(ty.description)}</p><span class="src">Fonte: ${esc(src ? `${src.title} (${src.vintage || src.publisher})` : ty.source)}</span></div></div>`;
   }).join("")}`).join("");
 
-  el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["eia_860m", "eia_coal", "msha_mines", "eia_shale_plays"], [
-    "Only sites above each type's threshold are mapped (e.g. gas plants of 1,500 MW or more, wind clustered per hex at 500 MW or more), so totals are <b>not</b> state or national capacity.",
-    "Capacity is nameplate-style net summer capacity (MW), not how much electricity a site produces: a 1,000 MW solar farm generates far less in a year than a 1,000 MW nuclear plant.",
-    "Mines are sized by employees (MSHA) or coal output (EIA); oil and gas plays by area. These units cannot be added to MW.",
-    "A site counts in the state its operator files it under; a few border sites sit in a hex another state owns.",
+  el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["aneel_siga", "anp_geo", "anm_sigmine", "ibge_agro"], [
+    "Só entram os locais acima do porte mínimo de cada tipo (veja a descrição de cada um), então os totais <b>não</b> são a capacidade do estado nem do país.",
+    "A potência é a outorgada (MW), não quanto a usina gera: um parque solar de 1.000 MW gera bem menos num ano que uma nuclear de 1.000 MW.",
+    "Minas se medem pela área da concessão (ANM), plataformas pela capacidade (ANP), lavouras em toneladas e rebanhos em cabeças (IBGE). Essas unidades não se somam aos MW.",
+    "Um local conta no estado em que o órgão o registra; alguns, perto da divisa, ficam num hexágono de outro estado.",
   ]));
 
   // --- map ------------------------------------------------------------------------------------------------------
@@ -223,10 +225,10 @@ export function mount(ctx) {
     const sIdx = st.state ? stateIdx.get(st.state) : null;
     link.base({ dimOthers: true, states: sIdx != null ? new Set([sIdx]) : undefined });
     stateChip.innerHTML = st.state
-      ? `<span class="adv-fchip">State: <b>${esc(states[sIdx]?.name || st.state)}</b> · ${int(vis.length)} sites<button type="button" data-clear-state aria-label="Clear the state filter">✕</button></span>`
+      ? `<span class="adv-fchip">Estado: <b>${esc(states[sIdx]?.name || st.state)}</b> · ${int(vis.length)} locais<button type="button" data-clear-state aria-label="Limpar o filtro de estado">✕</button></span>`
       : "";
     const r = (v) => 24 * Math.sqrt(v / vMax);
-    legendBox.innerHTML = sizeLegend([250, 1000, 4000].filter((v) => v <= vMax * 1.2), r, (v) => `${int(v)} MW`, "Circle area = capacity");
+    legendBox.innerHTML = sizeLegend([250, 1000, 4000].filter((v) => v <= vMax * 1.2), r, (v) => `${int(v)} MW`, "Área do círculo = potência");
     mixBars.setSelected(st.on.size === 1 ? [...st.on][0] : null);
   }
   apply();

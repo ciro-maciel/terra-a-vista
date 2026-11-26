@@ -67,7 +67,7 @@ export function barList(host, opts) {
       <span class="lb">${esc(r.label)}${r.sub ? ` <span class="sub">${esc(r.sub)}</span>` : ""}</span>
       <span class="vl${r.tone ? " " + r.tone : ""}">${esc(r.text ?? "")}</span>
       <span class="tr"><i class="${neg ? "neg" : ""}${r.tone ? " " + r.tone : ""}" style="${style};${color}"></i></span></button>`;
-  }).join("") : `<p class="adv-empty">No data.</p>`;
+  }).join("") : `<p class="adv-empty">Sem dados.</p>`;
   host.appendChild(root);
   const byKey = new Map(rows.map((r) => [String(r.key), r]));
   wire(root, (t) => byKey.get(t.dataset.key), opts);
@@ -105,7 +105,7 @@ export function stackedBars(host, opts) {
     return `<button type="button" role="listitem" class="adv-srow" data-key="${esc(r.key)}" aria-label="${esc(`${r.label}: ${r.text ?? ""}`)}">
       <span class="lb">${esc(r.label)}${r.sub ? ` <span class="sub">${esc(r.sub)}</span>` : ""}</span>
       <span class="st">${segs}</span><span class="vl">${esc(r.text ?? "")}</span></button>`;
-  }).join("") || `<p class="adv-empty">No data.</p>`;
+  }).join("") || `<p class="adv-empty">Sem dados.</p>`;
   host.appendChild(root);
   const byKey = new Map(rows.map((r) => [String(r.key), r]));
   let lastPart = null;
@@ -197,7 +197,7 @@ export function histogram(host, opts) {
   const root = document.createElement("div");
   root.className = "adv-hist";
   host.appendChild(root);
-  if (!vals.length) { root.innerHTML = `<p class="adv-empty">No data.</p>`; return { el: root, setHot() {} }; }
+  if (!vals.length) { root.innerHTML = `<p class="adv-empty">Sem dados.</p>`; return { el: root, setHot() {} }; }
   let [d0, d1] = opts.domain || [Math.min(...vals.map((d) => d.v)), Math.max(...vals.map((d) => d.v))];
   if (!(d1 > d0)) d1 = d0 + 1;
   const nb = opts.bins || 28;

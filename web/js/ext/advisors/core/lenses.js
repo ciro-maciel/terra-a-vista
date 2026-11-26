@@ -33,7 +33,7 @@ export function growthLens(data, by = "metros") {
     const { app, cellMetro } = data;
     const n = app.w.grid.size, owner = app.w.raw.owner;
     const values = new Array(n).fill(null);
-    const yrs = (data.nat.growth_years || []).join("–");
+    const yrs = (data.nat.growth_years || []).join(" a ");
     let vals;
     if (by === "states") {
       const rows = data.levels.states.rows;
@@ -44,12 +44,12 @@ export function growthLens(data, by = "metros") {
       vals = data.levels.metros.rows.map((r) => r.v.growth);
     }
     return {
-      id: `adv-growth-${by}`, group: "people", name: by === "states" ? "Growth by state" : "Growth by metro",
-      icon: "l-people", emoji: "📈", unit: "population change", format: "pct", scale: "linear",
-      domain: symDomain(vals), ramp: GROWTH_RAMP, higher_is: "neutral", source: "pep_population",
+      id: `adv-growth-${by}`, group: "people", name: by === "states" ? "Crescimento por estado" : "Crescimento por cidade",
+      icon: "l-people", emoji: "📈", unit: "variação da população", format: "pct", scale: "linear",
+      domain: symDomain(vals), ramp: GROWTH_RAMP, higher_is: "neutral", source: "ibge_estimates",
       description: by === "states"
-        ? `Population change ${yrs} by state (Census population estimates).`
-        : `Population change ${yrs} by metro and micro area (Census population estimates). Grey hexes lie outside them.`,
+        ? `Variação da população de ${yrs} por estado (estimativas do IBGE).`
+        : `Variação da população de ${yrs} por cidade (estimativas do IBGE). Os hexágonos cinza ficam fora das cidades.`,
       values,
     };
   });
@@ -65,39 +65,16 @@ export function scienceLens(data) {
     for (const [cell, city] of cellMetro) if (owner[cell] >= 0) values[cell] = share(city);
     const sci = app.data.nation?.yields?.find((y) => y.key === "science");
     return {
-      id: "adv-science-share", group: "knowledge", name: "Science jobs",
-      icon: "l-degrees", emoji: "🔬", unit: "of employed residents", format: "pct", scale: "linear",
-      domain: robust(data.levels.metros.rows.map((r) => share(r.ref))), ramp: SCIENCE_RAMP, higher_is: "neutral", source: "acs_1yr",
-      description: `${sci?.label || "Science"} workers as a share of employed residents, by metro and micro area (counted where they live). Grey hexes lie outside them.`,
+      id: "adv-science-share", group: "knowledge", name: "Empregos de Ciência",
+      icon: "l-degrees", emoji: "🔬", unit: "dos empregos formais", format: "pct", scale: "linear",
+      domain: robust(data.levels.metros.rows.map((r) => share(r.ref))), ramp: SCIENCE_RAMP, higher_is: "neutral", source: "ibge_cempre",
+      description: `Empregos formais de ${sci?.label || "Ciência"} ÷ todos os empregos formais, por cidade (CEMPRE 2024, onde fica o empregador). Os hexágonos cinza ficam fora das cidades.`,
       values,
     };
   });
 }
 
-/**
- * A county column as a map lens (each hex takes the value of the county at its centre). For counties.json columns
- * that have no lens in lenses.json (e.g. armed-forces share). opts: {name, ramp, format, unit, description, source,
- * emoji, icon, group, domain?}
- */
-export function countyLens(data, key, opts = {}) {
-  return memo(data, `county-${key}`, () => {
-    const lv = data.levels.counties;
-    const n = data.app.w.grid.size;
-    const values = new Array(n).fill(null);
-    if (lv) for (let i = 0; i < n; i++) { const r = lv.rowAtCell(i); const v = r ? r.v[key] : null; if (fin(v)) values[i] = v; }
-    const f = lv?.field(key);
-    return {
-      id: `adv-county-${key}`, group: opts.group || "people", name: opts.name || f?.label || key,
-      icon: opts.icon || "layers", emoji: opts.emoji || "🗺️", unit: opts.unit || f?.unit || "", format: opts.format || f?.format || "float",
-      scale: "linear", domain: opts.domain || robust(lv ? lv.rows.map((r) => r.v[key]) : []), ramp: opts.ramp || SCIENCE_RAMP,
-      higher_is: f?.higher_is || "neutral", source: opts.source || f?.source || "", description: opts.description || f?.description || "",
-      ...(opts.note ? { note: opts.note } : {}),
-      values,
-    };
-  });
-}
-
-/** A per-state value as a map lens. valueOf(abbr) → number | null. opts as countyLens plus id. */
+/** A per-state value as a map lens. valueOf(abbr) → number | null. opts: {name, ramp, format, unit, description, source, emoji, icon, group, domain?, note?}. */
 export function stateLens(data, id, valueOf, opts = {}) {
   return memo(data, `state-${id}`, () => {
     const app = data.app;

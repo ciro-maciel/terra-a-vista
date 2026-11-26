@@ -55,8 +55,8 @@ export function createScatter(host, opts) {
       r: o.size ? rmin + (rmax - rmin) * Math.sqrt(clamp((fin(p.s) ? p.s : 0) / smax, 0, 1)) : o.radius || 3,
     })).sort((a, b) => b.r - a.r);
     root._count = valid.length;
-    cv.setAttribute("aria-label", o.ariaLabel || `Scatter plot of ${valid.length} points: ${o.y?.label || "y"} against ${o.x?.label || "x"}`);
-    hint.textContent = o.brush === false ? "" : `${valid.length.toLocaleString("en-US")} points · drag to select`;
+    cv.setAttribute("aria-label", o.ariaLabel || `Gráfico de dispersão com ${valid.length} pontos: ${o.y?.label || "y"} contra ${o.x?.label || "x"}`);
+    hint.textContent = o.brush === false ? "" : `${valid.length.toLocaleString("pt-BR")} pontos · arraste para selecionar`;
     draw();
   }
 

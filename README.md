@@ -26,6 +26,9 @@ relief and land cover. Every number traces back to a public source, listed in th
 - **13 lenses** from the 2022 Census and land cover: density, median age, ageing, earnings, GDP per person,
   unemployment, literacy, degrees, sewer, water, forest, farmland, built-up.
 - **26 wonders**: every Brazilian site on UNESCO's World Heritage List.
+- **9 advisors**: dashboards beside the map (Economy with GDP by sector, People, Prosperity, Knowledge, Land,
+  Energy and resources, Commerce, Culture and the Explorer), linked to the map both ways.
+- **Citizens** in the city view: work, age, commute and schooling of the people who live there (2022 Census).
 
 ## Reading the map honestly
 

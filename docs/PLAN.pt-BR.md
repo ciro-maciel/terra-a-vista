@@ -1,6 +1,6 @@
 # Plano: do usaciv ao Terra à Vista
 
-_26/11/2026. Fases 0 a 4 concluídas no mesmo dia; a 5 é o lançamento. Ficam para depois: os conselheiros refeitos com as fontes brasileiras e os cidadãos da tela da cidade._
+_26/11/2026. Fases 0 a 5 concluídas no mesmo dia; depois vieram os cidadãos da tela da cidade e os conselheiros, refeitos com as fontes brasileiras._
 
 ## O que fica e o que muda
 

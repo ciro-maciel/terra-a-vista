@@ -50,5 +50,5 @@ class UnescoWhc(Source):
             pts = ((r.get("coordinates") or {}).get("geometry") or {}).get("coordinates") or []
             sites.append({"id": int(r["id_no"]), "name": NAME_PT.get(int(r["id_no"]), r["name_en"]), "name_en": r["name_en"],
                           "category": CATEGORY_PT.get(r["category"], r["category"]), "inscribed": int(r["date_inscribed"]),
-                          "danger": bool(r.get("danger")), "points": pts})
+                          "danger": str(r.get("danger")).lower() == "true", "points": pts})
         return {"vintage": "Lista do Patrimônio Mundial (UNESCO)", "_files": [FILE], "sites": sites}

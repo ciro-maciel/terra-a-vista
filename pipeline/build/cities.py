@@ -22,7 +22,7 @@ from ..core.store import load_interim, load_interim_payload, write_web
 from .growth import Growth
 from .yields import GDP_INDUSTRIES, INDUSTRY_LINES, YIELDS, bea_combos, economy, gdp_profile, sum_counties
 
-REQUIRES = ["_world", "ibge_census", "ibge_gdp", "ibge_arranjos", "ibge_localities", "ibge_boundaries", "ibge_cempre", "ibge_censo2022", "ibge_estimates"]
+REQUIRES = ["_world", "ibge_census", "ibge_gdp", "ibge_gdp_sectors", "ibge_arranjos", "ibge_localities", "ibge_boundaries", "ibge_cempre", "ibge_censo2022", "ibge_estimates"]
 PRODUCES = ["cities.json", "nation.json"]
 
 NON_CONUS = {"AK", "HI", "PR"}
@@ -285,6 +285,56 @@ def labour(censo: dict | None, codes: list[str]) -> dict:
             "unemployment": round(unemp / force, 4) if unemp is not None and force else None}
 
 
+GDP_SECTOR_LABEL = {"agriculture": "Agropecuária", "industry": "Indústria", "services": "Serviços",
+                    "public": "Administração pública", "taxes": "Impostos sobre produtos"}
+
+
+def gdp_sectors(sectors: dict | None, codes: list[str]) -> dict | None:
+    """Value added by sector plus net taxes over a set of territories (they add up to GDP); any member missing → None."""
+    if sectors is None:
+        return None
+    out = {}
+    for key, m in sectors.items():
+        vals = [m.get(c) for c in codes]
+        if not vals or any(v is None for v in vals):
+            return None
+        out[key] = sum(vals)
+    return out
+
+
+def census_profile(censo: dict | None, codes: list[str], pop: dict) -> dict:
+    """Census 2022 measures over a set of territories: counts are summed (density, degrees, sewer, water are exact);
+    rates published only as rates (median age, ageing index, literacy) are population-weighted means of the members,
+    exact for a single territory and an approximation otherwise. Any member missing → None."""
+    keys = ("density", "median_age", "ageing", "literacy", "degrees", "sewer", "water", "area_km2")
+    if censo is None:
+        return {k: None for k in keys}
+    def tot(key):
+        vals = [censo.get(key, {}).get(c) for c in codes]
+        return None if not vals or any(v is None for v in vals) else sum(vals)
+    def share(num, den):
+        a, b = tot(num), tot(den)
+        return round(a / b, 4) if a is not None and b else None
+    def mean(key, nd=2):
+        vals = [(censo.get(key, {}).get(c), pop.get(c)) for c in codes]
+        if not vals or any(v is None or w is None for v, w in vals):
+            return None
+        w = sum(w for _, w in vals)
+        return round(sum(v * w for v, w in vals) / w, nd) if w else None
+    area, people = tot("area_km2"), sum_or_none(pop.get(c) for c in codes)
+    lit = mean("literacy", 2)
+    return {
+        "density": round(people / area, 1) if area and people is not None else None,
+        "median_age": mean("median_age", 1),
+        "ageing": mean("ageing_index", 1),
+        "literacy": round(lit / 100, 4) if lit is not None and lit > 1 else lit,
+        "degrees": share("adults25_degree", "adults25"),
+        "sewer": share("households_sewer", "households"),
+        "water": share("households_water", "households"),
+        "area_km2": round(area) if area is not None else None,
+    }
+
+
 def empty_economy(population, gdp, gdp_year, jobs: dict | None = None, employed=None, work: dict | None = None) -> dict:
     """The economic shape of a city, state or nation: population, GDP and formal jobs (null = unknown)."""
     jobs = jobs or {k: None for k in INDUSTRY_LINES}
@@ -358,6 +408,7 @@ def build() -> None:
     cempre = load_interim("ibge_cempre")
     censo22 = load_interim("ibge_censo2022")
     est = load_interim("ibge_estimates")
+    sectors = load_interim("ibge_gdp_sectors")
 
     groups = []  # (members, full name, principal)
     in_arranjo = set()
@@ -395,6 +446,8 @@ def build() -> None:
                 "cell": grid.cell_at(x, y),
                 **empty_economy(population, city_gdp, gdp_year, *municipal_jobs(cempre, members),
                                 work=labour(censo22["municipalities"], members)),
+                "census": census_profile(censo22["municipalities"], members, pop),
+                "gdp_sectors": gdp_sectors(sectors["municipalities"], members),
                 "counties": sorted(members),
                 "pop_series": None,
             }
@@ -438,6 +491,8 @@ def build() -> None:
                            level_jobs(lambda c: (cempre["us"].get(c) or [None])[0] and cempre["us"][c][0][0]),
                            cempre["us_total"][0], labour(censo22["nation"], ["1"]))
     nation["growth"], nation["growth_years"], _ = growth_of(est["nation"], ["1"], est["years"])
+    nation["census"] = census_profile(censo22["nation"], ["1"], census["nation"])
+    nation["gdp_sectors"] = gdp_sectors(sectors["nation"], ["1"])
     write_web("cities.json", cities)
     write_web(
         "nation.json",
@@ -449,6 +504,8 @@ def build() -> None:
             "nation": nation,
             "yields": brazil_yields(),
             "industries": {k: INDUSTRY_LABEL.get(k, label) for k, (_, label) in INDUSTRY_LINES.items()},
+            "gdp_sectors": GDP_SECTOR_LABEL,
+            "gdp_sectors_year": load_interim_payload("ibge_gdp_sectors")["data"]["year"],
             "gdp_industries": {k: INDUSTRY_LABEL.get(k, label) for k, label in GDP_INDUSTRIES.items()},
         },
     )

@@ -103,6 +103,8 @@ export const RAMPS = {
   gold: ["#4a3416", "#7a5a22", "#b4872f", "#e0b54c", "#f6dc8a", "#fff6d6"],
   // red ← grey → teal, for signed values (growth)
   div: ["#c2463d", "#e08a6a", "#cfc4ae", "#7dc2b0", "#2e9c8a"],
+  // dark → light teal (sanitation, literacy)
+  teal: ["#062421", "#0d4a43", "#147266", "#2a9c8a", "#71c7b2", "#d4f1e8"],
   heat: ["#3b1f4a", "#7a2c62", "#bb3f5a", "#e8774a", "#f6b94a", "#fbe8a6"],
 };
 

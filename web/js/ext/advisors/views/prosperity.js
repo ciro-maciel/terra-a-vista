@@ -1,4 +1,4 @@
-// Prosperity & Housing advisor: income vs home values, poverty, rents and unemployment.
+// Prosperity advisor: earnings against unemployment, sanitation (sewer and water) and unemployment leaders.
 import { esc, fin, colorScale, RAMPS } from "../core/util.js";
 import { money, dollars, pct, int, count3, fmtShort } from "../core/fmt.js";
 import { barList, histogram, rampLegend } from "../core/charts.js";
@@ -7,137 +7,121 @@ import { createScatter } from "../core/scatter.js";
 import { section, tiles, segmented, lensButton, sourcesHtml, topBy, frameBtn } from "../core/view.js";
 import { rowsHighlight } from "../core/data.js";
 
-const METRO_MIN = 250000;
+const METRO_MIN = 100000;
 const BIG_METRO = 500000;
 
 export function mount(ctx) {
   const { app, data, el, link } = ctx;
   const n = data.nat;
-  const { states, metros, counties } = data.levels;
+  const nc = n.census || {};
+  const { states, metros } = data.levels;
 
   el.insertAdjacentHTML("beforeend", tiles([
-    { label: "Median income", value: dollars(n.median_income), sub: "per household" },
-    { label: "Median home", value: money(n.home_value), sub: `${(n.home_value / n.median_income).toFixed(1)}× income` },
-    { label: "Unemployment", value: pct(n.unemployment), sub: data.vintage },
+    { label: "Renda do trabalho", value: dollars(n.median_income), sub: "média por ocupado, por mês" },
+    { label: "Desocupação", value: pct(n.unemployment), sub: data.vintage },
+    { label: "Esgoto na rede", value: pct(nc.sewer), sub: "dos domicílios" },
   ]));
 
-  // --- income vs home value -------------------------------------------------------------------------------------
-  const aBody = section(el, { title: "What a home costs", note: "Median home value against median household income. The dashed lines mark 3, 5 and 8 years of income: above them, homes are harder to afford. Drag a rectangle to select places; hover the map to find one here." });
+  // --- earnings vs unemployment ---------------------------------------------------------------------------------
+  const aBody = section(el, { title: "Renda e desocupação", note: "Cada ponto é uma cidade: renda média do trabalho na horizontal, desocupação na vertical, tamanho = população, cor = domicílios com esgoto na rede. Embaixo à direita, renda alta e pouca gente sem trabalho. Arraste um retângulo para selecionar cidades; passe o mouse no mapa para achar uma aqui." });
   const aCtl = document.createElement("div");
   aCtl.className = "adv-row";
   aBody.appendChild(aCtl);
-  let level = counties ? "counties" : "metros";
-  segmented(aCtl, { label: "Places", value: level, options: [...(counties ? [{ value: "counties", label: "Counties" }] : []), { value: "metros", label: "Metros" }], onChange: (v) => { level = v; drawAfford(); } });
-  for (const [id, label] of [["income", "Income lens"], ["home", "Home value lens"]]) {
+  let level = "metros";
+  segmented(aCtl, { label: "Lugares", value: level, options: [{ value: "metros", label: "Cidades" }, { value: "states", label: "Estados" }], onChange: (v) => { level = v; drawScatter(); } });
+  for (const [id, label] of [["income", "Lente da renda"], ["unemployment", "Lente da desocupação"]]) {
     const b = lensButton(app, id, label);
     if (b) aCtl.appendChild(b);
   }
-  const ratioDomain = [2, 10];
-  const ratioColor = colorScale({ type: "seq", domain: ratioDomain, ramp: RAMPS.heat });
+  const sewerDomain = [0.05, 0.95];
+  const sewerColor = colorScale({ type: "seq", domain: sewerDomain, ramp: RAMPS.teal });
   const lv = () => data.levels[level];
-  const inc = (r) => (level === "counties" ? r.v.income : r.v.median_income);
-  const ratioOf = (r) => (fin(r.v.home_value) && fin(inc(r)) && inc(r) > 0 ? r.v.home_value / inc(r) : null);
   const scatter = createScatter(aBody, {
     height: 310, points: [],
-    x: { label: "Median household income", fmt: money, log: true },
-    y: { label: "Median home value", fmt: money, log: true },
-    size: { label: "Population", fmt: count3, max: 14, min: 1.4 },
-    refLines: [{ k: 3, label: "3×" }, { k: 5, label: "5×" }, { k: 8, label: "8×" }],
-    color: (c) => ratioColor(c), colorLabel: "Home ÷ income", colorFmt: (v) => `×${(+v).toFixed(1)}`,
-    onHover: (p) => { link.hover(p ? rowsHighlight(lv(), [p.row]) : null); affTable.setHot(p ? p.key : null, false); },
+    x: { label: "Renda média do trabalho (R$ por mês)", fmt: money, log: true },
+    y: { label: "Desocupação", fmt: (v) => fmtShort("pct", v) },
+    size: { label: "População", fmt: count3, max: 14, min: 1.6 },
+    refX: fin(n.median_income) ? [{ v: n.median_income, label: "Brasil" }] : [],
+    refY: fin(n.unemployment) ? [{ v: n.unemployment, label: `Brasil ${pct(n.unemployment)}` }] : [],
+    color: (c) => sewerColor(c), colorLabel: "Esgoto na rede", colorFmt: (v) => pct(v),
+    onHover: (p) => { link.hover(p ? rowsHighlight(lv(), [p.row]) : null); table.setHot(p ? p.key : null, false); },
     onClick: (p) => lv().focus(p.row),
     onBrush: (set) => {
       const sel = set ? lv().rows.filter((r) => set.has(r.key)) : [];
       link.base(sel.length ? rowsHighlight(lv(), sel, { dim: true }) : null, { frame: sel.length > 1 });
-      affTable.setSelected(set);
-      selInfo.innerHTML = sel.length ? `<b>${int(sel.length)}</b> ${level} selected · ${count3(sel.reduce((a, r) => a + (r.v.population || 0), 0))} people ${frameBtn()}<button type="button" class="adv-mini" data-clear>Clear</button>` : "";
+      table.setSelected(set);
+      selInfo.innerHTML = sel.length ? `<b>${int(sel.length)}</b> ${level === "states" ? "estados" : "cidades"} selecionados · ${count3(sel.reduce((a, r) => a + (r.v.population || 0), 0))} pessoas ${frameBtn()}<button type="button" class="adv-mini" data-clear>Limpar</button>` : "";
     },
   });
-  aBody.insertAdjacentHTML("beforeend", rampLegend({ ramp: RAMPS.heat, domain: ratioDomain, fmt: (v) => `×${v}`, label: "Home value ÷ income" }));
+  aBody.insertAdjacentHTML("beforeend", rampLegend({ ramp: RAMPS.teal, domain: sewerDomain, fmt: (v) => fmtShort("pct", v), label: "Domicílios com esgoto na rede" }));
   const selInfo = document.createElement("div");
   selInfo.className = "adv-brushinfo";
   aBody.appendChild(selInfo);
-  const clearSel = () => { scatter.setSelected(null); affTable.setSelected(null); link.base(null); selInfo.innerHTML = ""; };
+  const clearSel = () => { scatter.setSelected(null); table.setSelected(null); link.base(null); selInfo.innerHTML = ""; };
   selInfo.addEventListener("click", (e) => { if (e.target.closest("[data-clear]")) clearSel(); });
-  aBody.insertAdjacentHTML("beforeend", `<h4 class="adv-h4">Affordability table</h4>`);
-  const affTable = createTable(aBody, {
-    caption: "Home value to income", rank: true, maxHeight: 260, rows: [], search: "Search places",
+  aBody.insertAdjacentHTML("beforeend", `<h4 class="adv-h4">A tabela</h4>`);
+  const table = createTable(aBody, {
+    caption: "Renda, desocupação e saneamento", rank: true, maxHeight: 260, rows: [], search: "Buscar lugar",
     columns: [
-      { key: "name", label: "Place", align: "l", value: (r) => r.name, html: (r) => `${esc(r.name)} <span class="sub">${esc(r.sub)}</span>` },
-      { key: "inc", label: "Income", value: inc, text: (r) => money(inc(r)) },
-      { key: "home", label: "Home", value: (r) => r.v.home_value, text: (r) => money(r.v.home_value) },
-      { key: "ratio", label: "Ratio", value: (r) => ratioOf(r), html: (r) => fin(ratioOf(r)) ? `<span class="dot" style="background:${ratioColor(ratioOf(r))}"></span>×${ratioOf(r).toFixed(1)}` : "–" },
+      { key: "name", label: "Lugar", align: "l", value: (r) => r.name, html: (r) => `${esc(r.name)} <span class="sub">${esc(r.sub)}</span>` },
+      { key: "inc", label: "Renda", value: (r) => r.v.median_income, text: (r) => dollars(r.v.median_income) },
+      { key: "unemp", label: "Desoc.", value: (r) => r.v.unemployment, text: (r) => pct(r.v.unemployment) },
+      { key: "sewer", label: "Esgoto", value: (r) => r.v.sewer, html: (r) => (fin(r.v.sewer) ? `<span class="dot" style="background:${sewerColor(r.v.sewer)}"></span>${pct(r.v.sewer)}` : "–") },
+      { key: "water", label: "Água", value: (r) => r.v.water, text: (r) => pct(r.v.water) },
     ],
-    sort: { key: "ratio", dir: "desc" },
+    sort: { key: "inc", dir: "desc" },
     onHover: (r) => { link.hover(r ? rowsHighlight(lv(), [r]) : null); scatter.setHot(r ? r.key : null); },
     onClick: (r) => lv().focus(r),
   });
-  function drawAfford() {
+  function drawScatter() {
     clearSel();
-    const rows = lv().rows.filter((r) => fin(ratioOf(r)));
+    const rows = lv().rows.filter((r) => fin(r.v.median_income) && fin(r.v.unemployment));
     scatter.update({
-      points: rows.map((r) => ({ key: r.key, x: inc(r), y: r.v.home_value, s: r.v.population, c: ratioOf(r), label: r.name, sub: r.sub, row: r })),
-      labels: topBy(rows, (r) => r.v.population, { n: 6 }).map((x) => x.r.key),
+      points: rows.map((r) => ({ key: r.key, x: r.v.median_income, y: r.v.unemployment, s: r.v.population, c: r.v.sewer, label: r.name, sub: r.sub, row: r })),
+      labels: topBy(rows, (r) => r.v.population, { n: 7 }).map((x) => x.r.key),
     });
-    affTable.setRows(rows);
+    table.setRows(rows);
   }
-  drawAfford();
+  drawScatter();
 
-  // --- poverty --------------------------------------------------------------------------------------------------
-  let povHist = null;
-  if (counties) {
-    const pBody = section(el, { title: "Poverty", note: "Counties by the share of people below the official poverty line. Hover a bar to outline those counties; the table lists them all." });
-    const pCtl = document.createElement("div");
-    pCtl.className = "adv-row";
-    pBody.appendChild(pCtl);
-    const lb = lensButton(app, "poverty", "Poverty lens");
-    if (lb) pCtl.appendChild(lb);
-    const pHost = document.createElement("div");
-    pBody.appendChild(pHost);
-    const usPov = (() => {
-      let a = 0, w = 0;
-      for (const r of counties.rows) if (fin(r.v.poverty) && fin(r.v.population)) { a += r.v.poverty * r.v.population; w += r.v.population; }
-      return w ? a / w : null;
-    })();
-    povHist = histogram(pHost, {
-      values: counties.rows.map((r) => ({ key: r.key, v: r.v.poverty, w: r.v.population })), bins: 30, domain: [0, 0.45], height: 120,
-      fmt: (v) => fmtShort("pct", v), unitLabel: "counties", label: "Histogram of county poverty rates",
-      colorOf: (_, t) => colorScale({ type: "seq", domain: [0, 1], ramp: RAMPS.heat })(t),
-      markers: fin(usPov) ? [{ v: usPov, label: `Lower 48 ${pct(usPov)}` }] : [],
-      onHover: (bin) => link.hover(bin ? rowsHighlight(counties, bin.keys.map((k) => counties.byKey.get(k)), { dim: true }) : null),
-    });
-    const povTable = createTable(pBody, {
-      caption: "County poverty rates", rank: true, maxHeight: 240, rows: counties.rows.filter((r) => fin(r.v.poverty)), search: "Search counties",
-      columns: [
-        { key: "name", label: "County", align: "l", value: (r) => r.name, html: (r) => `${esc(r.name)} <span class="sub">${esc(r.sub)}</span>` },
-        { key: "population", label: "People", value: (r) => r.v.population, text: (r) => count3(r.v.population) },
-        { key: "poverty", label: "Poverty", value: (r) => r.v.poverty, text: (r) => pct(r.v.poverty), bar: { max: 0.5, color: "rgba(232,119,74,.4)" } },
-        { key: "income", label: "Income", value: (r) => r.v.income, text: (r) => money(r.v.income) },
-      ],
-      sort: { key: "poverty", dir: "desc" },
-      onHover: (r) => link.hover(r ? rowsHighlight(counties, [r]) : null),
-      onClick: (r) => counties.focus(r),
-    });
-    ctx.cleanup(() => povTable.destroy());
+  // --- sanitation -----------------------------------------------------------------------------------------------
+  const sBody = section(el, { title: "Saneamento", note: "As cidades pela parcela dos domicílios ligados à rede de esgoto. Troque para <i>pessoas</i> para pesar cada cidade pela população. Passe o mouse numa barra para contornar essas cidades no mapa." });
+  const sCtl = document.createElement("div");
+  sCtl.className = "adv-row";
+  sBody.appendChild(sCtl);
+  let weighted = false;
+  segmented(sCtl, { label: "Contar", value: "cities", options: [{ value: "cities", label: "Cidades" }, { value: "people", label: "Pessoas" }], onChange: (v) => { weighted = v === "people"; drawHist(); } });
+  for (const [id, label] of [["sewer", "Lente do esgoto"], ["water", "Lente da água"]]) {
+    const b = lensButton(app, id, label);
+    if (b) sCtl.appendChild(b);
   }
-
-  // --- rent -----------------------------------------------------------------------------------------------------
-  const rBody = section(el, { title: "Rent burden by metro", note: `Median rent × 12 ÷ median household income, for metros of ${count3(METRO_MIN)}+ people. A ratio of two medians: renters usually earn less than the median household, so their real burden is higher.` });
-  const rentRows = (list) => list.map((x) => ({ key: x.r.key, label: x.r.name, sub: `${dollars(x.r.v.median_rent)}/mo`, value: x.v, text: pct(x.v), row: x.r }));
-  const rOpts = { onHover: (r) => link.hover(r ? rowsHighlight(metros, [r.row]) : null), onClick: (r) => metros.focus(r.row) };
-  const hi = topBy(metros.rows, (r) => r.v.rent_burden, { n: 10, min: METRO_MIN });
-  const lo = topBy(metros.rows, (r) => r.v.rent_burden, { n: 5, min: METRO_MIN, asc: true });
-  const rmax = Math.max(...hi.map((x) => x.v));
-  rBody.insertAdjacentHTML("beforeend", `<h4 class="adv-h4">Heaviest</h4>`);
-  barList(rBody, { ...rOpts, rows: rentRows(hi), max: rmax, ariaLabel: "Heaviest rent burden" });
-  rBody.insertAdjacentHTML("beforeend", `<h4 class="adv-h4">Lightest</h4>`);
-  barList(rBody, { ...rOpts, rows: rentRows(lo), max: rmax, ariaLabel: "Lightest rent burden" });
+  const sHost = document.createElement("div");
+  sBody.appendChild(sHost);
+  let sewerHist = null;
+  function drawHist() {
+    sHost.innerHTML = "";
+    sewerHist = histogram(sHost, {
+      values: metros.rows.map((r) => ({ key: r.key, v: r.v.sewer, w: r.v.population })), bins: 20, domain: [0, 1], weighted, height: 120,
+      fmt: (v) => fmtShort("pct", v), unitLabel: "cidades", weightFmt: (w) => `${count3(w)} pessoas`, label: "Histograma do esgoto na rede nas cidades",
+      colorOf: (_, t) => colorScale({ type: "seq", domain: [0, 1], ramp: RAMPS.teal })(t),
+      markers: fin(nc.sewer) ? [{ v: nc.sewer, label: `Brasil ${pct(nc.sewer)}` }] : [],
+      onHover: (bin) => link.hover(bin ? rowsHighlight(metros, bin.keys.map((k) => metros.byKey.get(k)), { dim: true }) : null),
+    });
+  }
+  drawHist();
+  const worst = topBy(metros.rows, (r) => r.v.sewer, { n: 10, min: BIG_METRO / 2, asc: true });
+  sBody.insertAdjacentHTML("beforeend", `<h4 class="adv-h4">Cidades de ${count3(BIG_METRO / 2)} habitantes ou mais com menos esgoto na rede</h4>`);
+  barList(sBody, {
+    rows: worst.map((x) => ({ key: x.r.key, label: x.r.name, sub: `${x.r.sub} · água ${pct(x.r.v.water)}`, value: x.v, text: pct(x.v), tone: "bad", row: x.r })),
+    max: 1, ariaLabel: "Menos esgoto na rede",
+    onHover: (r) => link.hover(r ? rowsHighlight(metros, [r.row]) : null), onClick: (r) => metros.focus(r.row),
+  });
 
   // --- unemployment ---------------------------------------------------------------------------------------------
-  const uBody = section(el, { title: "Unemployment", note: `Unemployed ÷ civilian labour force (${esc(data.vintage)}). Metros of ${count3(BIG_METRO)}+ people.` });
+  const uBody = section(el, { title: "Desocupação", note: `Desocupados ÷ força de trabalho (${esc(data.vintage)}). Cidades de ${count3(BIG_METRO)} habitantes ou mais.` });
   const uHost = document.createElement("div");
   let uLevel = "states";
-  segmented(uBody, { label: "Areas", value: uLevel, options: [{ value: "states", label: "States" }, { value: "metros", label: "Large metros" }], onChange: (v) => { uLevel = v; drawU(); } });
+  segmented(uBody, { label: "Áreas", value: uLevel, options: [{ value: "states", label: "Estados" }, { value: "metros", label: "Cidades grandes" }], onChange: (v) => { uLevel = v; drawU(); } });
   uBody.appendChild(uHost);
   function drawU() {
     uHost.innerHTML = "";
@@ -148,31 +132,27 @@ export function mount(ctx) {
     const max = Math.max(...high.map((x) => x.v));
     const mk = (list) => list.map((x) => ({ key: x.r.key, label: x.r.name, sub: uLevel === "metros" ? x.r.sub : "", value: x.v, text: pct(x.v), tone: x.v > n.unemployment * 1.03 ? "bad" : x.v < n.unemployment * 0.97 ? "good" : null, row: x.r }));
     const o = { max, onHover: (r) => link.hover(r ? rowsHighlight(lvU, [r.row]) : null), onClick: (r) => lvU.focus(r.row) };
-    uHost.insertAdjacentHTML("beforeend", `<h4 class="adv-h4">Highest</h4>`);
+    uHost.insertAdjacentHTML("beforeend", `<h4 class="adv-h4">Mais alta</h4>`);
     barList(uHost, { ...o, rows: mk(high) });
-    uHost.insertAdjacentHTML("beforeend", `<h4 class="adv-h4">Lowest</h4>`);
+    uHost.insertAdjacentHTML("beforeend", `<h4 class="adv-h4">Mais baixa</h4>`);
     barList(uHost, { ...o, rows: mk(low) });
   }
   drawU();
 
-  el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["acs_1yr", "acs_5yr"], [
-    `Metro and state figures are ${esc(data.vintage)}; county figures are ${esc(data.countyVintage)} (five years pooled) and run lower in fast-rising markets.`,
-    "Home values are owners' own estimates of what their home would sell for (ACS), not sale prices.",
-    "Rent ÷ income compares two medians from different households; it is a rough guide, not the share of renters who are cost-burdened.",
-    "Poverty uses the official federal thresholds, which are the same everywhere and do not adjust for local living costs.",
-    ...(data.countiesOffMap ? [`${int(data.countiesOffMap)} of the smallest counties are smaller than one hex, so selecting them outlines nothing on the map.`] : []),
+  el.insertAdjacentHTML("beforeend", sourcesHtml(data, ["ibge_censo2022", "ibge_census", "ibge_arranjos"], [
+    "A renda é o rendimento médio de todos os trabalhos por pessoa ocupada, formal ou informal; não inclui aposentadorias, aluguéis nem programas sociais, e não é a renda da família.",
+    "A desocupação é a da semana de referência do Censo 2022 (julho de 2022); a PNAD mede todo trimestre e dá números um pouco diferentes.",
+    "Esgoto na rede conta a rede geral de esgoto ou pluvial; a fossa séptica fica de fora, então zonas rurais bem servidas por fossa aparecem baixas.",
+    "Preço de casa e aluguel não entram: o mapa ainda não tem uma fonte municipal aberta desses números.",
   ]));
 
   return {
     onMapHover(h) {
-      const l = lv();
-      const r = h.cell >= 0 ? l.rowAtCell(h.cell) : null;
+      const r = h.cell >= 0 ? lv().rowAtCell(h.cell) : null;
       scatter.setHot(r ? r.key : null);
-      affTable.setHot(r ? r.key : null);
-      if (povHist && counties) {
-        const c = h.cell >= 0 ? counties.rowAtCell(h.cell) : null;
-        povHist.setHot(c ? povHist.binOf(c.v.poverty)?.i ?? null : null);
-      }
+      table.setHot(r ? r.key : null);
+      const c = h.cell >= 0 ? metros.rowAtCell(h.cell) : null;
+      sewerHist?.setHot(c ? sewerHist.binOf(c.v.sewer)?.i ?? null : null);
     },
     onEscape() {
       if (scatter.selected) { clearSel(); return true; }

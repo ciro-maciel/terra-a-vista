@@ -23,7 +23,7 @@ from ..core.store import load_interim, load_interim_payload, write_web
 from .growth import Growth
 from .yields import YIELDS, economy, gdp_profile
 
-REQUIRES = ["_world", "ibge_boundaries", "ibge_census", "ibge_gdp", "ibge_cempre", "ibge_censo2022", "ibge_estimates", "cities.json"]
+REQUIRES = ["_world", "ibge_boundaries", "ibge_census", "ibge_gdp", "ibge_cempre", "ibge_censo2022", "ibge_estimates", "ibge_gdp_sectors", "cities.json"]
 PRODUCES = ["states.json"]
 
 MIN_LABEL_KM, MAX_LABEL_KM = 14.0, 110.0  # suggested font height range, map km
@@ -152,7 +152,7 @@ def energy_by_state() -> dict[str, dict] | None:
 
 
 def build() -> None:
-    from .cities import empty_economy, growth_of, labour, level_jobs
+    from .cities import census_profile, gdp_sectors, empty_economy, growth_of, labour, level_jobs
 
     world = load_interim("_world")
     census = load_interim("ibge_census")
@@ -160,6 +160,7 @@ def build() -> None:
     cempre = load_interim("ibge_cempre")
     censo22 = load_interim("ibge_censo2022")
     est = load_interim("ibge_estimates")
+    sectors = load_interim("ibge_gdp_sectors")
     gdp_year = load_interim_payload("ibge_gdp")["data"]["year"]
     grid = HexGrid(**world["grid"])
     owner = world["owner"]
@@ -181,6 +182,8 @@ def build() -> None:
                 "name": meta["name"],
                 **econ,
                 **dict(zip(("growth", "growth_years"), growth_of(est["states"], [fips], est["years"])[:2])),
+                "census": census_profile(censo22["states"], [fips], census["states"]),
+                "gdp_sectors": gdp_sectors(sectors["states"], [fips]),
                 "ranks": {},
                 "label": label_anchor(grid, owner, i, meta["name"]),
                 "land": land_shares(world, i),
