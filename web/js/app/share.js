@@ -4,8 +4,8 @@ import { icon } from "../ui/icon.js";
 
 // The address printed on shared images. Set it to the published site (e.g. "example.com/us-atlas"); when left
 // empty, the page's own host and path are used, except on a local dev server, where SITE_FALLBACK is printed.
-export const SITE_URL = "karpathy.ai/usaciv";
-const SITE_FALLBACK = "usaciv";
+export const SITE_URL = "ciro-maciel.github.io/terra-a-vista";
+const SITE_FALLBACK = "Terra à Vista";
 
 export function siteLabel() {
   if (SITE_URL) return SITE_URL;
@@ -115,11 +115,11 @@ export function composeImage(info, { height = IMG_H } = {}) {
   ctx.fillStyle = "#ecd08e";
   ctx.font = `bold 36px ${SERIF}`;
   spaced(ctx, 5);
-  ctx.fillText("UNITED STATES", 112, cy + 2);
+  ctx.fillText("BRASIL", 112, cy + 2);
   spaced(ctx, 0);
   ctx.fillStyle = "#b9ab88";
   ctx.font = `italic 17px ${SERIF}`;
-  ctx.fillText("A strategy-map atlas of the real economy", 114, cy + 28);
+  ctx.fillText("Terra à Vista: o Brasil como mapa de estratégia", 114, cy + 28);
 
   // Lens + legend ramp
   const mx = 640;

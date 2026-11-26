@@ -18,9 +18,13 @@ R_EARTH_KM = 6371.0088
 
 
 class Albers:
-    """Albers equal-area conic, standard USGS parameters for the lower 48."""
+    """Albers equal-area conic, the IBGE parameters for Brazil (standard parallels -2 and -22, origin -12, -54).
 
-    def __init__(self, lat1=29.5, lat2=45.5, lat0=37.5, lon0=-96.0):
+    In the southern hemisphere the cone constant n is negative, so rho is negative too; the inverse undoes
+    that with the sign of n (Snyder 1987, eq. 14-11).
+    """
+
+    def __init__(self, lat1=-2.0, lat2=-22.0, lat0=-12.0, lon0=-54.0):
         p1, p2, p0 = map(math.radians, (lat1, lat2, lat0))
         self.lon0 = math.radians(lon0)
         self.n = (math.sin(p1) + math.sin(p2)) / 2
@@ -35,8 +39,9 @@ class Albers:
     def inverse(self, x: float, y: float) -> tuple[float, float]:
         """Albers km → (lon, lat)."""
         dy = self.rho0 - y
+        sign = 1.0 if self.n > 0 else -1.0
         rho = math.hypot(x, dy)
-        theta = math.atan2(x, dy)
+        theta = math.atan2(sign * x, sign * dy)
         s = (self.c - (rho * self.n / R_EARTH_KM) ** 2) / (2 * self.n)
         return math.degrees(self.lon0 + theta / self.n), math.degrees(math.asin(max(-1.0, min(1.0, s))))
 

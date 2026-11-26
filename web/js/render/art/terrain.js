@@ -373,10 +373,10 @@ function speckle(g, S, r, n, dark, light) {
 // Albers equal-area conic of the pipeline (pipeline/core/geo.py Albers + MapProjection); keep in sync.
 const RAD = Math.PI / 180;
 const ALBERS = (() => {
-  const RE = 6371.0088, p1 = 29.5 * RAD, p2 = 45.5 * RAD, p0 = 37.5 * RAD;
+  const RE = 6371.0088, p1 = -2 * RAD, p2 = -22 * RAD, p0 = -12 * RAD;
   const n = (Math.sin(p1) + Math.sin(p2)) / 2;
   const c = Math.cos(p1) ** 2 + 2 * n * Math.sin(p1);
-  return { RE, n, c, rho0: (RE * Math.sqrt(c - 2 * n * Math.sin(p0))) / n, lon0: -96 };
+  return { RE, n, c, rho0: (RE * Math.sqrt(c - 2 * n * Math.sin(p0))) / n, lon0: -54 };
 })();
 // The shipped grid's projection (data/interim/_world.json), used when world.json does not carry `projection`.
 const SHIPPED_PROJ = { min_x: -2350.109311515341, max_y: 1559.2228881834299, margin: 200, grid: [25, 117, 90] };
@@ -402,7 +402,8 @@ function geo(w, i) {
     const X = w.grid.cx(i) + t.p.min_x - t.p.margin, Y = t.p.max_y + t.p.margin - w.grid.cy(i);
     const dy = rho0 - Y, rho = Math.hypot(X, dy);
     const s = (c - ((rho * n) / RE) ** 2) / (2 * n);
-    t.lon[i] = lon0 + Math.atan2(X, dy) / n / RAD;
+    const sg = n > 0 ? 1 : -1; // southern hemisphere: n < 0 (pipeline/core/geo.py Albers.inverse)
+    t.lon[i] = lon0 + Math.atan2(sg * X, sg * dy) / n / RAD;
     t.lat[i] = Math.asin(Math.max(-1, Math.min(1, s))) / RAD;
   }
   return t;

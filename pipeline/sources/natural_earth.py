@@ -4,7 +4,7 @@ from ..core.source import Source, SourceInfo
 # Pinned to a release tag so the content (and sha256) cannot change under the same URL.
 TAG = "v5.1.2"
 BASE = f"https://raw.githubusercontent.com/nvkelso/natural-earth-vector/{TAG}/geojson"
-BBOX = (-132.0, 20.0, -60.0, 56.0)  # lon/lat window around the lower 48 and the map margin
+BBOX = (-80.0, -39.0, -28.0, 10.0)  # lon/lat window around Brazil and the map margin
 
 
 class NaturalEarth(Source):
@@ -14,9 +14,9 @@ class NaturalEarth(Source):
         publisher="Natural Earth",
         homepage="https://www.naturalearthdata.com/",
         license="Public domain",
-        description="Neighbouring countries (Canada, Mexico, Cuba, the Bahamas; shown fogged), large lakes and major rivers. "
+        description="Países vizinhos (mostrados sob névoa), grandes lagos e os rios principais. "
         f"Files are pinned to the natural-earth-vector release {TAG}.",
-        used_for=["Foreign land (Canada, Mexico, Caribbean)", "Lakes", "Rivers"],
+        used_for=["Terra estrangeira (vizinhos da América do Sul)", "Lagos", "Rios"],
     )
 
     FILES = ["ne_50m_admin_0_countries", "ne_50m_lakes", "ne_50m_rivers_lake_centerlines"]
@@ -36,7 +36,7 @@ class NaturalEarth(Source):
         # keeping only its rings there, so foreign coasts inside the map are land rather than sea.
         countries = []
         for f in self._features("ne_50m_admin_0_countries"):
-            if f["properties"].get("ADM0_A3") == "USA":
+            if f["properties"].get("ADM0_A3") == "BRA":
                 continue
             rings = [r for r in geojson_rings(f["geometry"]) if bbox_intersects(r, BBOX)]
             if rings:

@@ -13,12 +13,15 @@ from ..core.geo import AlbersEllipsoid, MapProjection, Shape, ShapeIndex
 from ..core.hexgrid import SQRT3, HexGrid
 from ..core.store import load_interim, save_interim, write_web
 
-REQUIRES = ["census_boundaries", "natural_earth", "etopo", "nlcd"]
+REQUIRES = ["ibge_boundaries", "natural_earth", "etopo", "worldcover"]
 PRODUCES = ["_world", "world.json"]
 
 HEX_RADIUS_KM = 25.0
 MARGIN_KM = 200.0
-CONUS_EXCLUDE = {"02", "15", "60", "66", "69", "72", "78"}  # AK, HI, territories
+CONUS_EXCLUDE: set[str] = set()  # every Brazilian state is on the map
+# Oceanic islands far out in the Atlantic (Trindade e Martim Vaz, São Pedro e São Paulo, east of -32°) would
+# stretch the map by a thousand kilometres of sea; they stay off the frame. Fernando de Noronha (-32.4°) is in.
+FRAME_MAX_LON = -32.0
 
 # Cell owner codes (besides state index >= 0)
 WATER, FOREIGN = -1, -2
@@ -29,14 +32,14 @@ LAND, OCEAN, COAST, LAKE = range(4)
 TIDAL_SEA_SHARE = 0.5  # share of ETOPO samples below 0 m that keeps a sea-centred hex as water
 COAST_DEPTH_M = -200
 WATER_TABLE = [
-    {"id": LAND, "name": "Land", "rule": "At least 4 of the hex's 7 sample points (centre + 6) fall on Census state or Natural Earth country outlines, unless the centre is sea and the ETOPO1 mean is at or below sea level, or at least half its ETOPO1 samples are (tidal bays such as the Chesapeake stay water)."},
+    {"id": LAND, "name": "Land", "rule": "At least 4 of the hex's 7 sample points (centre + 6) fall on IBGE state or Natural Earth country outlines, unless the centre is sea and the ETOPO1 mean is at or below sea level, or at least half its ETOPO1 samples are (tidal bays stay water)."},
     {"id": OCEAN, "name": "Ocean", "color": "#1b4266", "rule": "Sea deeper than 200 m and not next to land."},
     {"id": COAST, "name": "Coast", "color": "#2d6d97", "rule": "Sea next to a land hex, or shallower than 200 m (ETOPO1 mean)."},
     {"id": LAKE, "name": "Lake", "color": "#3a80b0", "rule": "Water hex (most of its 7 sample points off land) with Natural Earth 1:50m lake points that outnumber sea points, or above sea level."},
 ]
 
 WATER_NOTE = (
-    "Census 1:20M state outlines and Natural Earth 1:50m country and lake outlines don't meet exactly. A sea hex whose "
+    "IBGE state outlines and Natural Earth 1:50m country and lake outlines don't meet exactly. A sea hex whose "
     "ETOPO1 mean is above sea level (and under half of its samples below it) becomes land when at least 4 of its 6 neighbours are land, or when it touches both "
     "US and foreign land; it takes the neighbours' majority owner. Narrow reservoirs that cover less than half a hex "
     "are land, and their river is drawn through them. Tidal bays stay water when the hex centre is sea and its "
@@ -73,10 +76,11 @@ COVER = [
     (11, "ice", "Ice & snow", "#e8eef2", [12], "Perennial ice/snow (12) is the largest group."),
 ]
 COVER_NOTE = (
-    "From NLCD 2021 (~2 km pixels), sampled on a 2 km lattice inside each US hex (about 400 points). Open water (11) "
-    "and no-data pixels are ignored; shares are of the remaining land points, rounded to whole percent, and the urban "
-    "threshold is applied to the rounded developed share. NLCD covers only the lower 48, so foreign hexes (Canada, "
-    "Mexico, the Caribbean) have cover 0 (none)."
+    "From ESA WorldCover 2021 (the smallest overview of each tile, reduced to ~2.4 km pixels by the most common "
+    "class), sampled on a 2 km lattice inside each Brazilian hex (about 400 points). WorldCover classes are read as "
+    "their NLCD equivalents (pipeline/sources/worldcover.py). It has no pasture class: pasture counts as grassland. "
+    "Open water and no-data pixels are ignored; shares are of the remaining land points, rounded to whole percent, "
+    "and the urban threshold is applied to the rounded built-up share. Foreign hexes have cover 0 (none)."
 )
 # Groups competing for the dominant cover (urban is decided by its threshold first).
 GROUPS = {
@@ -247,21 +251,23 @@ def majority(values: list, centre) -> object:
 
 
 def build() -> None:
-    bounds = load_interim("census_boundaries")
+    bounds = load_interim("ibge_boundaries")
     ne = load_interim("natural_earth")
     etopo = load_interim("etopo")
-    nlcd = load_interim("nlcd")
+    nlcd = load_interim("worldcover")
 
     states = [s for s in bounds["states"] if s["fips"] not in CONUS_EXCLUDE]
     states.sort(key=lambda s: s["name"])
     counties = [c for c in bounds["counties"] if c["state_fips"] not in CONUS_EXCLUDE]
     counties.sort(key=lambda c: c["geoid"])
 
-    # Projection: fit the lower-48 with a margin.
+    # Projection: fit the country with a margin (the oceanic islands east of FRAME_MAX_LON stay off the frame).
     probe = MapProjection(0, 0, 0)
     xs, ys = [], []
     for s in states:
         for ring in s["rings"]:
+            if max(lon for lon, _ in ring) > FRAME_MAX_LON:
+                continue
             for lon, lat in ring:
                 x, y = probe._albers(lon, lat)
                 xs.append(x)
@@ -440,7 +446,8 @@ def build() -> None:
     print(f"    {no_elev} hexes without elevation samples; {valley_floor} valley-floor hexes eased one relief class")
 
     # --- land cover from NLCD --------------------------------------------------------------------
-    albers = AlbersEllipsoid()  # NLCD is in EPSG:5070
+    lonlat = nlcd.get("crs") == "lonlat"  # WorldCover: a lon/lat grid; NLCD: EPSG:5070 metres
+    albers = None if lonlat else AlbersEllipsoid()
     rows, legend = nlcd["rows"], nlcd["legend"]
     x0, dx, y0, dy = nlcd["x0"], nlcd["dx"], nlcd["y0"], nlcd["dy"]
     ncols, nrows = nlcd["cols"], len(rows)
@@ -454,7 +461,7 @@ def build() -> None:
         cx, cy = grid.center(*grid.col_row(i))
         counts: Counter = Counter()
         for ox, oy in lattice:
-            ex, ey = albers(*proj.inverse(cx + ox, cy + oy))
+            ex, ey = proj.inverse(cx + ox, cy + oy) if lonlat else albers(*proj.inverse(cx + ox, cy + oy))
             c, r = round((ex - x0) / dx), round((ey - y0) / dy)
             if 0 <= c < ncols and 0 <= r < nrows:
                 counts[rows[r][c]] += 1
@@ -513,6 +520,7 @@ def build() -> None:
             "width": round(width, 1),
             "height": round(height, 1),
             "margin": MARGIN_KM,
+            "projection": proj.to_dict(),
             "owner": owner,
             "county": county,
             "elev": elev,

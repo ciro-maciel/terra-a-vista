@@ -40,7 +40,7 @@ export function initHelp() {
       </section>`).join("")}</div>
     <p class="help-foot">Every number traces back to public data: open the <b>Almanac</b> for sources.
       The link in the address bar always reopens this exact view.
-      Source code: <a href="usaciv-source.zip" download>usaciv-source.zip</a> (MIT; run it with uv, see its README).</p>`;
+      Código-fonte: <a href="https://github.com/ciro-maciel/terra-a-vista">github.com/ciro-maciel/terra-a-vista</a> (MIT), a partir do <a href="https://karpathy.ai/usaciv/">usaciv</a> de Andrej Karpathy.</p>`;
 
   const close = () => {
     if (modal.hidden) return;

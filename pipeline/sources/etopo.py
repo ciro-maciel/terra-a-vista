@@ -3,9 +3,9 @@ import csv
 from ..core.source import Source, SourceInfo
 
 # ETOPO1 (1 arc-minute) via NOAA ERDDAP, sampled every 5th point (~9 km). The window covers the
-# whole map rectangle (lower 48 plus the margin into Canada, Mexico and the oceans).
+# whole map rectangle (Brazil plus the margin into its neighbours and the Atlantic).
 STRIDE = 5
-LAT, LON = (22, 56), (-131, -60)
+LAT, LON = (-37, 8), (-78, -30)
 URL = (
     "https://coastwatch.pfeg.noaa.gov/erddap/griddap/etopo180.csv"
     f"?altitude%5B({LAT[0]}):{STRIDE}:({LAT[1]})%5D%5B({LON[0]}):{STRIDE}:({LON[1]})%5D"
