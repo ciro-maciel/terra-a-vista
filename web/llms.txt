@@ -1,0 +1,22 @@
+# Terra à Vista
+
+> An open strategy-style map of Brazil built from public data, municipality by municipality: population since 1970,
+> GDP, exports, city hall accounts, land cover since 1985, farming since 1975, health, schools (Ideb), connectivity,
+> disasters, protected areas and human development. In Brazilian Portuguese.
+
+- Map: https://ciro-maciel.github.io/terra-a-vista/
+- MCP server (open, no sign-in, read-only): https://terra-a-vista.mcp.myagents.click/mcp
+  Tools: guide, place_profile, find_places, compare_places, place_trend, trends. Call `guide` first.
+- How to connect: https://ciro-maciel.github.io/terra-a-vista/pergunte/
+- The weekly anonymous index and its rules: https://ciro-maciel.github.io/terra-a-vista/como-contamos/
+  Latest week as JSON: https://terra-a-vista.mcp.myagents.click/trends/latest.json
+- Data files (JSON): https://ciro-maciel.github.io/terra-a-vista/data/ (cities.json, states.json, history.json,
+  series_<theme>.json, exports.json, finances.json, protected.json); contracts in docs/DATA_CONTRACTS.md of
+  https://github.com/ciro-maciel/terra-a-vista
+
+## Rules an answer should repeat
+- Say the year and the source of each number.
+- Exports count in the exporter's tax municipality, not where goods were produced.
+- Growth uses IBGE estimates 2024 to 2026; never compare an estimate with a Census count.
+- Infant mortality before 2010 understates the North and Northeast (missing records).
+- A disaster record is a municipality declaring it, not a climate measure.

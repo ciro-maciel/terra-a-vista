@@ -1,0 +1,33 @@
+# Terra à Vista MCP: the map's public data as a remote MCP server, open (no sign-in), and the weekly anonymous index.
+# Deployed by .github/workflows/deploy-mcp.yml on every push to main that touches mcp/.
+
+name = "terra-a-vista-mcp"
+main = "src/index.js"
+compatibility_date = "2026-06-15"
+compatibility_flags = ["nodejs_compat"]
+account_id = "7df3b4b61e218b22da140626fd2113c7"
+workers_dev = false
+
+[[routes]]
+pattern = "terra-a-vista.mcp.myagents.click"
+custom_domain = true
+
+[vars]
+DATA_BASE = "https://ciro-maciel.github.io/terra-a-vista/data"
+
+# Published weeks of the index (latest, week:<id>, kept:<id>, weeks). Never stamps: those live only in the Tally.
+[[kv_namespaces]]
+binding = "TRENDS"
+id = "d1065558513e457fa78312ce992ccf9f"
+
+# The week's tally: one object, holding this week's key and the stamps per box until the close deletes them.
+[durable_objects]
+bindings = [{ name = "TALLY", class_name = "Tally" }]
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Tally"]
+
+# Mondays 03:00 UTC: close the week that ended (day names, never numbers: day 1 is Sunday in Workers cron).
+[triggers]
+crons = ["0 3 * * MON"]

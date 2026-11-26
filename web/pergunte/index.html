@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pergunte ao mapa | Terra à Vista</title>
+  <meta name="description" content="Pergunte ao seu assistente de IA sobre qualquer município, cidade ou estado do Brasil: população, PIB, exportação, prefeitura, escola, saúde, conexão, terra e IDH, com a fonte de cada número. Servidor MCP aberto e grátis.">
+  <link rel="canonical" href="https://ciro-maciel.github.io/terra-a-vista/pergunte/">
+  <meta property="og:title" content="Pergunte ao mapa: o Brasil por município, no seu assistente de IA">
+  <meta property="og:description" content="Um servidor MCP aberto com os dados do Terra à Vista: qualquer município, cidade ou estado, com a fonte de cada número.">
+  <meta property="og:image" content="https://ciro-maciel.github.io/terra-a-vista/og-image.png">
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+  <link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png">
+  <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+  <link rel="stylesheet" href="../css/page.css">
+</head>
+<body>
+  <header class="top">
+    <a class="brand" href="../"><img src="../favicon.svg" alt="">Terra à Vista</a>
+    <nav aria-label="Páginas">
+      <a href="../">O mapa</a>
+      <a href="./" aria-current="page">Pergunte ao mapa</a>
+      <a href="../como-contamos/">Como contamos</a>
+    </nav>
+  </header>
+  <main>
+    <p class="kicker">Servidor MCP aberto</p>
+    <h1>Os dados do Brasil estão espalhados em vinte sites. Pergunte num lugar só.</h1>
+    <p class="lede">Ligue o mapa ao seu assistente de IA e pergunte, em português, sobre qualquer município, cidade ou estado: quem cresce, o que exporta, quem paga a prefeitura, como está a escola, a saúde, a internet, a terra. A resposta vem com o ano e a fonte de cada número.</p>
+
+    <div class="address">
+      <code id="addr">https://terra-a-vista.mcp.myagents.click/mcp</code>
+      <button class="btn" type="button" id="copy">Copiar o endereço</button>
+    </div>
+    <p class="src">Grátis e sem conta: os dados são públicos. O assistente só consulta; nada é alterado.</p>
+
+    <h2>Ligar em um minuto</h2>
+    <div class="grid">
+      <section class="panel">
+        <h3>Claude</h3>
+        <ol>
+          <li>Abra Configurações, depois Conectores.</li>
+          <li>Adicionar conector personalizado.</li>
+          <li>Cole o endereço acima e salve.</li>
+        </ol>
+      </section>
+      <section class="panel">
+        <h3>Cursor, Claude Code e outros</h3>
+        <p class="answer">Qualquer cliente que aceite um servidor MCP remoto. Na configuração:</p>
+        <pre>{ "mcpServers": { "terra-a-vista": {
+  "url": "https://terra-a-vista.mcp.myagents.click/mcp" } } }</pre>
+      </section>
+    </div>
+
+    <h2>Perguntas que ele responde</h2>
+    <div class="grid">
+      <section class="panel">
+        <p class="ask">"Que cidades de 50 mil habitantes ou mais do Mato Grosso mais crescem?"</p>
+        <p class="answer">Lucas do Rio Verde (+7,6% de 2024 a 2026), Nova Mutum (+7,3%) e Sinop (+7,1%), pelas estimativas do IBGE.</p>
+      </section>
+      <section class="panel">
+        <p class="ask">"Por que Macaé é cidade do petróleo, e quanto a prefeitura vive de royalties?"</p>
+        <p class="answer">Petróleo e gás têm 82 vezes a parcela nacional dos empregos formais; os royalties são 30% da receita das prefeituras da cidade.</p>
+      </section>
+      <section class="panel">
+        <p class="ask">"O que aconteceu com a terra em Sorriso desde 1985, e para quem ela vende?"</p>
+        <p class="answer">A soja foi de 2% para 65% da área (MapBiomas), e a China é a maior compradora (Comex Stat).</p>
+      </section>
+      <section class="panel">
+        <p class="ask">"Compare o Ideb, a mortalidade infantil e a banda larga do Ceará e de São Paulo."</p>
+        <p class="answer">Uma tabela lado a lado, com o Brasil como referência e o ano de cada número.</p>
+      </section>
+    </div>
+
+    <h2>O que ele sabe</h2>
+    <p>Os 5.570 municípios, as 611 cidades do mapa e os 27 estados, com os dados do <a href="../">Terra à Vista</a>: IBGE (Censos desde 1970, PIB, estimativas), MapBiomas, Comex Stat, Datasus, Inep, Anatel, Tesouro Nacional, Defesa Civil, Funai, cadastro nacional de unidades de conservação e o Atlas do Desenvolvimento Humano. Seis ferramentas: o guia, o retrato de um lugar, achar lugares por qualquer medida, comparar até dez, um tema no tempo e o índice da semana.</p>
+    <p class="src">Cada número vem com o que ele não mostra: a exportação conta no município da empresa exportadora; a mortalidade infantil antes de 2010 subestima o Norte e o Nordeste; um registro de desastre é o município declarando, não uma medida do clima.</p>
+
+    <h2 id="indice">O que o Brasil está pesquisando</h2>
+    <p>Toda semana, os lugares e as perguntas que mais pessoas diferentes consultaram neste mapa. Sem saber quem perguntou: só aparece o que 10 pessoas ou mais consultaram. <a href="../como-contamos/">Como contamos</a>.</p>
+    <div class="panel" id="trends"><p class="empty">Lendo o índice…</p></div>
+  </main>
+  <footer>
+    Terra à Vista é aberto: <a href="https://github.com/ciro-maciel/terra-a-vista">código e dados no GitHub</a>. Feito por <a href="https://ciromaciel.click/?ref=oss-terra-a-vista">Ciro Cesar Maciel</a>.
+  </footer>
+  <script type="module">
+    const copy = document.getElementById("copy");
+    copy.addEventListener("click", async () => {
+      const text = document.getElementById("addr").textContent.trim();
+      try { await navigator.clipboard.writeText(text); copy.textContent = "Copiado"; }
+      catch { copy.textContent = "Selecione e copie"; }
+      setTimeout(() => (copy.textContent = "Copiar o endereço"), 2200);
+    });
+
+    const box = document.getElementById("trends");
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    const list = (title, rows) => rows?.length ? `<h3>${title}</h3><table>${rows.slice(0, 10).map((r) => `<tr><td>${esc(r.name)}<span class="bar" style="width:${Math.round(100 * r.n / rows[0].n)}%"></span></td><td class="n">${r.n} pessoas</td></tr>`).join("")}</table>` : "";
+    try {
+      const doc = await (await fetch("https://terra-a-vista.mcp.myagents.click/trends/latest.json")).json();
+      if (!doc.week) box.innerHTML = `<p class="empty">O primeiro índice sai na primeira semana em que um lugar ou uma pergunta passar de 10 pessoas diferentes. Até lá, nada é publicado.</p>`;
+      else box.innerHTML = `<p class="src">Semana ${esc(doc.week)}. ${esc(doc.rule)}</p>` + list("Os lugares mais consultados", doc.rankings.places) + list("As perguntas mais feitas", doc.rankings.questions) + list("Os que mais subiram", doc.rankings.rising) + list("Os temas", doc.rankings.themes);
+    } catch {
+      box.innerHTML = `<p class="empty">O índice não respondeu agora. Tente de novo em alguns minutos.</p>`;
+    }
+  </script>
+</body>
+</html>

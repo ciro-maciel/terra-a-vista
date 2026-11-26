@@ -52,6 +52,14 @@ o chão é o relevo e a cobertura do solo de verdade. Cada número leva a uma fo
   terra desde 1985?").
 - **Cidadãos** na tela da cidade: trabalho, idade, deslocamento e instrução de quem mora lá (Censo 2022).
 
+## Pergunte ao mapa
+
+Os mesmos dados como um servidor MCP aberto para qualquer assistente de IA: `https://terra-a-vista.mcp.myagents.click/mcp`
+(sem login, só consulta). Seis ferramentas: guide, place_profile, find_places, compare_places, place_trend e trends, o
+índice semanal e anônimo do que o Brasil pergunta ao mapa, publicado só para caixas de 10 pessoas ou mais. Como ligar:
+[pergunte](https://ciro-maciel.github.io/terra-a-vista/pergunte/); as regras do índice:
+[como contamos](https://ciro-maciel.github.io/terra-a-vista/como-contamos/); o código: [`mcp/`](mcp/).
+
 ## Como ler o mapa
 
 - Os rendimentos são nomes dados a números reais. Ouro é o PIB.

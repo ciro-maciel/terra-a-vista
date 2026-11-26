@@ -9,3 +9,5 @@ __pycache__/
 out/
 dist/
 usaciv.zip
+node_modules
+.wrangler/

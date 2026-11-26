@@ -48,6 +48,14 @@ relief and land cover. Every number traces back to a public source, listed in th
   activities behind it; and one question per timeline theme ("what happened to the land since 1985?").
 - **Citizens** in the city view: work, age, commute and schooling of the people who live there (2022 Census).
 
+## Ask the map
+
+The same data as an open MCP server for any AI assistant: `https://terra-a-vista.mcp.myagents.click/mcp` (no sign-in,
+read-only). Six tools: guide, place_profile, find_places, compare_places, place_trend and trends, the weekly anonymous
+index of what Brazil asks the map, published only for boxes of 10 people or more. How to connect:
+[pergunte](https://ciro-maciel.github.io/terra-a-vista/pergunte/); the index rules:
+[como contamos](https://ciro-maciel.github.io/terra-a-vista/como-contamos/); the code: [`mcp/`](mcp/).
+
 ## Reading the map honestly
 
 - Yields are names given to real figures. Gold is GDP.

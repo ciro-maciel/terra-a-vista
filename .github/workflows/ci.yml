@@ -19,3 +19,8 @@ jobs:
       - run: python -m unittest discover -s tests
       - run: python -m pipeline check
       - run: for f in $(find web/js -name '*.js'); do node --check "$f"; done
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.0
+      - run: bun install --frozen-lockfile && bun test
+        working-directory: ./mcp
