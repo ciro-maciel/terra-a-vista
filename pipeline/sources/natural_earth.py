@@ -34,8 +34,12 @@ class NaturalEarth(Source):
     def process(self):
         # Every non-US country with land in the window (Canada, Mexico, Cuba, the Bahamas, Bermuda...),
         # keeping only its rings there, so foreign coasts inside the map are land rather than sea.
-        countries = []
+        countries, labels = [], {}
         for f in self._features("ne_50m_admin_0_countries"):
+            p = f["properties"]
+            iso = p.get("ISO_A3") if p.get("ISO_A3") not in (None, "-99") else p.get("ADM0_A3")
+            if iso and p.get("LABEL_X") is not None:  # where to point a trade arrow, and the name in Portuguese
+                labels[iso] = [round(p["LABEL_X"], 3), round(p["LABEL_Y"], 3), p.get("NAME_PT") or p.get("ADMIN")]
             if f["properties"].get("ADM0_A3") == "BRA":
                 continue
             rings = [r for r in geojson_rings(f["geometry"]) if bbox_intersects(r, BBOX)]
@@ -58,6 +62,7 @@ class NaturalEarth(Source):
             "vintage": f"Natural Earth {TAG} (1:50m)",
             "_files": [self._path(n) for n in self.FILES],
             "countries": countries,
+            "labels": labels,
             "lakes": lakes,
             "rivers": rivers,
         }

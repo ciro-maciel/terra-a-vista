@@ -27,7 +27,8 @@ relief and land cover. Every number traces back to a public source, listed in th
   unemployment, literacy, degrees, sewer, water, forest, farmland, built-up.
 - **26 wonders**: every Brazilian site on UNESCO's World Heritage List.
 - **9 advisors**: dashboards beside the map (Economy with GDP by sector, People, Prosperity, Knowledge, Land,
-  Energy and resources, Commerce, Culture and the Explorer), linked to the map both ways.
+  Energy and resources, Commerce, Culture and the Explorer), linked to the map both ways. Commerce shows what Brazil
+  and each city export, where to and what (Comex Stat 2025), with arrows leaving the city towards each buyer.
 - **Timeline**, by theme. *People*: the Censuses from 1970 to 2022; banners show each count and the map colours each
   decade's yearly growth on one scale for all. *Land*: MapBiomas Collection 11, every five years from 1985 to 2025,
   the share of each municipality in native vegetation, pasture, agriculture, soy and city, on one scale for all years.

@@ -6,6 +6,7 @@
 //   growth     → which municipalities added or lost people between the two estimates
 //   city type  → the activities whose share of formal jobs is far above Brazil's
 //   each timeline series theme (series_<id>.json) → its measures in the first and the last year, against Brazil
+//   exports    → the buyers and the products (exports.json), against Brazil
 // Each answer names its source; a number the data cannot take apart says so instead of guessing.
 import { esc, int, money, pct, dec } from "../../format.js";
 
@@ -66,7 +67,7 @@ export function install(app) {
         d.dataset.done = "1";
         let html;
         try {
-          html = q.answer(q.series ? await app.timeline.series(q.series) : await load());
+          html = q.answer(q.series ? await app.timeline.series(q.series) : q.series === null ? null : await load());
         } catch (err) {
           console.error("why:", err);
           html = `<p>Não consegui montar esta resposta (${esc(err.message || err)}).</p>`;
@@ -76,6 +77,10 @@ export function install(app) {
       sec.appendChild(d);
     };
     questions(target).forEach(add);
+    app.loadData("exports").then((x) => {
+      const b = x && (target.kind === "city" ? x.cities[target.city.id] : x.states[target.st.abbr]);
+      if (b && sec.isConnected) add({ title: `Para onde vai o que ${target.kind === "city" ? "a cidade" : "o estado"} exporta?`, series: null, answer: () => whyExports(target, x, b) });
+    }).catch(() => {});
     // One question per timeline series theme, once its file is in (it loads in the background, a few hundred kB).
     for (const th of app.timeline?.themes || []) {
       if (!th.file) continue;
@@ -237,6 +242,23 @@ export function install(app) {
       if (up.length) html += `<p>E os com a maior alta:</p>${list(up)}`;
     }
     return html + `<p class="src">${esc(d.rule)} Fonte: ${esc(d.vintage)}.</p>`;
+  }
+
+  function whyExports(t, x, b) {
+    const usd = (v) => (v >= 1e9 ? `US$ ${dec(v / 1e9, 1)} bi` : v >= 1e6 ? `US$ ${dec(v / 1e6, 1)} mi` : `US$ ${int(v / 1e3)} mil`);
+    const br = x.nation, brC = new Map(br.countries.map(([c, v]) => [c, v / br.fob])), brP = new Map(br.products.map(([k, v]) => [k, v / br.fob]));
+    const rows = (list, label, brShare) => `<table>${list.map(([k, v]) => {
+      const sh = v / b.fob, ns = brShare.get(k);
+      return `<tr><td>${esc(label(k))}<span class="bar" style="width:${(100 * sh).toFixed(1)}%"></span></td><td class="n">${usd(v)}</td><td class="n m">${pct(sh, 0)}${ns != null ? ` · Brasil ${pct(ns, 0)}` : ""}</td></tr>`;
+    }).join("")}</table>`;
+    const o = t.kind === "city" ? t.city : t.st;
+    let html = `<p>${esc(nameOf(t))} exportou <b>${usd(b.fob)}</b> em ${x.year}, ${pct(b.fob / br.fob, 1)} do Brasil${o.population ? `, US$ ${int(b.fob / o.population)} por habitante (Brasil: US$ ${int(br.fob / n.population)})` : ""}.</p>`;
+    const big = (list) => list.slice(0, 6).filter(([, v], i) => i < 2 || v / b.fob >= 0.01); // under 1% is noise here
+    html += `<p>Para onde:</p>` + rows(big(b.countries), (k) => k, brC);
+    html += `<p>O quê:</p>` + rows(big(b.products), (k) => x.products[k] || k, brP);
+    const lead = b.countries[0];
+    if (lead && brC.get(lead[0]) && lead[1] / b.fob > 1.5 * brC.get(lead[0])) html += `<p>${esc(lead[0])} pesa aqui ${dec((lead[1] / b.fob) / brC.get(lead[0]), 1)} ${(lead[1] / b.fob) / brC.get(lead[0]) >= 2 ? "vezes" : "vez"} o que pesa nas vendas do Brasil.</p>`;
+    return html + `<p class="src">${esc(x.rule)}</p>`;
   }
 
   function whyType(t, { districts: d }) {

@@ -772,6 +772,25 @@ A city's value in a Census year sums its member municipalities that existed that
 later was counted in the one it split from); `null` when the municipality that names the city did not exist yet.
 GDP follows the same rule and uses Brazil's GDP deflator for every municipality.
 
+### exports.json (lazy)
+
+Built by `pipeline/build/exports.py` from `comex_stat` (the Comex Stat API, exports by municipality × country and
+municipality × SH4 heading, one year) and the Natural Earth label points.
+
+```js
+{
+  version: 1, year: 2025, vintage, sources: ["comex_stat"], rule: "…", unit: "US$ FOB", unmatched_fob,
+  countries: {name: {iso3, lon, lat}},            // only the ones some list uses
+  products: {sh4: short name},
+  nation: {fob, countries: [[name, fob, bearing]], products: [[sh4, fob]]},
+  states: {abbr: {...same}}, cities: {id: {...same}},
+  munis: {code7: [fob, population_2022]},
+}
+```
+
+`bearing` is the initial great-circle bearing in degrees from the city's principal seat (a state: its most populous
+municipality; the nation: Brasília) to the country's label point. The municipality is the exporter's tax domicile.
+
 ### series_<theme>.json (lazy)
 
 One file per timeline theme besides the Census one (`series_land.json`: MapBiomas; `series_farm.json`: PAM and

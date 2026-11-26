@@ -54,6 +54,10 @@ class Source:
     ) -> Path:
         return fetch.download(self.id, url, rel_path, force=force, headers=headers, expect_binary=expect_binary)
 
+    def download_post(self, url: str, rel_path: str, body: dict, *, force: bool = False) -> Path:
+        """POST a JSON body and cache the answer (see fetch.download_post)."""
+        return fetch.download_post(self.id, url, rel_path, body, force=force)
+
     def download_prefix(self, url: str, rel_path: str, prefix: str, *, header_start: str = "", force: bool = False) -> Path:
         """Header + the block of lines starting with `prefix` only (see fetch.download_prefix)."""
         return fetch.download_prefix(self.id, url, rel_path, prefix, header_start=header_start, force=force)

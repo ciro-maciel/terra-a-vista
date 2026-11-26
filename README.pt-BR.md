@@ -27,7 +27,9 @@ o chão é o relevo e a cobertura do solo de verdade. Cada número leva a uma fo
   por habitante, desocupação, alfabetização, ensino superior, esgoto, água, floresta, lavoura, área construída.
 - **26 maravilhas**: todos os sítios brasileiros do Patrimônio Mundial da UNESCO.
 - **9 conselheiros**: painéis ao lado do mapa (Economia com o PIB por setor, Pessoas, Prosperidade, Conhecimento,
-  Terra, Energia e recursos, Comércio, Cultura e o Explorador), ligados ao mapa nos dois sentidos.
+  Terra, Energia e recursos, Comércio, Cultura e o Explorador), ligados ao mapa nos dois sentidos. O Comércio mostra o
+  que o Brasil e cada cidade exportam, para onde e o quê (Comex Stat 2025), com setas saindo da cidade na direção de
+  cada comprador.
 - **Linha do tempo**, por tema. *Gente*: os Censos de 1970 a 2022; os estandartes mostram a população contada em
   cada um e o mapa pinta o crescimento por ano de cada década, na mesma escala para todas. *Terra*: o MapBiomas
   (Coleção 11), de cinco em cinco anos de 1985 a 2025, a parcela de cada município em vegetação nativa, pasto,

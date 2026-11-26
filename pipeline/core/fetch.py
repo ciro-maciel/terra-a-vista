@@ -200,6 +200,21 @@ def download(
 
 
 
+def download_post(source_id: str, url: str, rel_path: str, body: dict, *, force: bool = False, timeout: int = 600) -> Path:
+    """POST a JSON `body` to `url` and cache the answer like download() (an API that takes its query in the body)."""
+    payload = json.dumps(body, separators=(",", ":")).encode()
+
+    def attempt(tmp: Path) -> tuple[str, int]:
+        req = urllib.request.Request(url, data=payload, method="POST",
+                                     headers={"User-Agent": USER_AGENT, "Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = resp.read()
+        tmp.write_bytes(data)
+        return hashlib.sha256(data).hexdigest(), len(data)
+
+    return _download_with(source_id, url, rel_path, attempt, force=force, extra={"body": body})
+
+
 def download_reduced(
     source_id: str, url: str, rel_path: str, reduce: Callable[[Iterable[str]], dict], *,
     force: bool = False, timeout: int = 1800, encoding: str = "utf-8",

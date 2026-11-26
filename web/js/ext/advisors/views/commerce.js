@@ -1,7 +1,8 @@
 // Commerce advisor ("Mestre do comércio"): the busiest air routes between cities (trade.json), the ports and airports
-// and the road and rail network (infrastructure.json).
+// and the road and rail network (infrastructure.json), and what Brazil and each city export, where to (exports.json):
+// arrows leave the city towards each buyer, on its great-circle bearing, as wide as what it buys.
 import { esc, fin, el as mk } from "../core/util.js";
-import { int, count3 } from "../core/fmt.js";
+import { int, count3, pct } from "../core/fmt.js";
 import { barList, sizeLegend } from "../core/charts.js";
 import { section, tiles, segmented, sourcesHtml } from "../core/view.js";
 import { frameBox, focusPoint } from "../core/frame.js";
@@ -10,7 +11,7 @@ const ROUTE_COLOR = "#c9a0e0", PORT_COLOR = "#4f9ad6", AIR_COLOR = "#e6cf86";
 
 export async function mount(ctx) {
   const { app, el, link, data } = ctx;
-  const [trade, infra] = await Promise.all([app.loadData("trade"), app.loadData("infrastructure")]);
+  const [trade, infra, exp] = await Promise.all([app.loadData("trade"), app.loadData("infrastructure"), app.loadData("exports")]);
   if (!trade && !infra) {
     el.innerHTML = `<p class="adv-empty pad">O trade.json e o infrastructure.json não foram gerados, então o mestre do comércio não tem o que contar.</p>`;
     return {};
@@ -275,11 +276,119 @@ export async function mount(ctx) {
     focusPoint(app, p.x, p.y, Math.min(app.cam.maxScale, Math.max(app.cam.scale, (app.cam.fitScale || 1) * 3)));
   }
 
-  el.insertAdjacentHTML("beforeend", sourcesHtml(data, [...(trade?.sources || []), ...(infra?.sources || [])], [
+  // --- exports ---------------------------------------------------------------------------------------------------
+  if (exp) mountExports();
+  function mountExports() {
+    const usd = (v) => (v >= 1e9 ? `US$ ${dec1(v / 1e9)} bi` : v >= 1e6 ? `US$ ${dec1(v / 1e6)} mi` : `US$ ${int(v / 1e3)} mil`);
+    const dec1 = (x) => (x >= 100 ? int(x) : x.toFixed(1).replace(".", ","));
+    const eBody = section(el, { title: "Exportação", kicker: `Comex Stat ${exp.year}`, note: `${esc(exp.rule)} Clique numa cidade da lista para ver as setas saindo dela; passe o mouse num país para destacar a seta.` });
+    const head = mk("div");
+    const cHost = mk("div"), pHost = mk("div"), tHost = mk("div");
+    eBody.append(head, cHost, pHost, tHost);
+    const eSt = { origin: null, hot: null }; // origin: a city id, or null = Brazil
+    const blob = () => (eSt.origin ? exp.cities[eSt.origin] : exp.nation);
+    const originCell = () => {
+      const id = eSt.origin || "5300108";
+      return metros.byKey.get(id)?.ref?.cell ?? app.data.cities.find((c) => c.id === id)?.cell;
+    };
+    function drawExports() {
+      const b = blob();
+      const name = eSt.origin ? metros.byKey.get(eSt.origin)?.name || eSt.origin : "Brasil";
+      head.innerHTML = tiles([
+        { label: `Exportou em ${exp.year}`, value: usd(b?.fob || 0), sub: name },
+        { label: "Maior comprador", value: b?.countries?.[0]?.[0] || "–", sub: b?.countries?.[0] ? `${pct(b.countries[0][1] / b.fob)} do total` : "" },
+        { label: "Principal produto", value: b?.products?.[0] ? exp.products[b.products[0][0]] || b.products[0][0] : "–", sub: b?.products?.[0] ? `${pct(b.products[0][1] / b.fob)} do total` : "" },
+      ]) + (eSt.origin ? `<p class="adv-row"><button type="button" class="adv-mini" data-exp-br>Voltar ao Brasil</button></p>` : "");
+      head.querySelector("[data-exp-br]")?.addEventListener("click", () => setOrigin(null));
+      cHost.innerHTML = "<h4 class=\"adv-h4\">Para onde</h4>";
+      barList(cHost, {
+        compact: true, ariaLabel: "Países que mais compram",
+        rows: (b?.countries || []).map(([c, v]) => ({ key: c, label: c, value: v, text: usd(v), sub: pct(v / b.fob), color: "#7fb7d9" })),
+        onHover: (r) => { eSt.hot = r ? r.key : null; redraw(); },
+      });
+      pHost.innerHTML = "<h4 class=\"adv-h4\">O quê</h4>";
+      barList(pHost, {
+        compact: true, ariaLabel: "Produtos mais exportados",
+        rows: (b?.products || []).map(([k, v]) => ({ key: k, label: exp.products[k] || k, value: v, text: usd(v), sub: pct(v / b.fob), color: "#e3b23c" })),
+      });
+      redraw();
+    }
+    function setOrigin(id) {
+      eSt.origin = id;
+      eSt.hot = null;
+      drawExports();
+      const m = id ? metros.byKey.get(id) : null;
+      link.base(m ? { cells: new Set(m.ref.footprint || [m.ref.cell]), cities: new Set([id]), dimOthers: true } : null);
+      const cell = originCell();
+      if (cell != null) focusPoint(app, grid.cx(cell), grid.cy(cell), Math.min(app.cam.scale, (app.cam.fitScale || 1) * 1.2));
+    }
+    tHost.innerHTML = "<h4 class=\"adv-h4\">As cidades que mais exportam</h4>";
+    const ranked = Object.entries(exp.cities).sort((a, b) => b[1].fob - a[1].fob).slice(0, 15);
+    barList(tHost, {
+      rank: true, compact: true, ariaLabel: "Cidades que mais exportam",
+      rows: ranked.map(([id, b]) => ({ key: id, label: metros.byKey.get(id)?.name || id, value: b.fob, text: usd(b.fob), sub: exp.products[b.products?.[0]?.[0]] || "", color: "#7fb7d9" })),
+      onHover: (r) => link.hover(r && metros.byKey.get(r.key) ? { cells: new Set(metros.byKey.get(r.key).ref.footprint || []), label: metros.byKey.get(r.key).name } : null),
+      onClick: (r) => setOrigin(eSt.origin === r.key ? null : r.key),
+    });
+
+    // Arrows: from the origin's banner towards each buyer, on the great-circle bearing (north is up on this map).
+    const eOverlay = {
+      id: "adv-commerce-exports", z: 19, space: "world",
+      draw(ctx2, cam) {
+        const b = blob(), cell = originCell();
+        if (!b || cell == null) return;
+        const s = cam.scale, x0 = grid.cx(cell), y0 = grid.cy(cell);
+        const vMax = b.countries[0]?.[1] || 1;
+        ctx2.save();
+        ctx2.lineCap = "round";
+        ctx2.font = `600 ${12 / s}px system-ui, sans-serif`;
+        ctx2.textBaseline = "middle";
+        b.countries.forEach(([name, v, deg], k) => {
+          if (deg == null) return;
+          const hot = eSt.hot === name;
+          const a = (deg * Math.PI) / 180, L = 420 + 720 * Math.sqrt(v / vMax);
+          const dx = Math.sin(a), dy = -Math.cos(a);
+          const x1 = x0 + dx * L, y1 = y0 + dy * L;
+          const wpx = 1.5 + 7 * Math.sqrt(v / vMax) + (hot ? 2 : 0);
+          ctx2.strokeStyle = "rgba(10,8,4,.55)";
+          ctx2.lineWidth = (wpx + 2.5) / s;
+          ctx2.beginPath(); ctx2.moveTo(x0, y0); ctx2.lineTo(x1, y1); ctx2.stroke();
+          ctx2.strokeStyle = hot ? "#ffd36a" : eSt.hot ? "rgba(127,183,217,.35)" : "rgba(127,183,217,.9)";
+          ctx2.lineWidth = wpx / s;
+          ctx2.beginPath(); ctx2.moveTo(x0, y0); ctx2.lineTo(x1, y1); ctx2.stroke();
+          const h = (8 + wpx) / s; // arrow head
+          ctx2.fillStyle = ctx2.strokeStyle;
+          ctx2.beginPath();
+          ctx2.moveTo(x1 + dx * h, y1 + dy * h);
+          ctx2.lineTo(x1 - dy * h * 0.6, y1 + dx * h * 0.6);
+          ctx2.lineTo(x1 + dy * h * 0.6, y1 - dx * h * 0.6);
+          ctx2.closePath(); ctx2.fill();
+          if (k < 6 || hot) {
+            const tx = x1 + dx * (h + 6 / s), ty = y1 + dy * (h + 6 / s);
+            ctx2.textAlign = dx >= 0.2 ? "left" : dx <= -0.2 ? "right" : "center";
+            const label = `${name.replace(/ \(.*\)$/, "")} ${usd(v)}`;
+            ctx2.lineWidth = 3 / s;
+            ctx2.strokeStyle = "rgba(10,8,4,.85)";
+            ctx2.strokeText(label, tx, ty);
+            ctx2.fillStyle = hot ? "#ffd36a" : "#e8f2f8";
+            ctx2.fillText(label, tx, ty);
+          }
+        });
+        ctx2.restore();
+      },
+    };
+    const offE = app.registerOverlay(eOverlay);
+    ctx.cleanup(() => offE?.());
+    api.setExportOrigin = setOrigin;
+    drawExports();
+  }
+
+  el.insertAdjacentHTML("beforeend", sourcesHtml(data, [...(trade?.sources || []), ...(infra?.sources || []), ...(exp?.sources || [])], [
     "As rotas somam os passageiros dos dois sentidos e de todos os aeroportos de cada cidade, e só contam ligações de 250 km ou mais: a ponte Rio–São Paulo entra, Campinas–São Paulo não.",
     "O arco é um desenho entre os estandartes, não a rota do voo.",
     "Os números dos portos foram transcritos do Anuário 2025 da ANTAQ (a base bruta estava fora do ar), e cada porto fica na sede do seu município: um terminal longe da cidade aparece no lugar errado por alguns quilômetros.",
     "As rodovias e ferrovias do Natural Earth são desenho de mapa, não estatística: um traçado simplificado sem toda a malha, sem tráfego nem dono.",
+    "A seta da exportação aponta o rumo do país pelo menor caminho sobre o globo, a partir da cidade; o comprimento e a espessura seguem o valor, não a distância.",
   ]));
 
   return {
