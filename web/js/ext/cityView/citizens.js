@@ -123,8 +123,8 @@ function specMap(city) {
 /** The Citizens rows. data = citizens.json (or null / undefined while loading). */
 export function citizensHtml(m, data) {
   const c = m.city;
-  if (data === undefined) return `<p class="muted cv-note">Loading the citizen mix…</p>`;
-  if (!data || !data.cities) return `<p class="muted cv-note">The citizen mix is not available.</p>`;
+  if (data === undefined) return `<p class="muted cv-note">Carregando os cidadãos…</p>`;
+  if (!data || !data.cities) return `<p class="muted cv-note">Os cidadãos ainda não estão disponíveis: ocupação, idade, deslocamento e origem por município entram com o Censo 2022.</p>`;
   const row0 = data.cities[c.id];
   if (!row0) {
     return `<p class="muted cv-note">Census published none of the citizen tables for ${esc(c.name)} in the ${esc(data.vintage || "ACS 1-year")} release (it leaves out small areas), so there are no citizen figures here.</p>`;

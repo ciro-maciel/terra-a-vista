@@ -25,7 +25,7 @@ export const IMG_H = 900;
 export const CAPTION_H = 118;
 const SERIF = '"Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif';
 const SANS = '-apple-system, "Segoe UI", system-ui, sans-serif';
-const CREDIT = "Data: Census ACS, BEA, NOAA, USGS/MRLC, EIA, Natural Earth";
+const CREDIT = "Dados: IBGE, ESA WorldCover, NOAA, Natural Earth";
 
 async function copyText(text) {
   try {
@@ -130,7 +130,7 @@ export function composeImage(info, { height = IMG_H } = {}) {
   ctx.fillStyle = "#ecd08e";
   ctx.font = `24px ${SERIF}`;
   spaced(ctx, 1.5);
-  ctx.fillText((lens ? lens.name : "Terrain").toUpperCase() + (lens ? " LENS" : ""), mx + 50, cy - 8);
+  ctx.fillText((lens ? "LENTE " + lens.name : "Terreno").toUpperCase(), mx + 50, cy - 8);
   spaced(ctx, 0);
   if (lens?.ramp?.length) {
     const rx = mx + 50, ry = cy + 4, rw = 330, rh = 12;
@@ -150,7 +150,7 @@ export function composeImage(info, { height = IMG_H } = {}) {
   } else {
     ctx.font = `15px ${SANS}`;
     ctx.fillStyle = "#b9ab88";
-    ctx.fillText("Land cover, relief, rivers and resources", mx + 50, cy + 16);
+    ctx.fillText("Cobertura do solo, relevo, rios e recursos", mx + 50, cy + 16);
   }
 
   // Selection, credits, site
@@ -213,11 +213,11 @@ export function initShare(opts) {
   let restore = null;
 
   pop.innerHTML = `
-    <div class="sp-title">Share this view</div>
-    <button class="sp-item" data-act="copy">${icon("share", "🔗", { size: 16 })}<span>Copy link</span></button>
-    <button class="sp-item" data-act="image">${icon("terrain", "🖼️", { size: 16 })}<span>Download image <span class="muted">1600×900 PNG</span></span></button>
+    <div class="sp-title">Compartilhar esta vista</div>
+    <button class="sp-item" data-act="copy">${icon("share", "🔗", { size: 16 })}<span>Copiar o link</span></button>
+    <button class="sp-item" data-act="image">${icon("terrain", "🖼️", { size: 16 })}<span>Baixar a imagem <span class="muted">PNG 1600×900</span></span></button>
     <div class="sp-status" role="status" aria-live="polite"></div>
-    <input class="sp-url" type="text" readonly hidden aria-label="Link to this view">`;
+    <input class="sp-url" type="text" readonly hidden aria-label="Link desta vista">`;
   const status = pop.querySelector(".sp-status");
   const urlBox = pop.querySelector(".sp-url");
 
@@ -255,17 +255,17 @@ export function initShare(opts) {
       opts.beforeCopy?.();
       const link = location.href;
       if (await copyText(link)) {
-        status.textContent = "Link copied to the clipboard";
-        opts.onToast?.("Link copied");
+        status.textContent = "Link copiado";
+        opts.onToast?.("Link copiado");
       } else {
-        status.textContent = "Copy this link:";
+        status.textContent = "Copie este link:";
         urlBox.hidden = false;
         urlBox.value = link;
         urlBox.focus();
         urlBox.select();
       }
     } else if (b.dataset.act === "image") {
-      status.textContent = "Drawing the map…";
+      status.textContent = "Desenhando o mapa…";
       await new Promise((r) => setTimeout(r, 30)); // let the status paint
       try {
         const cv = composeImage(opts.getInfo());
@@ -278,10 +278,10 @@ export function initShare(opts) {
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-        status.textContent = `Saved ${a.download}`;
+        status.textContent = `Salvo: ${a.download}`;
       } catch (err) {
         console.warn(err);
-        status.textContent = "Could not create the image in this browser.";
+        status.textContent = "Não foi possível criar a imagem neste navegador.";
       }
     }
   });

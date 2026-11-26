@@ -9,7 +9,7 @@ const COVER_ICON = { forest_deciduous: "l-forest", forest_evergreen: "l-forest",
 const inkOn = (hex) => {
   try { return /^#[0-9a-f]{6}$/i.test(hex || "") && luminance(parseHex(hex)) > 0.4 ? "#1c1710" : "#f8f0d8"; } catch { return "#f8f0d8"; }
 };
-const CATEGORY = { energy: "Energy", mineral: "Minerals", agri: "Agriculture" };
+const CATEGORY = { energy: "Energia", mineral: "Minerais", agri: "Agropecuária" };
 
 export function initPedia(data) {
   const modal = document.getElementById("pedia");
@@ -22,71 +22,70 @@ export function initPedia(data) {
   const h2 = (ic, fb, text) => `<h2>${icon(ic, fb, { size: 24 })}<span>${esc(text)}</span></h2>`;
 
   const pages = {
-    "About this map": () => `
-      ${h2("pedia", "📖", "About this map")}
-      <p>This is the real United States, drawn like a strategy game. Nothing is invented: every tile, city and
-      number comes from public data, listed under <i>Sources</i>.</p>
-      <h4>How it's built</h4>
-      <p>The lower 48 states are projected (Albers equal-area) and cut into ${data.world.grid.cols}×${data.world.grid.rows}
-      hexes, each ${data.world.grid.radius * 2} km corner to corner. Each hex belongs to the state and county under its centre.
-      Terrain comes from elevation samples inside each hex.</p>
-      <p><b>Cities</b> are the metropolitan and micropolitan areas published in the ACS 1-year estimates (the Census Bureau
-      includes areas of roughly 65,000+ people, so a few now fall slightly below that), placed at their principal city. Their numbers cover the whole metro area, not just the city proper.</p>
-      <h4>Controls</h4>
-      <p>Drag or arrow keys / WASD to pan · scroll, +/– or double-click to zoom · click a city or a state to open it ·
-      / or ⌘K to search · L to cycle lenses · R to show or hide resources · ? for all shortcuts · Esc to close.</p>
-      <p>The address bar always holds a link to what you're looking at (lens, selection and view); use <i>Share</i> to copy it
-      or to download a picture.</p>`,
-    Yields: () => `
-      ${h2("y-production", "⚙️", "Yields")}
-      <p>Civilization's yields mapped onto real measures. Job-based yields count <i>residents</i> employed in an industry
-      (where workers live, not where they work). <b>Gold is GDP</b>: output per year, counted where the work is done.</p>
-      <table>${data.nation.yields.map((y) => `<tr><td class="ic" style="color:${esc(y.color)}">${glyph(y, 26)}</td><td><b style="color:${esc(y.color)}">${esc(y.label)}${y.key === "gold" ? " (GDP)" : ""}</b><br>${esc(y.description)}</td></tr>`).join("")}</table>
-      <h4>Amenities &amp; housing</h4>
-      <p>Unemployment = unemployed ÷ civilian labour force (B23025). Rent ÷ income = median gross rent × 12 ÷ median household
-      income: a rough affordability signal, not a household-level burden rate.</p>`,
-    States: () => `
-      ${h2("terrain", "🗺️", "States")}
-      <p>Click any land hex without a city to open its state. A state's numbers are the state totals and medians from the
-      same tables as the cities (${esc(data.nation.vintage)}${data.nation.gdp_vintage ? `; GDP from ${esc(data.nation.gdp_vintage)}` : ""}),
-      not the sum of its cities, so rural areas count too.</p>
-      <p><b>Ranks</b> ("#3 of 49") compare the 48 contiguous states and the District of Columbia; 1 is the largest. Alaska,
-      Hawaii and the territories are not mapped yet, so they are not ranked.</p>
-      <p>Metro areas that cross state lines (New York–Newark, Kansas City, Philadelphia…) are listed under every state they
-      touch, with their whole-metro numbers.</p>
-      ${data.states ? "" : `<p class="muted">This data build has no states.json, so state panels show names and cities only.</p>`}`,
-    Terrain: () => {
+    "Sobre o mapa": () => `
+      ${h2("pedia", "", "Sobre o mapa")}
+      <p>Este é o Brasil de verdade, desenhado como um jogo de estratégia. Nada é inventado: cada hexágono, cidade e
+      número vem de um dado público, listado em <i>Fontes</i>.</p>
+      <h4>Como é feito</h4>
+      <p>O país é projetado (Albers de áreas iguais, com os parâmetros do IBGE) e cortado em ${data.world.grid.cols}×${data.world.grid.rows}
+      hexágonos de ${data.world.grid.radius * 2} km de ponta a ponta. Cada hexágono pertence ao estado e ao município da maioria
+      dos seus 7 pontos de amostra. O relevo vem das altitudes medidas dentro de cada hexágono.</p>
+      <p>${data.nation.city_rule ? esc(data.nation.city_rule) : ""} Os números de uma cidade cobrem todos os seus municípios,
+      não só o principal.</p>
+      <h4>Controles</h4>
+      <p>Arraste ou use as setas / WASD para mover · role, use +/– ou dê um clique duplo para aproximar · clique numa cidade
+      ou num estado para abrir · / ou ⌘K para buscar · L troca a lente · R mostra ou esconde os recursos · ? mostra todos os
+      atalhos · Esc fecha.</p>
+      <p>A barra de endereço sempre guarda um link para o que você está vendo (lente, seleção e enquadramento); use
+      <i>Compartilhar</i> para copiar o link ou baixar uma imagem.</p>`,
+    Rendimentos: () => `
+      ${h2("y-production", "", "Rendimentos")}
+      <p>Os rendimentos de um jogo de estratégia, ligados a medidas reais. Os rendimentos de trabalho contam <i>empregos
+      formais assalariados</i> numa atividade, onde fica a empresa (o IBGE monta o Cadastro Central de Empresas a partir da
+      RAIS). <b>Ouro é o PIB</b>: o que se produz num ano, contado onde o trabalho é feito.</p>
+      <table>${data.nation.yields.map((y) => `<tr><td class="ic" style="color:${esc(y.color)}">${glyph(y, 26)}</td><td><b style="color:${esc(y.color)}">${esc(y.label)}${y.key === "gold" ? " (PIB)" : ""}</b><br>${esc(y.description)}</td></tr>`).join("")}</table>
+      <h4>O que fica de fora</h4>
+      <p>O trabalho informal, que é perto de 4 em cada 10 ocupados no Brasil, não está nos rendimentos de trabalho. Renda,
+      aluguel e desemprego por cidade ainda não entraram: aparecem como "–", que quer dizer "sem dado", nunca zero.</p>`,
+    Estados: () => `
+      ${h2("terrain", "", "Estados")}
+      <p>Clique em qualquer hexágono de terra sem cidade para abrir o seu estado. Os números de um estado são os totais do
+      estado nas mesmas fontes das cidades (${esc(data.nation.vintage)}${data.nation.gdp_vintage ? `; PIB: ${esc(data.nation.gdp_vintage)}` : ""}),
+      não a soma das cidades, então as áreas rurais também contam.</p>
+      <p>As <b>posições</b> ("3º de 27") comparam as 26 unidades da federação e o Distrito Federal; 1 é o maior. As ilhas
+      oceânicas mais distantes (Trindade e Martim Vaz, São Pedro e São Paulo) ficam fora do enquadramento do mapa.</p>
+      <p>Cidades que cruzam divisas estaduais (Brasília com o entorno goiano, Petrolina e Juazeiro, Teresina e Timon…)
+      aparecem em cada estado que tocam, com os números da cidade inteira.</p>
+      ${data.states ? "" : `<p class="muted">Esta versão dos dados não tem states.json, então os painéis dos estados mostram só nomes e cidades.</p>`}`,
+    Terreno: () => {
       const t = data.w?.tables || resolveTables(data.world.tables);
       const hasCover = Array.isArray(data.world.cover);
       const row = (x) => `<tr><td class="nm">${x.color ? `<span class="swatch" style="background:${esc(x.color)}"></span>` : ""}${
         COVER_ICON[x.key] ? icon(COVER_ICON[x.key], "", { size: 15 }) + " " : ""}<b>${esc(x.name)}</b></td><td>${esc(x.rule || "")}</td></tr>`;
       return `
-      ${h2("terrain", "🗺️", "Terrain")}
-      <p>Each hex averages the ETOPO1 elevation samples inside it. Relief comes from the mean elevation and roughness
-      (standard deviation) of those samples; shading comes from elevation differences with neighbouring hexes, lit from the
-      north-west.</p>
-      <h4>${icon("l-forest", "🌲", { size: 16 })} Land cover</h4>
+      ${h2("terrain", "", "Terreno")}
+      <p>Cada hexágono faz a média das altitudes do ETOPO1 dentro dele. O relevo vem da altitude média e da rugosidade
+      (desvio-padrão) dessas amostras; o sombreado vem da diferença de altitude com os vizinhos, com luz vinda do noroeste.</p>
+      <h4>${icon("l-forest", "", { size: 16 })} Cobertura do solo</h4>
       ${hasCover
-        ? `<p>The base colour of each hex is its dominant land-cover group: the largest group among the land samples inside it.
-           Small symbols show the mix: trees scale with the forest share, and fields, reeds, shrubs and grass tufts mark farmland,
-           wetland, scrub and grassland.</p>
+        ? `<p>A cor de base de cada hexágono é o seu grupo de cobertura dominante: o maior grupo entre as amostras de terra
+           dentro dele (ESA WorldCover 2021). Os símbolos pequenos mostram a mistura: as árvores crescem com a parcela de
+           floresta, e roças, juncos, arbustos e tufos de capim marcam lavoura, área úmida, caatinga e campo. O WorldCover não
+           separa pasto de campo.</p>
            <table>${t.cover.filter((x) => x.id > 0).map(row).join("")}</table>`
-        : `<p class="muted">This data build has no land-cover layer yet; land is coloured by elevation.</p>`}
-      <h4>Relief</h4>
+        : `<p class="muted">Esta versão dos dados ainda não tem cobertura do solo; a terra é colorida pela altitude.</p>`}
+      <h4>Relevo</h4>
       <table>${t.relief.map(row).join("")}</table>
-      <h4>${icon("r-hydro", "💧", { size: 16 })} Water</h4>
+      <h4>${icon("r-hydro", "", { size: 16 })} Água</h4>
       <table>${t.water.filter((x) => x.id > 0).map(row).join("")}</table>
-      <h4>Beyond the borders</h4>
-      <p class="muted">Foreign land (Canada, Mexico, and in the Caribbean Cuba and the Bahamas) is drawn under a light fog:
-      it is shown for context and not mapped in detail.</p>`;
+      <h4>Além das fronteiras</h4>
+      <p class="muted">Os países vizinhos aparecem sob uma névoa leve: estão ali para dar contexto e não são mapeados em detalhe.</p>`;
     },
-    Lenses: () => `
-      ${h2("layers", "▤", "Lenses")}
-      <p>Lenses recolour the map by one measure, built from county data (${esc(data.lenses.vintage)}). Each hex is sampled
-      at 7 points. A county covering some of them is assumed to cover that share of the hex. Small dense counties that no
-      sample hits (Manhattan, Virginia's independent cities) are added to the hex containing their centre. Income and home
-      value are averaged over the counties in a hex, weighted by population.</p>
-      <p>The legend shows how many hexes fall at each value. Hover or drag on it to show only that range on the map.</p>
+    Lentes: () => `
+      ${h2("layers", "", "Lentes")}
+      <p>As lentes recolorem o mapa por uma medida, feita a partir dos municípios (${esc(data.lenses.vintage)}). Cada hexágono
+      é amostrado em 7 pontos, e um município que cobre parte deles conta como cobrindo essa parcela do hexágono.</p>
+      <p>A legenda mostra quantos hexágonos caem em cada valor. Passe o mouse ou arraste nela para mostrar só aquela faixa no mapa.</p>
       ${(data.lenses.groups || [{ id: null, name: "" }]).map((g) => {
         const ls = data.lenses.lenses.filter((l) => !g.id || l.group === g.id);
         if (!ls.length) return "";
@@ -94,40 +93,40 @@ export function initPedia(data) {
           <div class="lens-entry"><div class="le-ic">${glyph(l, 26)}</div><div>
           <h4>${esc(l.name)}</h4><p>${esc(l.description)}<br>
           <i class="le-ramp" style="background:linear-gradient(90deg, ${(l.ramp || []).map(esc).join(",")})"></i>
-          <span class="muted">Scale: ${esc(l.scale)}, ${l.domain[0].toLocaleString()}–${l.domain[1].toLocaleString()} ${esc(l.unit)}${
-            l.higher_is === "good" ? " · higher is better" : l.higher_is === "bad" ? " · higher is worse" : ""}${l.source ? " · " + esc(srcName(l.source)) : ""}</span></p></div></div>`).join("")}`;
+          <span class="muted">Escala: ${esc(l.scale === "log" ? "logarítmica" : "linear")}, ${l.domain[0].toLocaleString("pt-BR")}–${l.domain[1].toLocaleString("pt-BR")} ${esc(l.unit)}${
+            l.higher_is === "good" ? " · maior é melhor" : l.higher_is === "bad" ? " · maior é pior" : ""}${l.source ? " · " + esc(srcName(l.source)) : ""}</span></p></div></div>`).join("")}`;
       }).join("")}`,
-    Resources: () => {
+    Recursos: () => {
       const r = data.resources;
-      if (!r?.types?.length) return `${h2("resources", "⛏️", "Resources")}<p class="muted">This data build has no resources layer.</p>`;
+      if (!r?.types?.length) return `${h2("resources", "", "Recursos")}<p class="muted">Esta versão dos dados ainda não tem a camada de recursos.</p>`;
       const count = new Map();
       for (const it of r.items || []) count.set(it.type, (count.get(it.type) || 0) + 1);
       const cats = [...new Set(r.types.map((t) => t.category || "other"))];
       return `
-      ${h2("resources", "⛏️", "Resources")}
-      <p>Resources mark the country's biggest power plants, mines and oil &amp; gas fields on the tiles where they are.
-      Only meaningful sites are shown: each type's threshold is in its description. When zoomed out, a hex shows its
-      highest-ranked resource; zoom in to see more. Press <b>R</b> to show or hide them.</p>
+      ${h2("resources", "", "Recursos")}
+      <p>Os recursos marcam as maiores usinas, minas e campos de petróleo e gás do país, nos hexágonos onde ficam. Só
+      aparecem os locais relevantes: o limite de cada tipo está na descrição dele. Com o mapa afastado, cada hexágono mostra
+      o seu recurso mais importante; aproxime para ver mais. Aperte <b>R</b> para mostrar ou esconder.</p>
       ${cats.map((c) => `<h4>${esc(CATEGORY[c] || c)}</h4><table class="res-table">
-        <tr><th></th><th>Type</th><th>What counts</th><th>Sites</th></tr>
+        <tr><th></th><th>Tipo</th><th>O que conta</th><th>Locais</th></tr>
         ${r.types.filter((t) => (t.category || "other") === c).map((t) => `<tr>
           <td class="ic"><span class="res-ic" style="background:${esc(t.color || "#24384f")};color:${inkOn(t.color)}">${glyph(t, 20)}</span></td>
-          <td class="nm"><b>${esc(t.name)}</b>${t.unit ? `<br><span class="muted">value in ${esc(t.unit)}</span>` : ""}</td>
-          <td>${esc(t.description || "")}<br><span class="muted">Source: ${esc(srcName(t.source))}</span></td>
+          <td class="nm"><b>${esc(t.name)}</b>${t.unit ? `<br><span class="muted">valor em ${esc(t.unit)}</span>` : ""}</td>
+          <td>${esc(t.description || "")}<br><span class="muted">Fonte: ${esc(srcName(t.source))}</span></td>
           <td class="num">${count.get(t.id) || 0}</td></tr>`).join("")}</table>`).join("")}`;
     },
-    Sources: () => `
-      ${h2("pedia", "📖", "Sources")}
+    Fontes: () => `
+      ${h2("pedia", "", "Fontes")}
       ${data.sources.map((s) => `
         <h4>${esc(s.title)}</h4>
         <p>${esc(s.description)}<br>
         <span class="muted">${esc(s.publisher)} · ${esc(s.license)}${s.vintage ? " · " + esc(s.vintage) : ""} ·
-        <a href="${esc(s.homepage)}" target="_blank" rel="noopener">homepage</a></span></p>
-        <table>${(s.files || []).map((f) => `<tr><td><code>${esc(f.url)}</code></td><td class="muted" style="white-space:nowrap">${esc((f.retrieved || "").slice(0, 10))}<br>${((f.bytes || 0) / 1e6).toFixed(1)} MB</td></tr>`).join("")}</table>`).join("")}`,
+        <a href="${esc(s.homepage)}" target="_blank" rel="noopener">página</a></span></p>
+        <table>${(s.files || []).map((f) => `<tr><td><code>${esc(f.url)}</code></td><td class="muted" style="white-space:nowrap">${esc((f.retrieved || "").slice(0, 10))}<br>${((f.bytes || 0) / 1e6).toFixed(1).replace(".", ",")} MB</td></tr>`).join("")}</table>`).join("")}`,
   };
 
   const show = (name) => {
-    if (!pages[name]) name = "About this map";
+    if (!pages[name]) name = "Sobre o mapa";
     body.innerHTML = pages[name]();
     body.scrollTop = 0;
     nav.querySelectorAll("button").forEach((b) => {
@@ -136,7 +135,7 @@ export function initPedia(data) {
       b.setAttribute("aria-current", on ? "page" : "false");
     });
   };
-  nav.innerHTML = `<div class="hd">Almanac</div>` + Object.keys(pages).map((p) => `<button data-page="${esc(p)}">${esc(p)}</button>`).join("");
+  nav.innerHTML = `<div class="hd">Almanaque</div>` + Object.keys(pages).map((p) => `<button data-page="${esc(p)}">${esc(p)}</button>`).join("");
   nav.onclick = (e) => {
     const b = e.target.closest("button[data-page]");
     if (b) show(b.dataset.page);
@@ -161,7 +160,7 @@ export function initPedia(data) {
   });
 
   return {
-    open(page = "About this map") {
+    open(page = "Sobre o mapa") {
       if (modal.hidden) restoreFocus = document.activeElement;
       show(page);
       modal.hidden = false;

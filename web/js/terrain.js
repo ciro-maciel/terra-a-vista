@@ -4,37 +4,37 @@ import { parseHex } from "./color.js";
 
 // v1 terrain codes (pipeline/build/world.py before v2). Only used to derive water/relief from old files.
 export const V1_TERRAIN = [
-  { id: 0, name: "Ocean", water: 1 }, { id: 1, name: "Coast", water: 2 }, { id: 2, name: "Lake", water: 3 },
-  { id: 3, name: "Lowlands" }, { id: 4, name: "Plains" }, { id: 5, name: "High plains" }, { id: 6, name: "Plateau" },
-  { id: 7, name: "Hills", relief: 1 }, { id: 8, name: "Mountains", relief: 2 }, { id: 9, name: "Alpine", relief: 3 },
+  { id: 0, name: "Oceano", water: 1 }, { id: 1, name: "Costa", water: 2 }, { id: 2, name: "Lago", water: 3 },
+  { id: 3, name: "Baixada" }, { id: 4, name: "Planície" }, { id: 5, name: "Planície alta" }, { id: 6, name: "Planalto" },
+  { id: 7, name: "Morros", relief: 1 }, { id: 8, name: "Serras", relief: 2 }, { id: 9, name: "Picos", relief: 3 },
 ];
 
 export const DEFAULT_TABLES = {
   water: [
-    { id: 0, name: "Land" },
-    { id: 1, name: "Ocean", color: "#1b4266", rule: "Water deeper than ~200 m, away from land." },
-    { id: 2, name: "Coast", color: "#2d6d97", rule: "Water next to land or shallower than 200 m." },
-    { id: 3, name: "Lake", color: "#3a80b0", rule: "Hex centre inside a Natural Earth lake." },
+    { id: 0, name: "Terra" },
+    { id: 1, name: "Oceano", color: "#1b4266", rule: "Água com mais de ~200 m de profundidade, longe da terra." },
+    { id: 2, name: "Costa", color: "#2d6d97", rule: "Água ao lado da terra ou com menos de 200 m." },
+    { id: 3, name: "Lago", color: "#3a80b0", rule: "O centro do hexágono fica num lago do Natural Earth." },
   ],
   relief: [
-    { id: 0, name: "Flat", rule: "Gentle terrain." },
-    { id: 1, name: "Hills", rule: "Rough terrain inside the hex." },
-    { id: 2, name: "Mountains", rule: "Very rough or high terrain." },
-    { id: 3, name: "Peaks", rule: "Alpine heights." },
+    { id: 0, name: "Plano", rule: "Terreno suave." },
+    { id: 1, name: "Morros", rule: "Terreno acidentado dentro do hexágono." },
+    { id: 2, name: "Serras", rule: "Terreno muito acidentado ou alto." },
+    { id: 3, name: "Picos", rule: "Grandes altitudes." },
   ],
   cover: [
-    { id: 0, key: "none", name: "Unknown" },
-    { id: 1, key: "forest_deciduous", name: "Deciduous forest", color: "#4f7a35" },
-    { id: 2, key: "forest_evergreen", name: "Evergreen forest", color: "#2f5f3a" },
-    { id: 3, key: "forest_mixed", name: "Mixed forest", color: "#436d36" },
-    { id: 4, key: "scrub", name: "Scrub & desert", color: "#b8a26a" },
-    { id: 5, key: "grassland", name: "Grassland", color: "#9fb35a" },
-    { id: 6, key: "pasture", name: "Pasture & hay", color: "#a8b862" },
-    { id: 7, key: "cropland", name: "Cropland", color: "#c2b65c" },
-    { id: 8, key: "wetland", name: "Wetland", color: "#4f7f68" },
-    { id: 9, key: "urban", name: "Urban", color: "#8c8780" },
-    { id: 10, key: "barren", name: "Barren", color: "#b9ab94" },
-    { id: 11, key: "ice", name: "Ice & snow", color: "#e8eef2" },
+    { id: 0, key: "none", name: "Desconhecido" },
+    { id: 1, key: "forest_deciduous", name: "Floresta", color: "#4f7a35" },
+    { id: 2, key: "forest_evergreen", name: "Floresta de coníferas", color: "#2f5f3a" },
+    { id: 3, key: "forest_mixed", name: "Floresta mista", color: "#436d36" },
+    { id: 4, key: "scrub", name: "Caatinga e arbustos", color: "#b8a26a" },
+    { id: 5, key: "grassland", name: "Campo", color: "#9fb35a" },
+    { id: 6, key: "pasture", name: "Pasto", color: "#a8b862" },
+    { id: 7, key: "cropland", name: "Lavoura", color: "#c2b65c" },
+    { id: 8, key: "wetland", name: "Área úmida", color: "#4f7f68" },
+    { id: 9, key: "urban", name: "Urbano", color: "#8c8780" },
+    { id: 10, key: "barren", name: "Solo exposto", color: "#b9ab94" },
+    { id: 11, key: "ice", name: "Gelo e neve", color: "#e8eef2" },
   ],
 };
 

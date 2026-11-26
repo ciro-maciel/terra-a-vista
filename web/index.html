@@ -28,50 +28,50 @@
 <body>
   <header id="topbar">
     <div class="brand" title="Brasil"><span class="brand-emblem" aria-hidden="true">★</span><span class="brand-text">Brasil</span></div>
-    <div id="yields" class="yields" aria-label="National yields"></div>
+    <div id="yields" class="yields" aria-label="Rendimentos do país"></div>
     <div class="spacer"></div>
     <div class="search" role="search">
       <span class="search-ic" aria-hidden="true"></span>
-      <input id="search-input" type="search" placeholder="Search cities &amp; states" autocomplete="off" spellcheck="false"
-        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-results" aria-label="Search cities and states (/ or Ctrl K)">
+      <input id="search-input" type="search" placeholder="Buscar cidades e estados" autocomplete="off" spellcheck="false"
+        role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-results" aria-label="Buscar cidades e estados (/ ou Ctrl K)">
       <kbd class="search-kbd" aria-hidden="true">/</kbd>
     </div>
     <div id="turn" class="turn"></div>
     <div class="tb-buttons">
-      <button id="btn-share" class="btn" aria-haspopup="dialog" aria-expanded="false" aria-label="Share this view" title="Share: copy a link or download an image"></button>
-      <button id="btn-help" class="btn btn-icon" aria-label="Keyboard and mouse help" title="Help (?)"></button>
-      <button id="btn-pedia" class="btn" aria-label="Open the Almanac" title="What every number means and where it comes from"></button>
+      <button id="btn-share" class="btn" aria-haspopup="dialog" aria-expanded="false" aria-label="Compartilhar esta vista" title="Compartilhar: copiar o link ou baixar uma imagem"></button>
+      <button id="btn-help" class="btn btn-icon" aria-label="Ajuda do teclado e do mouse" title="Ajuda (?)"></button>
+      <button id="btn-pedia" class="btn" aria-label="Abrir o Almanaque" title="O que cada número quer dizer e de onde vem"></button>
     </div>
   </header>
 
   <canvas id="map" role="img" aria-label="Mapa do Brasil em hexágonos"></canvas>
 
   <div id="tooltip" class="tooltip" hidden></div>
-  <aside id="city-panel" class="panel" hidden role="region" aria-label="Details"></aside>
+  <aside id="city-panel" class="panel" hidden role="region" aria-label="Detalhes"></aside>
 
   <div id="lens-area">
-    <div id="lens-picker" class="panel lens-picker" hidden role="dialog" aria-label="Choose a lens"></div>
-    <div id="legend" class="panel legend" hidden role="group" aria-label="Lens legend"></div>
-    <div id="lens-dock" class="panel lens-dock" role="toolbar" aria-label="Map lenses">
-      <button id="btn-res" class="lens-btn res-toggle" aria-pressed="true" aria-label="Resources on tiles (R)" title="Show or hide resources on tiles (R)" hidden></button>
+    <div id="lens-picker" class="panel lens-picker" hidden role="dialog" aria-label="Escolha uma lente"></div>
+    <div id="legend" class="panel legend" hidden role="group" aria-label="Legenda da lente"></div>
+    <div id="lens-dock" class="panel lens-dock" role="toolbar" aria-label="Lentes do mapa">
+      <button id="btn-res" class="lens-btn res-toggle" aria-pressed="true" aria-label="Recursos nos hexágonos (R)" title="Mostrar ou esconder os recursos nos hexágonos (R)" hidden></button>
       <div id="lens-quick" class="lens-quick"></div>
       <button id="btn-lenses" class="lens-btn lens-more" aria-haspopup="dialog" aria-expanded="false" aria-controls="lens-picker"></button>
     </div>
   </div>
 
-  <div id="minimap-wrap" class="panel"><canvas id="minimap" aria-label="Minimap: click to jump" role="img"></canvas></div>
-  <button id="btn-minimap" class="panel minimap-toggle" aria-pressed="false" aria-controls="minimap-wrap" aria-label="Show the minimap"></button>
+  <div id="minimap-wrap" class="panel"><canvas id="minimap" aria-label="Minimapa: clique para ir até lá" role="img"></canvas></div>
+  <button id="btn-minimap" class="panel minimap-toggle" aria-pressed="false" aria-controls="minimap-wrap" aria-label="Mostrar o minimapa"></button>
 
-  <div id="search-results" class="panel search-results" role="listbox" aria-label="Search results" hidden></div>
-  <div id="share-pop" class="panel share-pop" role="dialog" aria-label="Share" hidden></div>
-  <div id="yield-report" class="panel yield-report" role="dialog" aria-label="National report" tabindex="-1" hidden></div>
+  <div id="search-results" class="panel search-results" role="listbox" aria-label="Resultados da busca" hidden></div>
+  <div id="share-pop" class="panel share-pop" role="dialog" aria-label="Compartilhar" hidden></div>
+  <div id="yield-report" class="panel yield-report" role="dialog" aria-label="Relatório do país" tabindex="-1" hidden></div>
   <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   <div id="announce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
 
   <div id="pedia" class="modal" hidden>
-    <div class="modal-card panel" role="dialog" aria-modal="true" aria-label="Almanac">
-      <button class="close icon-btn" data-close aria-label="Close the Almanac">✕</button>
-      <nav id="pedia-nav" aria-label="Almanac pages"></nav>
+    <div class="modal-card panel" role="dialog" aria-modal="true" aria-label="Almanaque">
+      <button class="close icon-btn" data-close aria-label="Fechar o Almanaque">✕</button>
+      <nav id="pedia-nav" aria-label="Páginas do Almanaque"></nav>
       <article id="pedia-body"></article>
     </div>
   </div>

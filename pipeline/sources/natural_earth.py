@@ -10,12 +10,12 @@ BBOX = (-80.0, -39.0, -28.0, 10.0)  # lon/lat window around Brazil and the map m
 class NaturalEarth(Source):
     info = SourceInfo(
         id="natural_earth",
-        title="Natural Earth 1:50m (countries, lakes, rivers)",
+        title="Natural Earth 1:50m (países, lagos, rios)",
         publisher="Natural Earth",
         homepage="https://www.naturalearthdata.com/",
-        license="Public domain",
+        license="Domínio público",
         description="Países vizinhos (mostrados sob névoa), grandes lagos e os rios principais. "
-        f"Files are pinned to the natural-earth-vector release {TAG}.",
+        f"Arquivos fixados na versão {TAG} do natural-earth-vector.",
         used_for=["Terra estrangeira (vizinhos da América do Sul)", "Lagos", "Rios"],
     )
 
@@ -72,7 +72,7 @@ class NaturalEarthRoads(Source):
         title="Natural Earth 1:10m roads and railroads",
         publisher="Natural Earth",
         homepage="https://www.naturalearthdata.com/",
-        license="Public domain",
+        license="Domínio público",
         description="Interstates, US highways and major state roads, and main railroads, as 1:10m line work. "
         "Shown as map art (roads and rail between hex centres), not as statistics: the road alignment dates from "
         "Natural Earth's older releases, carries no traffic or owner data, and the rail layer holds about half of the "

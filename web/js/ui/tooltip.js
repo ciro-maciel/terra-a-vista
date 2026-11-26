@@ -20,7 +20,7 @@ export function showCellTooltip(mx, my, w, i, lens, showResources = true) {
   } else {
     const cover = w.cover[i] > 0 ? nameOf(w.tables.cover, w.cover[i]) : null;
     const relief = w.relief[i] > 0 ? nameOf(w.tables.relief, w.relief[i]) : null;
-    const terrain = [cover, relief].filter(Boolean).join(" · ") || (relief ?? "Land");
+    const terrain = [cover, relief].filter(Boolean).join(" · ") || (relief ?? "Terra");
     lines.push(`<b>${esc(terrain)}</b> <span class="muted">· ${int(raw.elev[i])} m</span>`);
   }
   const o = raw.owner[i];
@@ -29,7 +29,7 @@ export function showCellTooltip(mx, my, w, i, lens, showResources = true) {
     lines.push(`${esc(county)}${esc(raw.states[o].name)}`);
     if (lens) lines.push(`${glyph(lens, 13)} ${esc(lens.name)}: <b>${formatLensValue(lens, lens.values[i])}</b>`);
   } else if (o === FOREIGN) {
-    lines.push(`<span class="muted">Beyond the borders (not mapped)</span>`);
+    lines.push(`<span class="muted">Fora das fronteiras (fora do mapa)</span>`);
   }
   const res = showResources && w.resources?.byCell.get(i);
   if (res) {
@@ -42,8 +42,8 @@ export function showCellTooltip(mx, my, w, i, lens, showResources = true) {
     }
     if (res.length > 4) lines.push(`<span class="muted">+${res.length - 4} more</span>`);
   }
-  if (city) lines.push(`<span class="muted">Click to open the city</span>`);
-  else if (o >= 0) lines.push(`<span class="muted">Click to open ${esc(raw.states[o].name)}</span>`);
+  if (city) lines.push(`<span class="muted">Clique para abrir a cidade</span>`);
+  else if (o >= 0) lines.push(`<span class="muted">Clique para abrir ${esc(raw.states[o].name)}</span>`);
   show(mx, my, lines.join("<br>"));
 }
 
@@ -58,7 +58,7 @@ export function showHtmlTooltip(mx, my, content) {
 }
 
 export function showCityTooltip(mx, my, city) {
-  show(mx, my, `<b>${esc(city.full)}</b><br><span class="muted">Click to open the city</span>`);
+  show(mx, my, `<b>${esc(city.full)}</b><br><span class="muted">Clique para abrir a cidade</span>`);
 }
 
 function show(mx, my, html) {

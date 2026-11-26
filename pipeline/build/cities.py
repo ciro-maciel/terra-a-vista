@@ -180,11 +180,25 @@ def add_ranks(cities: list[dict]) -> None:
         c["peers"] = [cities[j]["id"] for _, j in near[:PEERS]]
 
 
+YIELD_LABEL = {"food": "Comida", "production": "Produção", "gold": "Ouro", "science": "Ciência", "culture": "Cultura"}
+INDUSTRY_LABEL = {
+    "agriculture": "Agropecuária, produção florestal e pesca", "mining": "Indústrias extrativas",
+    "construction": "Construção", "manufacturing": "Indústria de transformação", "wholesale": "Comércio atacadista",
+    "retail": "Comércio varejista e de veículos", "transportation": "Transporte, armazenagem e correio",
+    "utilities": "Eletricidade, gás, água e esgoto", "information": "Informação e comunicação",
+    "finance": "Atividades financeiras e seguros", "real_estate": "Atividades imobiliárias",
+    "professional": "Atividades profissionais, científicas e técnicas", "management": "Sedes de empresas e consultoria",
+    "admin": "Atividades administrativas", "education": "Educação", "health": "Saúde e serviços sociais",
+    "arts": "Artes, cultura, esporte e recreação", "accommodation": "Alojamento e alimentação",
+    "other": "Outros serviços", "public_admin": "Administração pública", "government": "Governo",
+}
+
+
 def brazil_yields() -> list[dict]:
-    """The yield definitions for Brazil: Gold is municipal GDP; the job yields wait for RAIS (phase 2)."""
+    """The yield definitions for Brazil: Gold is municipal GDP; the job yields count CEMPRE formal jobs."""
     out = []
     for y in YIELDS:
-        y = dict(y)
+        y = dict(y, label=YIELD_LABEL[y["key"]])
         if y["key"] == "gold":
             # unit stays "usd": the browser reads it as "money" (shown as R$, web/js/format.js)
             y["description"] = ("PIB a preços correntes de 2023, em reais (IBGE, PIB dos Municípios). O Ouro de uma "
@@ -277,9 +291,9 @@ CAPITAL_CODE = "5300108"  # Brasília
 CITY_RULE = (
     f"Cada arranjo populacional do IBGE (grupos de municípios integrados pelo deslocamento para trabalhar e "
     f"estudar, ou pela mancha urbana contínua) é uma cidade, e todo município fora de arranjo com pelo menos "
-    f"{MIN_ISOLATED_POP:,} habitantes no Censo 2022 também. A cidade leva o nome do município que dá nome ao "
+    + f"{MIN_ISOLATED_POP:,}".replace(",", ".") + f" habitantes no Censo 2022 também. A cidade leva o nome do município que dá nome ao "
     f"arranjo (o mais populoso, se o título não nomear nenhum), e o estandarte fica na sede dele."
-).replace(",", ".")
+)
 
 
 def title_principal(arranjo: dict, codes: list[str], pop: dict) -> str:
@@ -398,7 +412,7 @@ def build() -> None:
             "city_rule": CITY_RULE,
             "nation": nation,
             "yields": brazil_yields(),
-            "industries": {k: label for k, (_, label) in INDUSTRY_LINES.items()},
-            "gdp_industries": GDP_INDUSTRIES,
+            "industries": {k: INDUSTRY_LABEL.get(k, label) for k, (_, label) in INDUSTRY_LINES.items()},
+            "gdp_industries": {k: INDUSTRY_LABEL.get(k, label) for k, label in GDP_INDUSTRIES.items()},
         },
     )

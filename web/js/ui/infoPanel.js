@@ -18,12 +18,12 @@ export function yieldGrid(nation, yields, ranks = null, rankOf = 0) {
     .map((y) => {
       const v = yields?.[y.key];
       const r = ranks?.[y.key];
-      const label = y.key === "gold" ? "GDP" : y.label;
+      const label = y.key === "gold" ? "PIB" : y.label;
       return `<div class="yield-tile" title="${esc(y.label)}${y.key === "gold" ? " (GDP)" : ""}: ${esc(y.description || "")}">
         <div class="ico" style="color:${esc(y.color)}">${glyph(y, 20)}</div>
         <div class="val" style="color:${esc(y.color)}">${yieldValue(y, v)}</div>
         <div class="lbl">${esc(label)}</div>
-        ${r ? `<div class="rank" title="Rank among the ${rankOf} mapped states (1 = largest)">#${r} of ${rankOf}</div>` : ""}</div>`;
+        ${r ? `<div class="rank" title="Posição entre os ${rankOf} estados do mapa (1 = o maior)">${r}º de ${rankOf}</div>` : ""}</div>`;
     })
     .join("");
 }
@@ -43,11 +43,11 @@ export function statRow(ic, fallback, label, v, nv, fmt, higherIsGood) {
 
 export function amenities(o, n) {
   return `
-    ${statRow("unemployment", "😐", "Unemployment", o.unemployment, n.unemployment, (x) => pct(x), false)}
-    ${statRow("l-income", "💵", "Median household income", o.median_income, n.median_income, dollars, true)}
-    ${statRow("l-home", "🏠", "Median home value", o.home_value, n.home_value, dollars, null)}
-    ${statRow("l-homeownership", "🔑", "Median gross rent / mo", o.median_rent, n.median_rent, dollars, false)}
-    ${statRow(null, "⚖️", "Rent ÷ income", o.rent_burden, n.rent_burden, (x) => pct(x), false)}`;
+    ${statRow("unemployment", "😐", "Desemprego", o.unemployment, n.unemployment, (x) => pct(x), false)}
+    ${statRow("l-income", "💵", "Renda mediana do domicílio", o.median_income, n.median_income, dollars, true)}
+    ${statRow("l-home", "🏠", "Valor mediano do imóvel", o.home_value, n.home_value, dollars, null)}
+    ${statRow("l-homeownership", "🔑", "Aluguel mediano / mês", o.median_rent, n.median_rent, dollars, false)}
+    ${statRow(null, "⚖️", "Aluguel ÷ renda", o.rent_burden, n.rent_burden, (x) => pct(x), false)}`;
 }
 
 // Workforce by industry with location quotients vs. the nation ("specialisation"). limit = max rows (0 = all).
@@ -59,16 +59,16 @@ export function industries(o, nation, limit = 0) {
     .filter(([, v]) => v > 0)
     .sort((a, b) => b[1] - a[1]);
   if (limit) rows = rows.slice(0, limit);
-  if (!rows.length) return `<p class="muted">No industry data.</p>`;
+  if (!rows.length) return `<p class="muted">Sem dados de atividade.</p>`;
   const maxShare = rows[0][1] / total;
   return rows
     .map(([k, v]) => {
       const share = v / total;
       const nShare = (n.jobs?.[k] || 0) / nTotal;
       const lq = nShare > 0 ? share / nShare : 1;
-      const tip = `Share of jobs is ${lq.toFixed(1)}× the national share`;
-      const badge = lq >= 1.3 ? `<span class="lq hi" title="${tip}">×${lq.toFixed(1)}</span>`
-        : lq <= 0.6 ? `<span class="lq lo" title="${tip}">×${lq.toFixed(1)}</span>` : "";
+      const tip = `A parcela dos empregos é ${lq.toFixed(1).replace(".", ",")}× a parcela nacional`;
+      const badge = lq >= 1.3 ? `<span class="lq hi" title="${tip}">×${lq.toFixed(1).replace(".", ",")}</span>`
+        : lq <= 0.6 ? `<span class="lq lo" title="${tip}">×${lq.toFixed(1).replace(".", ",")}</span>` : "";
       return `<div class="ind"><span aria-hidden="true">${icon(`i-${k}`, DISTRICT_ICON[k] || "•")}</span>
         <span>${esc(nation.industries?.[k] || k)}${badge}</span><span class="n">${compact(v)} · ${pct(share, 0)}</span>
         <div class="bar"><i style="width:${(share / maxShare) * 100}%;background:${lq >= 1.3 ? "#9fd76a" : "#c9a45c"}"></i></div></div>`;
@@ -78,8 +78,8 @@ export function industries(o, nation, limit = 0) {
 
 export const gdpRow = (o) =>
   o.gdp != null
-    ? `<div class="stat-row"><span class="sl">${icon("y-gold", "💰", { size: 14 })}GDP${o.gdp_year ? ` (${o.gdp_year})` : ""}</span><span><b>${money(o.gdp)}</b>${
-        o.population ? `<span class="cmp">${money(o.gdp / o.population)} per person</span>` : ""}</span></div>`
+    ? `<div class="stat-row"><span class="sl">${icon("y-gold", "💰", { size: 14 })}PIB${o.gdp_year ? ` (${o.gdp_year})` : ""}</span><span><b>${money(o.gdp)}</b>${
+        o.population ? `<span class="cmp">${money(o.gdp / o.population)} por habitante</span>` : ""}</span></div>`
     : "";
 
 // " · ▲ 3.4% since 2021" from growth / growth_years (cities and states), compared with the U.S. in the tooltip.
@@ -87,17 +87,17 @@ export const gdpRow = (o) =>
 export function growthSpan(o, n = null) {
   if (!Number.isFinite(o?.growth)) return "";
   const yrs = Array.isArray(o.growth_years) && o.growth_years.length === 2 ? o.growth_years : null;
-  const p = (g) => `${g >= 0 ? "+" : "−"}${Math.abs(g * 100).toFixed(1)}%`;
+  const p = (g) => `${g >= 0 ? "+" : "−"}${Math.abs(g * 100).toFixed(1).replace(".", ",")}%`;
   const period = yrs ? `${yrs[0]}–${yrs[1]}` : "the last few years";
   const us = Number.isFinite(n?.growth) ? ` (U.S. ${p(n.growth)})` : "";
-  const tip = `Population change ${period}, Census population estimates: ${p(o.growth)}${us}`;
+  const tip = `Variação da população ${period}, estimativas do IBGE: ${p(o.growth)}${us}`;
   const cls = o.growth >= 0 ? "good" : "bad";
-  return ` · <span class="growth ${cls}" title="${esc(tip)}">${o.growth >= 0 ? "▲" : "▼"} ${Math.abs(o.growth * 100).toFixed(1)}%${
-    yrs ? ` <span class="since">since ${yrs[0]}</span>` : ""}</span>`;
+  return ` · <span class="growth ${cls}" title="${esc(tip)}">${o.growth >= 0 ? "▲" : "▼"} ${Math.abs(o.growth * 100).toFixed(1).replace(".", ",")}%${
+    yrs ? ` <span class="since">desde ${yrs[0]}</span>` : ""}</span>`;
 }
 
 export const popLine = (o, extra = "") =>
-  `<div class="cp-pop">${icon("pop", "👥", { size: 16 })} <b>${int(o.population)}</b> people · ${int(o.employed)} employed${extra}</div>`;
+  `<div class="cp-pop">${icon("pop", "👥", { size: 16 })} <b>${int(o.population)}</b> habitantes · ${int(o.employed)} empregos formais${extra}</div>`;
 
 /**
  * Fill and show the panel.
@@ -106,19 +106,19 @@ export const popLine = (o, extra = "") =>
 export function showPanel(spec) {
   const panel = panelEl();
   panel.dataset.kind = spec.kind;
-  panel.setAttribute("aria-label", `${spec.kind === "state" ? "State" : "City"}: ${spec.title}`);
+  panel.setAttribute("aria-label", `${spec.kind === "state" ? "Estado" : "Cidade"}: ${spec.title}`);
   panel.innerHTML = `
     <div class="sheet-grip" aria-hidden="true"></div>
     <div class="cp-head">
       <div class="stripe" style="background:${spec.stripe}"></div>
-      <button class="icon-btn cp-close" aria-label="Close panel (Esc)" title="Close (Esc)">${icon("close", "✕", { size: 13 })}</button>
-      <div class="cp-kind">${spec.kind === "state" ? "State" : "City"}</div>
+      <button class="icon-btn cp-close" aria-label="Fechar o painel (Esc)" title="Fechar (Esc)">${icon("close", "✕", { size: 13 })}</button>
+      <div class="cp-kind">${spec.kind === "state" ? "Estado" : "Cidade"}</div>
       <h2 class="cp-name">${spec.titleHtml ?? esc(spec.title)}</h2>
       ${spec.sub ? `<div class="cp-full">${spec.sub}</div>` : ""}
       ${spec.headExtra || ""}
     </div>
     ${spec.sections.filter(Boolean).map((s) => `<section class="cp-section"><h3>${s.title}</h3>${s.html}</section>`).join("")}
-    <div class="cp-foot">${spec.foot || ""} <a href="#" data-pedia>Almanac ›</a></div>`;
+    <div class="cp-foot">${spec.foot || ""} <a href="#" data-pedia>Almanaque ›</a></div>`;
   panel.hidden = false;
   panel.scrollTop = 0;
   panel.classList.remove("dragging-sheet");

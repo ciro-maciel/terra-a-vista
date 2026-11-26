@@ -32,48 +32,49 @@ LAND, OCEAN, COAST, LAKE = range(4)
 TIDAL_SEA_SHARE = 0.5  # share of ETOPO samples below 0 m that keeps a sea-centred hex as water
 COAST_DEPTH_M = -200
 WATER_TABLE = [
-    {"id": LAND, "name": "Land", "rule": "At least 4 of the hex's 7 sample points (centre + 6) fall on IBGE state or Natural Earth country outlines, unless the centre is sea and the ETOPO1 mean is at or below sea level, or at least half its ETOPO1 samples are (tidal bays stay water)."},
-    {"id": OCEAN, "name": "Ocean", "color": "#1b4266", "rule": "Sea deeper than 200 m and not next to land."},
-    {"id": COAST, "name": "Coast", "color": "#2d6d97", "rule": "Sea next to a land hex, or shallower than 200 m (ETOPO1 mean)."},
-    {"id": LAKE, "name": "Lake", "color": "#3a80b0", "rule": "Water hex (most of its 7 sample points off land) with Natural Earth 1:50m lake points that outnumber sea points, or above sea level."},
+    {"id": LAND, "name": "Terra", "rule": "Pelo menos 4 dos 7 pontos de amostra do hexágono (o centro e mais 6) caem dentro dos contornos dos estados do IBGE ou dos países do Natural Earth, a não ser que o centro seja mar e a média do ETOPO1 esteja no nível do mar ou abaixo, ou que pelo menos metade das amostras do ETOPO1 esteja (as baías continuam água)."},
+    {"id": OCEAN, "name": "Oceano", "color": "#1b4266", "rule": "Mar com mais de 200 m de profundidade e longe da terra."},
+    {"id": COAST, "name": "Costa", "color": "#2d6d97", "rule": "Mar ao lado de um hexágono de terra, ou com menos de 200 m de profundidade (média do ETOPO1)."},
+    {"id": LAKE, "name": "Lago", "color": "#3a80b0", "rule": "Hexágono de água (a maioria dos 7 pontos fora da terra) com mais pontos em lagos do Natural Earth 1:50m do que no mar, ou acima do nível do mar."},
 ]
 
 WATER_NOTE = (
-    "IBGE state outlines and Natural Earth 1:50m country and lake outlines don't meet exactly. A sea hex whose "
-    "ETOPO1 mean is above sea level (and under half of its samples below it) becomes land when at least 4 of its 6 neighbours are land, or when it touches both "
-    "US and foreign land; it takes the neighbours' majority owner. Narrow reservoirs that cover less than half a hex "
-    "are land, and their river is drawn through them. Tidal bays stay water when the hex centre is sea and its "
-    "ETOPO1 mean is at or below sea level or at least half of its ETOPO1 samples are. A sea hex's "
-    "elevation is the mean of its ETOPO1 samples below sea level (its water depth)."
+    "Os contornos dos estados do IBGE e dos países e lagos do Natural Earth 1:50m não se encaixam com exatidão. Um "
+    "hexágono de mar cuja média do ETOPO1 fica acima do nível do mar (e com menos da metade das amostras abaixo dele) "
+    "vira terra quando pelo menos 4 dos 6 vizinhos são terra, ou quando toca terra brasileira e estrangeira; fica com o "
+    "dono da maioria dos vizinhos. Represas estreitas, com menos da metade de um hexágono, são terra, e o rio passa por "
+    "elas. As baías continuam água quando o centro do hexágono é mar e a média do ETOPO1 está no nível do mar ou abaixo, "
+    "ou quando pelo menos metade das amostras está. A altitude de um hexágono de mar é a média das amostras abaixo do "
+    "nível do mar (a profundidade)."
 )
 
 FLAT, HILLS, MOUNTAINS, PEAKS = range(4)
 LAND_MIN_ALT_M = -100  # ETOPO samples below this inside a land hex are treated as sea floor
 RELIEF_TABLE = [
-    {"id": FLAT, "name": "Flat", "rule": "Elevation standard deviation inside the hex under 85 m."},
-    {"id": HILLS, "name": "Hills", "rule": "Elevation standard deviation ≥ 85 m."},
-    {"id": MOUNTAINS, "name": "Mountains", "rule": "Elevation standard deviation ≥ 260 m, or mean elevation ≥ 2,300 m."},
-    {"id": PEAKS, "name": "Peaks", "rule": "Mean elevation ≥ 2,700 m (alpine)."},
+    {"id": FLAT, "name": "Plano", "rule": "Desvio-padrão da altitude dentro do hexágono abaixo de 85 m."},
+    {"id": HILLS, "name": "Morros", "rule": "Desvio-padrão da altitude de pelo menos 85 m."},
+    {"id": MOUNTAINS, "name": "Serras", "rule": "Desvio-padrão da altitude de pelo menos 260 m, ou altitude média de pelo menos 2.300 m."},
+    {"id": PEAKS, "name": "Picos", "rule": "Altitude média de pelo menos 2.700 m."},
 ]
 RELIEF_NOTE = (
-    "From ETOPO1 samples (~9 km apart, about 20 per hex) with altitude ≥ -100 m, so bays and sea floor don't "
-    "count; all samples are used if none qualify. Water hexes are always flat."
+    "Das amostras do ETOPO1 (a cada ~9 km, umas 20 por hexágono) com altitude de pelo menos -100 m, para que baías e "
+    "fundo do mar não contem; se nenhuma passar, usam-se todas. Hexágonos de água são sempre planos."
 )
 
 URBAN_MIN_PCT = 30
 # id, key, name, colour, NLCD codes, rule. Ids are fixed by docs/DATA_CONTRACTS.md.
 COVER = [
-    (1, "forest_deciduous", "Deciduous forest", "#4f7a35", [41], "Forest (41+42+43) is the largest group and deciduous (41) the largest forest type."),
-    (2, "forest_evergreen", "Conifer forest", "#2f5a3a", [42], "Forest is the largest group and evergreen (42) the largest forest type."),
-    (3, "forest_mixed", "Mixed forest", "#43703f", [43], "Forest is the largest group and mixed (43) the largest forest type."),
-    (4, "scrub", "Scrub & desert", "#c9b07a", [52], "Shrub/scrub (52) is the largest group: deserts, chaparral, sagebrush."),
-    (5, "grassland", "Grassland", "#a9b35a", [71, 21], "Grassland/herbaceous (71) plus developed open space (21: lawns, parks) is the largest group."),
-    (6, "pasture", "Pasture", "#8fb04e", [81], "Pasture/hay (81) is the largest group."),
-    (7, "cropland", "Cropland", "#c2b84e", [82], "Cultivated crops (82) is the largest group."),
-    (8, "wetland", "Wetland", "#4f8a6e", [90, 95], "Woody (90) plus emergent herbaceous (95) wetlands is the largest group."),
-    (9, "urban", "Urban", "#8a8378", [22, 23, 24], f"Developed low/medium/high intensity (22+23+24) is ≥ {URBAN_MIN_PCT}% of the hex's land, whatever else is there."),
-    (10, "barren", "Barren", "#bfae95", [31], "Barren land (31: rock, sand, playa) is the largest group."),
-    (11, "ice", "Ice & snow", "#e8eef2", [12], "Perennial ice/snow (12) is the largest group."),
+    (1, "forest_deciduous", "Floresta", "#4f7a35", [41], "A floresta é o maior grupo do hexágono (WorldCover: cobertura arbórea)."),
+    (2, "forest_evergreen", "Floresta de coníferas", "#2f5a3a", [42], "Não usado no Brasil: o WorldCover não separa o tipo de floresta."),
+    (3, "forest_mixed", "Floresta mista", "#43703f", [43], "Não usado no Brasil: o WorldCover não separa o tipo de floresta."),
+    (4, "scrub", "Caatinga e arbustos", "#c9b07a", [52], "Os arbustos são o maior grupo: a caatinga e as formações abertas."),
+    (5, "grassland", "Campo e pasto", "#a9b35a", [71, 21], "Campo e vegetação rasteira são o maior grupo; inclui os pastos, que o WorldCover não separa."),
+    (6, "pasture", "Pasto", "#8fb04e", [81], "Não usado no Brasil: os pastos contam como campo."),
+    (7, "cropland", "Lavoura", "#c2b84e", [82], "A lavoura é o maior grupo."),
+    (8, "wetland", "Área úmida", "#4f8a6e", [90, 95], "As áreas úmidas e os mangues são o maior grupo."),
+    (9, "urban", "Urbano", "#8a8378", [22, 23, 24], f"A área construída é pelo menos {URBAN_MIN_PCT}% da terra do hexágono, seja o que for o resto."),
+    (10, "barren", "Solo exposto", "#bfae95", [31], "Solo exposto (rocha, areia, dunas) é o maior grupo."),
+    (11, "ice", "Gelo e neve", "#e8eef2", [12], "Gelo e neve permanentes são o maior grupo."),
 ]
 COVER_NOTE = (
     "From ESA WorldCover 2021 (the smallest overview of each tile, reduced to ~2.4 km pixels by the most common "
@@ -501,7 +502,7 @@ def build() -> None:
             if len(pts) >= 2:
                 rivers.append({"name": name, "rank": rank, "pts": [round(v, 1) for p in pts for v in p]})
 
-    cover_table = [{"id": 0, "key": "none", "name": "None", "rule": "Water, foreign land, or no NLCD land pixels."}] + [
+    cover_table = [{"id": 0, "key": "none", "name": "Nenhuma", "rule": "Água, terra estrangeira ou sem amostras de terra na cobertura do solo."}] + [
         {"id": cid, "key": key, "name": name, "color": color, "nlcd": codes, "rule": rule}
         for cid, key, name, color, codes, rule in COVER
     ]

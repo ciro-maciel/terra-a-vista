@@ -5,24 +5,24 @@ const isMac = /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent |
 const MOD = isMac ? "⌘" : "Ctrl";
 
 const ROWS = [
-  ["Move", [
-    [["Drag", "←↑→↓", "WASD"], "Pan the map"],
-    [["Scroll", "+", "–"], "Zoom in and out"],
-    [["Double-click"], "Zoom in on a spot"],
-    [["Two fingers"], "Pinch to zoom, drag to pan (touch)"],
-    [["Minimap"], "Click or drag to jump"],
+  ["Mover", [
+    [["Arrastar", "←↑→↓", "WASD"], "Mover o mapa"],
+    [["Rolar", "+", "–"], "Aproximar e afastar"],
+    [["Clique duplo"], "Aproximar num ponto"],
+    [["Dois dedos"], "Pinçar para aproximar, arrastar para mover (toque)"],
+    [["Minimapa"], "Clicar ou arrastar para ir até lá"],
   ]],
-  ["Explore", [
-    [["Click city"], "Open the city screen"],
-    [["Click land"], "Open that state"],
-    [["/", `${MOD} K`], "Search cities and states"],
-    [["L", "Shift L"], "Next / previous lens"],
-    [["Legend"], "Hover or drag the scale to show only that range"],
-    [["R"], "Show or hide resources"],
+  ["Explorar", [
+    [["Clicar na cidade"], "Abrir a tela da cidade"],
+    [["Clicar no terreno"], "Abrir aquele estado"],
+    [["/", `${MOD} K`], "Buscar cidades e estados"],
+    [["L", "Shift L"], "Próxima lente / lente anterior"],
+    [["Legenda"], "Passar o mouse ou arrastar na escala para mostrar só aquela faixa"],
+    [["R"], "Mostrar ou esconder os recursos"],
   ]],
-  ["Panels", [
-    [["?"], "This help"],
-    [["Esc"], "Close help, search, Almanac, then the panel"],
+  ["Painéis", [
+    [["?"], "Esta ajuda"],
+    [["Esc"], "Fechar a ajuda, a busca, o Almanaque e, por fim, o painel"],
   ]],
 ];
 
@@ -32,14 +32,14 @@ export function initHelp() {
   const card = modal.querySelector(".help-card");
   let restore = null;
   card.innerHTML = `
-    <button class="icon-btn help-close" data-close aria-label="Close help">${icon("close", "✕", { size: 13 })}</button>
-    <h2 id="help-title">${icon("help", "?", { size: 22 })}<span>Controls</span></h2>
+    <button class="icon-btn help-close" data-close aria-label="Fechar a ajuda">${icon("close", "✕", { size: 13 })}</button>
+    <h2 id="help-title">${icon("help", "?", { size: 22 })}<span>Controles</span></h2>
     <div class="help-cols">${ROWS.map(([title, rows]) => `
       <section><h3>${title}</h3>${rows.map(([keys, what]) => `
         <div class="help-row"><span class="keys">${keys.map((k) => `<kbd>${k}</kbd>`).join("")}</span><span>${what}</span></div>`).join("")}
       </section>`).join("")}</div>
-    <p class="help-foot">Every number traces back to public data: open the <b>Almanac</b> for sources.
-      The link in the address bar always reopens this exact view.
+    <p class="help-foot">Todo número leva a um dado público: abra o <b>Almanaque</b> para ver as fontes.
+      O link na barra de endereço sempre reabre esta mesma vista.
       Código-fonte: <a href="https://github.com/ciro-maciel/terra-a-vista">github.com/ciro-maciel/terra-a-vista</a> (MIT), a partir do <a href="https://karpathy.ai/usaciv/">usaciv</a> de Andrej Karpathy.</p>`;
 
   const close = () => {
