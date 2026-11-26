@@ -4,7 +4,8 @@
 // as an error and does not stop the others. Modules are fetched in parallel and installed in list order.
 // layers/: static map layers (roads, rail, ports, forts, wonders, trade routes) and their toggles.
 // advisors/: the council of dashboards beside the map, built on the Brazilian data (states and cities).
-const MODULES = ["./cityView/index.js", "./layers/index.js", "./advisors/index.js"];
+// timeline/: the map in each Census year since 1970. why/: "Por quê?" at the end of the city and state panels.
+const MODULES = ["./cityView/index.js", "./layers/index.js", "./advisors/index.js", "./timeline/index.js", "./why/index.js"];
 
 export async function installExtensions(app, list = MODULES) {
   const loads = list.map((spec) => import(spec).then((m) => ({ m }), (err) => ({ err })));

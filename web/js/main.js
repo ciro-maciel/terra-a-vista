@@ -854,7 +854,8 @@ async function main() {
   ui.setMapToggle = mapToggles.set;
 
   // --- input -----------------------------------------------------------------------------------------------------
-  const hitCity = (mx, my) => hits.find((h) => mx >= h.x && mx <= h.x + h.w && my >= h.y && my <= h.y + h.h)?.city;
+  // A banner of another year (app.setBannerCities) carries the real city in __orig.
+  const hitCity = (mx, my) => { const c = hits.find((h) => mx >= h.x && mx <= h.x + h.w && my >= h.y && my <= h.y + h.h)?.city; return c?.__orig || c; };
   const cellAt = (mx, my) => w.grid.cellAt(...cam.toWorld(mx, my));
   // The resource icon under a screen point (css px), from where the cached static layer placed the icons.
   function hitResource(mx, my) {
@@ -1174,6 +1175,13 @@ async function main() {
     w, cam, state, cityById, lensById,
     // drawing
     requestDraw,
+    /** Draw the banners from another list of cities (e.g. the timeline's year), each {...city, __orig: city,
+     *  population}, sorted by population; null goes back to the real cities. Panels and data are not touched. */
+    setBannerCities(list) {
+      state.cities = list || cities;
+      state.cityProxy = list ? new Map(list.map((c) => [c.id, c])) : null;
+      requestDraw();
+    },
     invalidate() { cache.key = null; invalidateHighlight(); requestDraw(); },
     registerOverlay(o) {
       if (!o || typeof o.draw !== "function") throw new Error("registerOverlay({id, z, space, draw})");

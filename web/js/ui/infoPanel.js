@@ -19,7 +19,7 @@ export function yieldGrid(nation, yields, ranks = null, rankOf = 0) {
       const v = yields?.[y.key];
       const r = ranks?.[y.key];
       const label = y.key === "gold" ? "PIB" : y.label;
-      return `<div class="yield-tile" title="${esc(y.label)}${y.key === "gold" ? " (GDP)" : ""}: ${esc(y.description || "")}">
+      return `<div class="yield-tile" title="${esc(y.label)}${y.key === "gold" ? " (PIB)" : ""}: ${esc(y.description || "")}">
         <div class="ico" style="color:${esc(y.color)}">${glyph(y, 20)}</div>
         <div class="val" style="color:${esc(y.color)}">${yieldValue(y, v)}</div>
         <div class="lbl">${esc(label)}</div>
@@ -28,15 +28,15 @@ export function yieldGrid(nation, yields, ranks = null, rankOf = 0) {
     .join("");
 }
 
-// One "value ▲ US value" row. higherIsGood: true / false / null (neutral).
+// One "value ▲ BR value" row. higherIsGood: true / false / null (neutral).
 export function statRow(ic, fallback, label, v, nv, fmt, higherIsGood) {
   let cmp = "";
   if (v != null && nv != null && nv !== 0) {
     const ratio = v / nv;
     const cls = Math.abs(ratio - 1) < 0.03 || higherIsGood == null ? "" : (higherIsGood ? ratio >= 1 : ratio <= 1) ? "good" : "bad";
-    // Within 3% of the U.S. value reads as level: no arrow, no colour (the colour uses the same band).
+    // Within 3% of the national value reads as level: no arrow, no colour (the colour uses the same band).
     const arrow = Math.abs(ratio - 1) < 0.03 ? "≈" : ratio > 1 ? "▲" : "▼";
-    cmp = `<span class="cmp ${cls}">${arrow} US ${fmt(nv)}</span>`;
+    cmp = `<span class="cmp ${cls}">${arrow} BR ${fmt(nv)}</span>`;
   }
   return `<div class="stat-row"><span class="sl">${icon(ic, fallback, { size: 14 })}${esc(label)}</span><span><b>${fmt(v)}</b>${cmp}</span></div>`;
 }
@@ -79,15 +79,15 @@ export const gdpRow = (o) =>
         o.population ? `<span class="cmp">${money(o.gdp / o.population)} por habitante</span>` : ""}</span></div>`
     : "";
 
-// " · ▲ 3.4% since 2021" from growth / growth_years (cities and states), compared with the U.S. in the tooltip.
+// " · ▲ 3.4% since 2021" from growth / growth_years (cities and states), compared with Brazil in the tooltip.
 // Empty when growth is missing (null means "not measured", never zero).
 export function growthSpan(o, n = null) {
   if (!Number.isFinite(o?.growth)) return "";
   const yrs = Array.isArray(o.growth_years) && o.growth_years.length === 2 ? o.growth_years : null;
   const p = (g) => `${g >= 0 ? "+" : "−"}${Math.abs(g * 100).toFixed(1).replace(".", ",")}%`;
-  const period = yrs ? `${yrs[0]}–${yrs[1]}` : "the last few years";
-  const us = Number.isFinite(n?.growth) ? ` (U.S. ${p(n.growth)})` : "";
-  const tip = `Variação da população ${period}, estimativas do IBGE: ${p(o.growth)}${us}`;
+  const period = yrs ? `de ${yrs[0]} a ${yrs[1]}` : "nos últimos anos";
+  const br = Number.isFinite(n?.growth) ? ` (Brasil ${p(n.growth)})` : "";
+  const tip = `Variação da população ${period}, estimativas do IBGE: ${p(o.growth)}${br}`;
   const cls = o.growth >= 0 ? "good" : "bad";
   return ` · <span class="growth ${cls}" title="${esc(tip)}">${o.growth >= 0 ? "▲" : "▼"} ${Math.abs(o.growth * 100).toFixed(1).replace(".", ",")}%${
     yrs ? ` <span class="since">desde ${yrs[0]}</span>` : ""}</span>`;

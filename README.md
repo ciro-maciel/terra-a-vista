@@ -28,6 +28,11 @@ relief and land cover. Every number traces back to a public source, listed in th
 - **26 wonders**: every Brazilian site on UNESCO's World Heritage List.
 - **9 advisors**: dashboards beside the map (Economy with GDP by sector, People, Prosperity, Knowledge, Land,
   Energy and resources, Commerce, Culture and the Explorer), linked to the map both ways.
+- **Timeline**: the Censuses from 1970 to 2022; banners show each count and the map colours each decade's yearly
+  growth on one scale for all.
+- **Why?** in every city and state panel: population by municipality and Census, GDP by sector and municipality
+  (and real change since 2002), growth by the municipalities that gained or lost people, and the city type by the
+  activities behind it.
 - **Citizens** in the city view: work, age, commute and schooling of the people who live there (2022 Census).
 
 ## Reading the map honestly

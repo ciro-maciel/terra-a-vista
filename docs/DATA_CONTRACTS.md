@@ -749,6 +749,29 @@ NOAA events span many states: never add state costs together into a national fig
 helper `disasters.county_declarations(fema_interim, geoids)` gives the per-county counts used by the `disasters` lens,
 the counties.json column and this file, so the three always agree.
 
+### history.json (lazy)
+
+The timeline and the "Por quê?" panel section. Built by `pipeline/build/history.py` from `ibge_history` (Census
+counts 1970 to 2010, municipal GDP 2002 to 2023, the GDP deflator), `ibge_census`, `ibge_gdp` and `ibge_estimates`.
+
+```js
+{
+  version: 1, vintage, sources: [...], rule: "…",          // the rule in Portuguese, shown in the lens note
+  census_years: [1970, 1980, 1991, 2000, 2010, 2022],       // Census counts only, never the yearly estimates
+  gdp_years: [2002, …, 2023], gdp_unit: "R$ mil de 2023 (deflator do PIB)", deflator: {year: factor},
+  estimate_years: [2024, 2026],
+  nation: {p: [one per census year], g: [one per gdp year, R$ mil of the last year]},
+  states: {abbr: {p, g}},
+  cities: {id: {p, g}},                                     // null where the city's principal municipality did not exist
+  muni_columns: ["name", "uf", "population_2022", "gdp_rs_mil", "estimate_2024", "estimate_2026"],
+  munis: {code7: [name, uf, population_2022, gdp_rs_mil, estimate_2024, estimate_2026]},
+}
+```
+
+A city's value in a Census year sums its member municipalities that existed that year (a municipality created
+later was counted in the one it split from); `null` when the municipality that names the city did not exist yet.
+GDP follows the same rule and uses Brazil's GDP deflator for every municipality.
+
 ## sources.json
 
 A list of `{id, title, publisher, homepage, license, description, used_for, vintage, files: [{file, url, retrieved, sha256, bytes}]}`.

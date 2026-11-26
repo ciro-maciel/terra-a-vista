@@ -130,7 +130,8 @@ const metrics = new Map(); // `${city.id}|${layout}` -> measured layout (fonts a
 function measure(ctx, city, yields, nation, L) {
   const key = `${city.id}|${L.name}`;
   let m = metrics.get(key);
-  if (m && m.nation === nation && m.yields === yields && m.cityRef === city.name + city.population) return m;
+  const ref = city.name + city.population + (city.__orig ? "|year" : "");
+  if (m && m.nation === nation && m.yields === yields && m.cityRef === ref) return m;
   ctx.save();
   const runs = smallCapRuns(city.name);
   let nameW = 0;
@@ -148,7 +149,8 @@ function measure(ctx, city, yields, nation, L) {
   const chevW = growth == null ? 0 : L.chev + 3;
   const capW = Math.ceil(Math.max(L.capMin, popW + chevW + 14));
   ctx.font = L.yieldFont;
-  const parts = (yields || []).map((yd) => {
+  // A banner of another year has no yields (they are today's numbers).
+  const parts = (city.__orig ? [] : yields || []).map((yd) => {
     const t = compact(city.yields?.[yd.key]);
     return { yd, t, w: ctx.measureText(t).width };
   });
@@ -162,7 +164,7 @@ function measure(ctx, city, yields, nation, L) {
   const tierW = parts.length ? Math.ceil(yieldsW + 18) : 0;
   m = {
     runs, nameW, capital, pop, popW, chevW, capW, parts, yieldsW, tierW, spec, specW, plateW,
-    growth, growthTxt, growthW, nation, yields, cityRef: city.name + city.population,
+    growth, growthTxt, growthW, nation, yields, cityRef: ref,
   };
   metrics.set(key, m);
   return m;
@@ -588,8 +590,10 @@ export function drawBanners(ctx, cam, w, state, yields, nation = state.nation) {
   const scale = t ? Math.max(0.5, Math.round(Math.hypot(t.a, t.b) * 4) / 4) : 1;
   const placed = [];
   const hits = [];
-  const sel = state.selectedCity || null;
-  const hov = state.hoverCell >= 0 ? w.cityByCell?.get(state.hoverCell) ?? null : null;
+  // Banners of another year (state.cityProxy, see app.setBannerCities) stand in for the real cities.
+  const proxy = (c) => (c && state.cityProxy ? state.cityProxy.get(c.id) ?? null : c);
+  const sel = proxy(state.selectedCity || null);
+  const hov = proxy(state.hoverCell >= 0 ? w.cityByCell?.get(state.hoverCell) ?? null : null);
   const focus = state.bannerFocus || null;
   const cities = state.cities;
   // Horizontal room for plates: the screen, or state.bannerBounds {x0, x1} (css px) beside an open dock.
@@ -614,7 +618,7 @@ export function drawBanners(ctx, cam, w, state, yields, nation = state.nation) {
     // the yield tier: the selected and hovered cities, then the biggest few in view (or the focus cities)
     const tierOk = pinned || city === hov || (focus != null ? focused : tiers < tierMax);
     let tiered = showYields && m.parts.length > 0 && tierOk;
-    const badge0 = badges && showYields ? badgeFor(badges, city) : null;
+    const badge0 = badges && showYields && !city.__orig ? badgeFor(badges, city) : null;
     let width, height, x, y, rect, ptr, tab;
     const layout = () => {
       width = Math.ceil(tiered ? Math.max(m.plateW, m.tierW + 12) : m.plateW);

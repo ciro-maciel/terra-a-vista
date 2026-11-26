@@ -28,6 +28,11 @@ o chão é o relevo e a cobertura do solo de verdade. Cada número leva a uma fo
 - **26 maravilhas**: todos os sítios brasileiros do Patrimônio Mundial da UNESCO.
 - **9 conselheiros**: painéis ao lado do mapa (Economia com o PIB por setor, Pessoas, Prosperidade, Conhecimento,
   Terra, Energia e recursos, Comércio, Cultura e o Explorador), ligados ao mapa nos dois sentidos.
+- **Linha do tempo**: os Censos de 1970 a 2022; os estandartes mostram a população contada em cada um e o mapa pinta
+  o crescimento por ano de cada década, na mesma escala para todas.
+- **Por quê?** no painel de cada cidade e estado: a população nos seus municípios e em cada Censo, o PIB nos setores e
+  nos municípios (e o crescimento real desde 2002), o crescimento nos municípios que somaram ou perderam gente, e o
+  tipo de cidade nas atividades que o explicam.
 - **Cidadãos** na tela da cidade: trabalho, idade, deslocamento e instrução de quem mora lá (Censo 2022).
 
 ## Como ler o mapa
