@@ -23,7 +23,7 @@ from ..core.store import load_interim, load_interim_payload, write_web
 from .growth import Growth
 from .yields import YIELDS, economy, gdp_profile
 
-REQUIRES = ["_world", "ibge_boundaries", "ibge_census", "ibge_gdp", "cities.json"]
+REQUIRES = ["_world", "ibge_boundaries", "ibge_census", "ibge_gdp", "ibge_cempre", "cities.json"]
 PRODUCES = ["states.json"]
 
 MIN_LABEL_KM, MAX_LABEL_KM = 14.0, 110.0  # suggested font height range, map km
@@ -152,11 +152,12 @@ def energy_by_state() -> dict[str, dict] | None:
 
 
 def build() -> None:
-    from .cities import empty_economy
+    from .cities import empty_economy, level_jobs
 
     world = load_interim("_world")
     census = load_interim("ibge_census")
     gdp = load_interim("ibge_gdp")
+    cempre = load_interim("ibge_cempre")
     gdp_year = load_interim_payload("ibge_gdp")["data"]["year"]
     grid = HexGrid(**world["grid"])
     owner = world["owner"]
@@ -168,7 +169,9 @@ def build() -> None:
     states = []
     for i, fips in enumerate(world["states"]):
         meta = names.get(fips, {"abbr": None, "name": fips})
-        econ = empty_economy(census["states"].get(fips), gdp["states"].get(fips), gdp_year)
+        jobs = level_jobs(lambda c: cempre["states"].get(c, {}).get(fips))
+        econ = empty_economy(census["states"].get(fips), gdp["states"].get(fips), gdp_year, jobs,
+                             cempre["states"].get("total", {}).get(fips))
         states.append(
             {
                 "fips": fips,

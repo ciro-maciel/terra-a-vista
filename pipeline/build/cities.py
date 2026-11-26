@@ -22,7 +22,7 @@ from ..core.store import load_interim, load_interim_payload, write_web
 from .growth import Growth
 from .yields import GDP_INDUSTRIES, INDUSTRY_LINES, YIELDS, bea_combos, economy, gdp_profile, sum_counties
 
-REQUIRES = ["_world", "ibge_census", "ibge_gdp", "ibge_arranjos", "ibge_localities", "ibge_boundaries"]
+REQUIRES = ["_world", "ibge_census", "ibge_gdp", "ibge_arranjos", "ibge_localities", "ibge_boundaries", "ibge_cempre"]
 PRODUCES = ["cities.json", "nation.json"]
 
 NON_CONUS = {"AK", "HI", "PR"}
@@ -190,18 +190,72 @@ def brazil_yields() -> list[dict]:
             y["description"] = ("PIB a preços correntes de 2023, em reais (IBGE, PIB dos Municípios). O Ouro de uma "
                                 "cidade é a soma do PIB dos seus municípios.")
         else:
-            y["description"] = "Ainda sem dado: este rendimento conta empregos por setor e entra com a RAIS."
+            sectors = {"food": "na agropecuária, produção florestal e pesca",
+                       "production": "na indústria de transformação, na construção e nas indústrias extrativas",
+                       "science": "nos serviços profissionais, científicos e técnicos e na informação e comunicação",
+                       "culture": "nas artes, cultura, esporte e recreação"}[y["key"]]
+            y["description"] = (f"Empregos formais assalariados {sectors}, contados onde fica a empresa (IBGE, "
+                                f"Cadastro Central de Empresas 2024). Não conta o trabalho informal.")
         out.append(y)
     return out
 
 
-def empty_economy(population, gdp, gdp_year) -> dict:
-    """The economic shape of a city, state or nation with only population and GDP known (null = unknown)."""
+# Each upstream industry key as CNAE 2.0 sections or divisions (IBGE CEMPRE). Management of companies is division 70
+# (head offices and consulting), so professional services are section M without it.
+INDUSTRY_CNAE = {
+    "agriculture": ["A"], "mining": ["B"], "construction": ["F"], "manufacturing": ["C"], "wholesale": ["46"],
+    "retail": ["45", "47"], "transportation": ["H"], "utilities": ["D", "E"], "information": ["J"], "finance": ["K"],
+    "real_estate": ["L"], "professional": ["69", "71", "72", "73", "74", "75"], "management": ["70"],
+    "admin": ["N"], "education": ["P"], "health": ["Q"], "arts": ["R"], "accommodation": ["I"],
+    "other": ["S", "T", "U"], "public_admin": ["O"],
+}
+
+
+def municipal_jobs(q: dict | None, munis: list[str]) -> tuple[dict, int | None]:
+    """Formal salaried jobs per industry key summed over municipalities, and the total. A suppressed municipality is
+    left out (the sum is a floor); a key with nothing disclosed is None, never 0."""
+    if q is None:
+        return {k: None for k in INDUSTRY_LINES}, None
+    out = {}
+    for key, codes in INDUSTRY_CNAE.items():
+        total, disclosed = 0, False
+        for m in munis:
+            for c in codes:
+                row = q["counties"].get(c, {}).get(m)
+                if row is None:
+                    disclosed = True  # no local unit: a real 0
+                elif row[0] is not None:
+                    total += row[0][0]
+                    disclosed = True
+        out[key] = total if disclosed else None
+    known = [q["totals"][m][0] for m in munis if q["totals"].get(m)]
+    return out, (sum(known) if known else None)
+
+
+def level_jobs(values_of) -> dict:
+    """Jobs per industry key for a state or the nation; values_of(code) → jobs or None."""
+    out = {}
+    for key, codes in INDUSTRY_CNAE.items():
+        vals = [values_of(c) for c in codes]
+        out[key] = None if any(v is None for v in vals) else sum(vals)
+    return out
+
+
+def empty_economy(population, gdp, gdp_year, jobs: dict | None = None, employed=None) -> dict:
+    """The economic shape of a city, state or nation: population, GDP and formal jobs (null = unknown)."""
+    jobs = jobs or {k: None for k in INDUSTRY_LINES}
+    yields = {}
+    for y in YIELDS:
+        if y["key"] == "gold":
+            yields["gold"] = gdp
+        else:
+            vals = [jobs.get(k) for k in y["industries"]]
+            yields[y["key"]] = None if any(v is None for v in vals) else sum(vals)
     return {
         "population": population,
-        "yields": {y["key"]: (gdp if y["key"] == "gold" else None) for y in YIELDS},
-        "jobs": {k: None for k in INDUSTRY_LINES},
-        "employed": None,
+        "yields": yields,
+        "jobs": jobs,
+        "employed": employed,
         "median_income": None,
         "median_rent": None,
         "home_value": None,
@@ -257,6 +311,7 @@ def build() -> None:
     abbr = {s["fips"]: s["abbr"] for s in bounds["states"]}
     pop, money = census["municipalities"], gdp["municipalities"]
     names = {c["geoid"]: c["name"] for c in bounds["counties"]}
+    cempre = load_interim("ibge_cempre")
 
     groups = []  # (members, full name, principal)
     in_arranjo = set()
@@ -292,7 +347,7 @@ def build() -> None:
                 "x": round(x, 1),
                 "y": round(y, 1),
                 "cell": grid.cell_at(x, y),
-                **empty_economy(population, city_gdp, gdp_year),
+                **empty_economy(population, city_gdp, gdp_year, *municipal_jobs(cempre, members)),
                 "counties": sorted(members),
                 "pop_series": None,
             }
@@ -330,7 +385,9 @@ def build() -> None:
         if items:
             print(f"    {len(items)} {label}: {', '.join(items[:8])}{' …' if len(items) > 8 else ''}")
 
-    nation = empty_economy(census["nation"]["1"], gdp["nation"]["1"], gdp_year)
+    nation = empty_economy(census["nation"]["1"], gdp["nation"]["1"], gdp_year,
+                           level_jobs(lambda c: (cempre["us"].get(c) or [None])[0] and cempre["us"][c][0][0]),
+                           cempre["us_total"][0])
     write_web("cities.json", cities)
     write_web(
         "nation.json",

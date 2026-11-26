@@ -1,141 +1,139 @@
-"""Districts: real industry specialisation (BLS QCEW) as strategy-game districts, per metro and per county.
+"""Distritos: a especialização real do emprego (IBGE CEMPRE) como distritos de jogo de estratégia, por cidade.
 
-QCEW stopped publishing metro areas by industry with the 2025 data, so a metro's jobs in an industry are the sum of
-its member counties (cities.json `counties`). Counties whose row BLS withheld for confidentiality are left out of
-the sum, so such a value is a lower bound (`suppressed` counts them, `lower_bound` flags it); a value with no
-disclosed county at all is null, never 0.
+Os empregos de uma cidade numa atividade são a soma dos seus municípios (cities.json `counties`). Uma célula que o
+IBGE suprime (poucos informantes) fica fora da soma, e o valor vira um piso (`suppressed` conta quantas,
+`lower_bound` marca); sem nenhum município divulgado, o valor é nulo, nunca 0.
 
-Location quotient (LQ) = (metro jobs in the district's industries ÷ metro jobs in all industries) ÷ (the same
-ratio for the nation). All industries' total is QCEW industry 10, all ownerships.
+Quociente locacional (QL) = (empregos da cidade nas atividades do distrito ÷ todos os empregos da cidade) ÷ (a
+mesma razão no país). Todos os empregos = o total do CEMPRE (pessoal ocupado assalariado).
 
-The rule (published in the file as `rule`):
-* A district's score is the LQ of the sum of its industries (`naics`, ownerships `own`).
-* It **appears** when that LQ is at least MIN_LQ and it has at least MIN_JOBS jobs or MIN_SHARE of the metro's
-  jobs ("broad"), or when one of its listed specialities (`sub`) has an LQ of at least SPECIALTY_LQ with at least
-  SPECIALTY_JOBS jobs or SPECIALTY_SHARE of the metro's jobs, and never under MIN_JOBS ("specialty": e.g. Houston's oil and gas inside a manufacturing-sized Industrial zone).
-* Districts are ranked by strength = jobs above the national norm (emp - emp / LQ), taking the larger of the
-  district's and its qualifying specialty's; up to MAX_PER_CITY are kept. (Ranking by jobs rather than by LQ
-  stops a small, extreme speciality from outranking what most of a city does.) Harbor needs a footprint hex on or next to water, or on a mapped river.
-* The city type `badge` comes from the strongest district, unless another listed district is extreme
-  (LQ >= BADGE_LQ and >= BADGE_SHARE of the metro's jobs: Huntsville's defense civilians, Elizabethtown's Fort Knox),
-  in which case the strongest such district wins. Its label is the speciality's nickname when one qualifies, else
-  the district's generic nickname (one vocabulary: 'Factory town', 'Military town', ...). When BLS withholds the
-  Campus jobs but R1 universities enrol at least COLLEGE_SHARE of the metro's population (IPEDS), the badge is
-  'College town' (basis 'ipeds', flagged `withheld`). No district → no badge ("diversified").
+A regra (publicada no arquivo como `rule`):
+* A nota de um distrito é o QL da soma das suas atividades (`naics`: códigos da CNAE 2.0, seção, divisão ou grupo).
+* Ele **aparece** quando esse QL é de pelo menos MIN_LQ e soma pelo menos MIN_JOBS empregos ou MIN_SHARE dos
+  empregos da cidade ("amplo"), ou quando uma das suas especialidades (`sub`) tem QL de pelo menos SPECIALTY_LQ com
+  pelo menos SPECIALTY_JOBS empregos ou SPECIALTY_SHARE dos empregos da cidade, e nunca abaixo de MIN_JOBS.
+* Os distritos se ordenam pela força = empregos acima da norma nacional (emp - emp / QL); ficam até MAX_PER_CITY.
+  O Porto também precisa de um hexágono da cidade na água, ao lado dela, ou sobre um rio do mapa.
+* O tipo de cidade (`badge`) vem do distrito mais forte, a não ser que outro seja extremo (QL >= BADGE_LQ e >=
+  BADGE_SHARE dos empregos, no distrito ou numa especialidade dele: Macaé e o petróleo), e então o mais forte
+  desses vence. O rótulo é o apelido da especialidade quando ela
+  passa, senão o apelido do distrito. Sem distrito, sem tipo ("diversificada").
 """
 
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 from ..core.hexgrid import HexGrid
 from ..core.paths import WEB_DATA
 from ..core.store import load_interim, load_interim_payload, write_web
 
-REQUIRES = ["bls_qcew", "ipeds", "_world", "cities.json", "world.json"]
+REQUIRES = ["ibge_cempre", "_world", "cities.json", "world.json"]
 PRODUCES = ["districts.json"]
 
 MIN_LQ = 1.25
 MIN_JOBS = 1000
 MIN_SHARE = 0.01
 SPECIALTY_LQ = 3.0
-SPECIALTY_JOBS = 5000      # a speciality alone makes a district only when it is a real share of the metro:
-SPECIALTY_SHARE = 0.005    # at least this many jobs, or this share of the metro's jobs
+SPECIALTY_JOBS = 5000      # a speciality alone makes a district only when it is a real share of the city:
+SPECIALTY_SHARE = 0.005    # at least this many jobs, or this share of the city's jobs
 MAX_PER_CITY = 5
 TOP_INDUSTRIES = 8
-ALL_OWN = [1, 2, 3, 5]
+ALL_OWN = [1]              # CEMPRE has no ownership split: one "ownership", all employers
 BADGE_LQ = 6.0
 BADGE_SHARE = 0.03
-COLLEGE_SHARE = 0.15
+
+
+def _n(x) -> str:
+    """Brazilian thousands separator for the rule text."""
+    return f"{x:,}".replace(",", ".")
+
 
 RULE_TEXT = (
-    f"A district appears when the jobs in its industries have a location quotient (the metro's share of jobs in "
-    f"them divided by the national share) of at least {MIN_LQ:g} and number at least {MIN_JOBS:,} or "
-    f"{MIN_SHARE:.0%} of the metro's jobs, or when one of its listed specialities has a location quotient of at "
-    f"least {SPECIALTY_LQ:g} with at least {SPECIALTY_JOBS:,} jobs or {SPECIALTY_SHARE:.1%} of the metro's jobs (and "
-    f"never fewer than {MIN_JOBS:,}). Districts are ranked by how many jobs they have "
-    f"above the national norm (jobs minus jobs divided by the quotient); up to {MAX_PER_CITY} per city. A Harbor also needs a metro hex on or next to water or a mapped "
-    f"river. Metro jobs add up the member counties (BLS publishes metros as totals only from 2025 on); counties "
-    f"BLS withheld are left out, so such values are lower bounds. The city type is named after the strongest "
-    f"district, or after a listed district with a quotient of at least {BADGE_LQ:g} and at least {BADGE_SHARE:.0%} of "
-    f"the metro's jobs when there is one, and labelled by its speciality when one passes; 'Seat of government' and "
-    f"'Capital city' go only to metros holding a state capital or the national capital. When BLS withholds the "
-    f"Campus jobs but R1 research universities enrol students numbering at least {COLLEGE_SHARE:.0%} of the metro's "
-    f"population (IPEDS 12-month headcount, which includes online students), the city type is 'College town'."
-)
+    f"Um distrito aparece quando os empregos formais nas suas atividades têm quociente locacional (a parcela desses "
+    f"empregos na cidade dividida pela parcela no país) de pelo menos {MIN_LQ:g} e somam pelo menos {_n(MIN_JOBS)} ou "
+    f"{MIN_SHARE:.0%} dos empregos da cidade, ou quando uma das suas especialidades tem quociente de pelo menos "
+    f"{SPECIALTY_LQ:g} com pelo menos {_n(SPECIALTY_JOBS)} empregos ou {SPECIALTY_SHARE:.1%} dos empregos da cidade "
+    f"(e nunca menos de {_n(MIN_JOBS)}). Os distritos se ordenam por quantos empregos têm acima da norma nacional; até "
+    f"{MAX_PER_CITY} por cidade. O Porto também precisa de um hexágono da cidade na água, ao lado dela ou sobre um rio "
+    f"do mapa. Os empregos da cidade somam os seus municípios; células que o IBGE suprime ficam de fora, e esses "
+    f"valores são pisos. O tipo de cidade leva o nome do distrito mais forte, ou de um distrito com quociente de "
+    f"pelo menos {BADGE_LQ:g} e pelo menos {BADGE_SHARE:.0%} dos empregos (no distrito ou numa especialidade dele) "
+    f"quando houver, e o apelido da especialidade "
+    f"quando ela passa; 'Capital federal' e 'Capital estadual' só vão para cidades com a capital. Fonte: IBGE, "
+    f"Cadastro Central de Empresas (emprego assalariado formal; o trabalho informal fica de fora)."
+).replace(".0%", "%").replace("0.5%", "0,5%")
 
 
-def _d(id, name, color, naics, own, sub, badge, labels, description, caveat=None):
+def _d(id, name, color, naics, sub, badge, labels, description, caveat=None, icon=None):
     return {
-        "id": id, "name": name, "icon": "d-" + id.replace("_", "-"), "color": color, "naics": naics, "own": own,
-        "sub": sub, "badge": {"id": badge[0], "label": badge[1], "labels": labels},
+        "id": id, "name": name, "icon": icon or "d-" + id.replace("_", "-"), "color": color, "naics": naics,
+        "own": ALL_OWN, "sub": sub, "badge": {"id": badge[0], "label": badge[1], "labels": labels},
         "description": description, "caveat": caveat,
     }
 
 
 CATALOG = [
-    _d("campus", "Campus", "#4a7bd0", ["5417", "6113", "5415", "5132", "5182"], ALL_OWN,
-       {"5417": "Research labs", "6113": "Universities", "5132": "Software", "5415": "Computer services",
-        "5182": "Data centres & hosting"},
-       ("scientific", "Knowledge city"),
-       {"5417": "Research city", "6113": "College town", "5132": "Tech city", "5415": "Tech city", "5182": "Tech city"},
-       "Science and technology: research labs, colleges and universities, software publishers, computer "
-       "services and data hosting."),
-    _d("commercial_hub", "Commercial hub", "#d0a23a", ["52"], ALL_OWN,
-       {"5231": "Securities & brokerage", "524": "Insurance"},
-       ("commercial", "Finance city"), {"5231": "Finance capital", "524": "Insurance city"},
-       "Finance and insurance: banks, securities and commodity trading, insurers."),
-    _d("industrial_zone", "Industrial zone", "#c2643a", ["31_33", "211", "2121"], ALL_OWN,
-       {"3361": "Motor vehicles", "3344": "Semiconductors", "3254": "Pharmaceuticals", "3241": "Oil refining",
-        "331": "Primary metals", "211": "Oil & gas", "2121": "Coal mining"},
-       ("industrial", "Factory town"),
-       {"3361": "Motor city", "3344": "Silicon city", "3254": "Pharma city", "3241": "Refinery town",
-        "331": "Steel town", "211": "Oil town", "2121": "Coal town"},
-       "Manufacturing plus oil and gas extraction and coal mining (the strategy-game home of power plants)."),
-    _d("harbor", "Harbor", "#2f8fb0", ["483", "4883"], ALL_OWN,
-       {"483": "Shipping lines", "4883": "Port services"},
-       ("maritime", "Port city"), {"483": "Port city", "4883": "Port city"},
-       "Water transport: shipping and barge lines, and port and harbour services (cargo handling, pilots, "
-       "marinas).", "Only for metros with a hex on or next to water or a mapped river."),
-    _d("theater_square", "Theater square", "#a15bc4", ["711", "512", "516"], ALL_OWN,
-       {"711": "Performing arts & sports", "512": "Film & recording", "516": "Broadcasting"},
-       ("cultural", "Arts city"), {"711": "Arts city", "512": "Film capital", "516": "Media city"},
-       "Culture and media: theatres, orchestras, spectator sports, film and music studios, broadcasters."),
-    _d("entertainment_complex", "Entertainment complex", "#d0508a", ["713", "721"], ALL_OWN,
-       {"7132": "Casinos", "713": "Amusement & recreation", "721": "Hotels & resorts"},
-       ("entertainment", "Resort city"), {"7132": "Casino city", "713": "Resort city", "721": "Resort city"},
-       "Leisure: theme parks, casinos, golf, ski and fitness, plus hotels and resorts. Casino hotels count as "
-       "hotels (NAICS 721120)."),
-    _d("aerodrome", "Aerodrome", "#6a8fb8", ["481", "4881", "3364"], ALL_OWN,
-       {"481": "Airlines", "4881": "Airport services", "3364": "Aerospace"},
-       ("aviation", "Air hub"), {"481": "Air hub", "4881": "Air hub", "3364": "Aerospace city"},
-       "Aviation: airlines, airport services and aerospace manufacturing."),
-    _d("government_plaza", "Government plaza", "#8a9a5b", ["921", "922", "923", "924", "925", "926", "927"], [1, 2],
-       {"921": "Government offices", "922": "Courts, police & prisons", "923": "Benefit agencies",
-        "926": "Economic agencies", "927": "Space agency"},
-       ("governmental", "Government town"),
-       {"921": "Government town", "922": "Government town", "923": "Government town", "926": "Government town",
-        "927": "Space city"},
-       "Federal and state public administration (NAICS 92 without national security). Local government offices "
-       "are in every county and are left out.",
-       "State universities and hospitals are not public administration (they count in Campus)."),
-    _d("encampment", "Encampment", "#8a4a3a", ["928110"], [1, 2],
-       {"928110": "Defense civilians"},
-       ("militaristic", "Military town"), {"928110": "Military town"},
-       "National security: civilian Department of Defense staff and state National Guard employees.",
-       "Civilian defense staff only: uniformed troops are not in QCEW (see the Military layer)."),
-    _d("aqueduct", "Aqueduct & dam", "#3aa0a0", ["22"], ALL_OWN,
-       {"2211": "Power utilities", "2213": "Water & sewer"},
-       ("utility", "Utility town"), {"2211": "Power town", "2213": "Waterworks town"},
-       "Utilities: electric power generation and distribution, water, sewage and gas."),
+    _d("campus", "Campus", "#4a7bd0", ["62", "63", "72", "85.3"],
+       {"72.1": "Pesquisa científica", "85.3": "Universidades", "62.0": "Software e TI"},
+       ("scientific", "Cidade do conhecimento"),
+       {"72.1": "Cidade da pesquisa", "85.3": "Cidade universitária", "62.0": "Polo de tecnologia"},
+       "Ciência e tecnologia: software e serviços de TI, serviços de informação, pesquisa e desenvolvimento e "
+       "educação superior."),
+    _d("commercial_hub", "Centro financeiro", "#d0a23a", ["64", "65", "66"],
+       {"64": "Bancos", "65": "Seguros e previdência"},
+       ("commercial", "Centro financeiro"), {"64": "Capital financeira", "65": "Cidade dos seguros"},
+       "Finanças e seguros: bancos, crédito, seguradoras, previdência e mercado de capitais."),
+    _d("industrial_zone", "Zona industrial", "#c2643a", ["B", "C"],
+       {"29.1": "Automóveis", "24.2": "Siderurgia", "24.1": "Ferro-gusa", "19.2": "Refino de petróleo",
+        "06.0": "Petróleo e gás", "07.1": "Minério de ferro", "15.3": "Calçados", "21": "Farmacêutica"},
+       ("industrial", "Cidade industrial"),
+       {"29.1": "Cidade do automóvel", "24.2": "Cidade do aço", "24.1": "Cidade do aço", "19.2": "Cidade da refinaria",
+        "06.0": "Cidade do petróleo", "07.1": "Cidade do minério", "15.3": "Polo calçadista", "21": "Polo farmacêutico"},
+       "Indústria de transformação e indústrias extrativas (petróleo, gás e mineração)."),
+    _d("agro", "Agro", "#9bb04a", ["A", "46.2", "10.1"],
+       {"01": "Lavouras e pecuária", "46.2": "Comércio de grãos e insumos", "10.1": "Frigoríficos"},
+       ("agrarian", "Cidade do agro"),
+       {"01": "Cidade do agro", "46.2": "Cidade do agro", "10.1": "Cidade dos frigoríficos"},
+       "A cadeia do agronegócio: agropecuária e produção florestal, comércio atacadista de matérias-primas "
+       "agrícolas (grãos, insumos) e abate e frigoríficos.",
+       "Só emprego formal: no campo, a informalidade é maior que na média.", icon="l-farmland"),
+    _d("harbor", "Porto", "#2f8fb0", ["50", "52.3"],
+       {"50.1": "Navegação", "52.3": "Serviços portuários"},
+       ("maritime", "Cidade portuária"), {"50.1": "Cidade portuária", "52.3": "Cidade portuária"},
+       "Transporte aquaviário: navegação de cabotagem e longo curso, e serviços portuários (operação de terminais, "
+       "praticagem).", "Só para cidades com um hexágono na água, ao lado dela ou sobre um rio do mapa."),
+    _d("theater_square", "Praça das artes", "#a15bc4", ["90", "59", "60"],
+       {"90": "Artes e espetáculos", "59": "Cinema, vídeo e música", "60": "Rádio e televisão"},
+       ("cultural", "Cidade das artes"), {"90": "Cidade das artes", "59": "Cidade do audiovisual", "60": "Cidade da mídia"},
+       "Cultura e mídia: artes cênicas e espetáculos, cinema, vídeo e música, rádio e televisão."),
+    _d("entertainment_complex", "Complexo de lazer", "#d0508a", ["93", "55"],
+       {"93.2": "Recreação e lazer", "93.1": "Esportes", "55": "Hotéis e pousadas"},
+       ("entertainment", "Cidade turística"),
+       {"93.2": "Cidade turística", "93.1": "Cidade do esporte", "55": "Cidade turística"},
+       "Lazer: parques, clubes, academias e esportes, mais hotéis e pousadas."),
+    _d("aerodrome", "Aeródromo", "#6a8fb8", ["51", "52.4", "30.4"],
+       {"51": "Companhias aéreas", "52.4": "Serviços aeroportuários", "30.4": "Aeronaves"},
+       ("aviation", "Polo aéreo"), {"51": "Polo aéreo", "52.4": "Polo aéreo", "30.4": "Cidade aeroespacial"},
+       "Aviação: companhias aéreas, serviços aeroportuários e fabricação de aeronaves."),
+    _d("government_plaza", "Praça do governo", "#8a9a5b", ["84"],
+       {"84.1": "Administração do Estado"},
+       ("governmental", "Cidade do governo"), {"84.1": "Cidade do governo"},
+       "Administração pública, defesa e seguridade social, nas três esferas.",
+       "Inclui as prefeituras, que existem em todo município; universidades e hospitais públicos ficam no Campus e na saúde."),
+    _d("aqueduct", "Usina e saneamento", "#3aa0a0", ["D", "E"],
+       {"35.1": "Energia elétrica", "36.0": "Água"},
+       ("utility", "Cidade da energia"), {"35.1": "Cidade da energia", "36.0": "Cidade do saneamento"},
+       "Serviços públicos: geração e distribuição de energia elétrica e gás, água, esgoto e resíduos."),
 ]
 BY_ID = {d["id"]: d for d in CATALOG}
 IDS = [d["id"] for d in CATALOG]
 
 
 class Metrics:
-    """Adds up QCEW county entries for a set of counties."""
+    """Adds up CEMPRE municipal entries for a set of municipalities (the upstream QCEW layout)."""
 
     def __init__(self, q: dict):
         self.q = q
@@ -146,17 +144,22 @@ class Metrics:
     def total(self, fips: list[str]) -> dict:
         emp = wages = 0
         known = 0
+        has_wages = True
         for f in fips:
             e = self.q["totals"].get(f)
             if e:
                 emp += e[0]
-                wages += e[1]
+                if e[1] is None:
+                    has_wages = False
+                else:
+                    wages += e[1]
                 known += 1
-        return {"emp": emp if known else None, "wages": wages if known else None, "known": known}
+        return {"emp": emp if known else None, "wages": wages if known and has_wages else None, "known": known}
 
     def industry(self, codes: list[str], own: list[int], fips: list[str]) -> dict:
-        """{emp, wages, chg, suppressed} over counties; emp None when no county disclosed anything."""
+        """{emp, wages, chg, suppressed} over municipalities; emp None when none disclosed anything."""
         emp = wages = chg = 0
+        has_wages = True
         suppressed = 0
         disclosed = 0
         for f in fips:
@@ -164,14 +167,17 @@ class Metrics:
             for c in codes:
                 row = self.q["counties"].get(c, {}).get(f)
                 if row is None:
-                    continue  # no establishment of any ownership: 0 jobs
+                    continue  # no local unit in this activity: 0 jobs
                 for o in own:
                     e = row[self.owns.index(o)]
                     if e is None:
                         sup = True
                     elif e:
                         emp += e[0]
-                        wages += e[1]
+                        if e[1] is None:
+                            has_wages = False
+                        else:
+                            wages += e[1]
                         chg += e[2]
             if sup:
                 suppressed += 1
@@ -179,7 +185,7 @@ class Metrics:
                 disclosed += 1
         if disclosed == 0 and suppressed > 0 and emp == 0:
             return {"emp": None, "wages": None, "chg": None, "suppressed": suppressed}
-        return {"emp": emp, "wages": wages, "chg": chg, "suppressed": suppressed}
+        return {"emp": emp, "wages": wages if has_wages else None, "chg": chg, "suppressed": suppressed}
 
     def us(self, codes: list[str], own: list[int]) -> int:
         n = 0
@@ -207,7 +213,7 @@ def excess(emp, q) -> float:
 
 
 def evaluate(m: Metrics, fips: list[str], total: int | None, wet: bool = True) -> list[dict]:
-    """Every district that passes the rule for this set of counties, strongest first (max MAX_PER_CITY)."""
+    """Every district that passes the rule for this set of municipalities, strongest first (max MAX_PER_CITY)."""
     out = []
     if not total:
         return out
@@ -237,7 +243,7 @@ def evaluate(m: Metrics, fips: list[str], total: int | None, wet: bool = True) -
         strength = max(excess(v["emp"], dlq) if broad else 0, best_sub[3] if specialty else 0)
         out.append({
             "id": d["id"], "lq": _r(dlq, 2), "emp": v["emp"], "share": _r(share, 4),
-            "avg_pay": round(v["wages"] / v["emp"]) if v["emp"] else None,
+            "avg_pay": round(v["wages"] / v["emp"]) if v["emp"] and v["wages"] is not None else None,
             "sub": best_sub[0] if best_sub else None, "sub_lq": _r(best_sub[1], 2) if best_sub else None,
             "sub_emp": best_sub[2] if best_sub else None,
             "sub_lower_bound": bool(best_sub[4]) if best_sub else None,
@@ -252,46 +258,29 @@ def badge_district(dists: list[dict]) -> dict | None:
     """The district the city type is named after: the strongest, unless a listed district is extreme."""
     if not dists:
         return None
-    extreme = [d for d in dists if d["lq"] is not None and d["lq"] >= BADGE_LQ and (d["share"] or 0) >= BADGE_SHARE]
+    def sub_share(d):
+        return d["sub_emp"] * (d["share"] or 0) / d["emp"] if d.get("sub_emp") and d.get("emp") else 0
+
+    extreme = [d for d in dists
+               if (d["lq"] is not None and d["lq"] >= BADGE_LQ and (d["share"] or 0) >= BADGE_SHARE)
+               or ((d.get("sub_lq") or 0) >= BADGE_LQ and sub_share(d) >= BADGE_SHARE)]
     return max(extreme, key=lambda d: d["strength"]) if extreme else dists[0]
 
 
-def college_badge(univs: list[tuple[str, int]], pop, campus_withheld: bool) -> dict | None:
-    """'College town' from IPEDS when BLS withholds the Campus jobs of a metro dominated by R1 universities."""
-    if not campus_withheld or not univs or not pop:
-        return None
-    enrolled = sum(e for _, e in univs)
-    if enrolled < COLLEGE_SHARE * pop:
-        return None
-    names = ", ".join(n for n, _ in sorted(univs, key=lambda t: -t[1])[:2])
-    return {"id": "scientific", "label": "College town", "district": "campus", "basis": "ipeds", "withheld": True,
-            "text": f"{names}: R1 research university enrolment equal to {enrolled / pop:.0%} of the metro's people "
-                    f"(IPEDS, 12-month headcount). BLS withholds part of the Campus jobs here, so that district cannot be measured."}
-
-
-# State capitals of the lower 48 (city name, state): 'Seat of government' goes only to metros holding one.
-STATE_CAPITALS = [
-    ("Montgomery", "AL"), ("Phoenix", "AZ"), ("Little Rock", "AR"), ("Sacramento", "CA"), ("Denver", "CO"),
-    ("Hartford", "CT"), ("Dover", "DE"), ("Tallahassee", "FL"), ("Atlanta", "GA"), ("Boise City", "ID"),
-    ("Springfield", "IL"), ("Indianapolis", "IN"), ("Des Moines", "IA"), ("Topeka", "KS"), ("Frankfort", "KY"),
-    ("Baton Rouge", "LA"), ("Augusta", "ME"), ("Annapolis", "MD"), ("Boston", "MA"), ("Lansing", "MI"),
-    ("St. Paul", "MN"), ("Jackson", "MS"), ("Jefferson City", "MO"), ("Helena", "MT"), ("Lincoln", "NE"),
-    ("Carson City", "NV"), ("Concord", "NH"), ("Trenton", "NJ"), ("Santa Fe", "NM"), ("Albany", "NY"),
-    ("Raleigh", "NC"), ("Bismarck", "ND"), ("Columbus", "OH"), ("Oklahoma City", "OK"), ("Salem", "OR"),
-    ("Harrisburg", "PA"), ("Providence", "RI"), ("Columbia", "SC"), ("Pierre", "SD"), ("Nashville", "TN"),
-    ("Austin", "TX"), ("Salt Lake City", "UT"), ("Montpelier", "VT"), ("Richmond", "VA"), ("Olympia", "WA"),
-    ("Charleston", "WV"), ("Madison", "WI"), ("Cheyenne", "WY"),
-    ("Barre", "VT"),  # Montpelier's micro area is named after Barre
-]
+# The 27 capitals (IBGE municipality codes); 'Capital estadual' goes only to cities holding one.
+STATE_CAPITALS = {
+    "1200401", "2704302", "1600303", "1302603", "2927408", "2304400", "3205309", "5208707", "2111300", "5103403",
+    "5002704", "3106200", "1501402", "2507507", "4106902", "2611606", "2211001", "3304557", "2408102", "4314902",
+    "1100205", "1400100", "4205407", "3550308", "2800308", "1721000",
+}
 
 
 def holds_state_capital(city: dict) -> bool:
-    """True when one of the metro's named principal cities is a state capital in one of its states."""
-    full = city.get("full") or city.get("name") or ""
-    names, _, st = full.partition(", ")
-    states = set(city.get("states") or []) | set(st.split(" ")[0].split("-"))
-    parts = {p.strip() for p in names.split("-")}
-    return any(cap in parts and abbr in states for cap, abbr in STATE_CAPITALS)
+    return bool(STATE_CAPITALS & set(city.get("counties") or []))
+
+
+def _fmt(x: float) -> str:
+    return f"{x:.1f}".replace(".", ",")
 
 
 def badge_for(best: dict | None, capital: bool = False, state_capital: bool = False) -> dict | None:
@@ -302,16 +291,16 @@ def badge_for(best: dict | None, capital: bool = False, state_capital: bool = Fa
     use_sub = sub is not None and best["sub_lq"] is not None and best["sub_lq"] >= SPECIALTY_LQ
     label = d["badge"]["labels"].get(sub, d["badge"]["label"]) if use_sub else d["badge"]["label"]
     if capital and d["id"] == "government_plaza":
-        label = "Capital city"
-    elif d["id"] == "government_plaza" and use_sub and sub == "921" and state_capital:
-        label = "Seat of government"
+        label = "Capital federal"
+    elif d["id"] == "government_plaza" and state_capital:
+        label = "Capital estadual"
     if use_sub:
-        ge = "≥" if best.get("sub_lower_bound") else ""
-        text = f"{d['sub'][sub]}: {ge}{best['sub_lq']:.1f}× the national share of jobs"
+        ge = "≥ " if best.get("sub_lower_bound") else ""
+        text = f"{d['sub'][sub]}: {ge}{_fmt(best['sub_lq'])}× a parcela nacional dos empregos"
     else:
-        ge = "≥" if best.get("lower_bound") else ""
-        text = f"{d['name']}: {ge}{best['lq']:.1f}× the national share of jobs"
-    return {"id": d["badge"]["id"], "label": label, "district": d["id"], "text": text, "basis": "qcew"}
+        ge = "≥ " if best.get("lower_bound") else ""
+        text = f"{d['name']}: {ge}{_fmt(best['lq'])}× a parcela nacional dos empregos"
+    return {"id": d["badge"]["id"], "label": label, "district": d["id"], "text": text, "basis": "cempre"}
 
 
 def wet_cities(cities: list[dict], world_i: dict, world: dict) -> set[str]:
@@ -339,7 +328,7 @@ def wet_cities(cities: list[dict], world_i: dict, world: dict) -> set[str]:
 
 
 def build() -> None:
-    payload = load_interim_payload("bls_qcew")
+    payload = load_interim_payload("ibge_cempre")
     q = payload["data"]
     world_i = load_interim("_world")
     cities = json.loads((WEB_DATA / "cities.json").read_text())
@@ -347,19 +336,13 @@ def build() -> None:
     m = Metrics(q)
     titles = q["codes"]
     wet = wet_cities(cities, world_i, world)
-    r1 = {}
-    for i in load_interim_payload("ipeds")["data"]["institutions"].values():
-        if i.get("research") == 1 and i.get("cbsa") and i.get("enrollment"):
-            r1.setdefault(i["cbsa"], []).append((i["name"].replace("-Main Campus", ""), i["enrollment"]))
-    campus = BY_ID["campus"]
 
-    detail = [c for c in titles if c not in ("10", "31_33", "52", "22")]
+    detail = [c for c in titles if re.fullmatch(r"\d{2}", c)]  # the 87 CNAE divisions
     industries = {}
     for c in titles:
-        if c == "10":
+        if c == "total" or c not in q["us"]:
             continue
-        us_emp = m.us([c], ALL_OWN)
-        industries[c] = {"title": titles[c], "us_emp": us_emp}
+        industries[c] = {"title": titles[c], "us_emp": m.us([c], ALL_OWN)}
 
     out_cities: dict[str, dict] = {}
     for c in cities:
@@ -377,58 +360,44 @@ def build() -> None:
             ilq = lq(v["emp"], total, industries[code]["us_emp"], m.us_emp)
             if ilq is None:
                 continue
-            prev = v["emp"] - v["chg"]
             top.append({
-                "naics": code, "emp": v["emp"], "lq": _r(ilq, 2),
-                "avg_pay": round(v["wages"] / v["emp"]) if v["emp"] else None,
-                "oty_pct": _r(v["chg"] / prev, 4) if prev > 0 else None,
+                "naics": code, "emp": v["emp"], "lq": _r(ilq, 2), "avg_pay": None, "oty_pct": None,
                 "suppressed": v["suppressed"], "lower_bound": v["suppressed"] > 0,
             })
         top.sort(key=lambda r: -r["lq"])
         dists = evaluate(m, fips, total, c["id"] in wet)
         out_cities[c["id"]] = {
-            "emp": total, "avg_pay": round(tot["wages"] / total) if total else None,
+            "emp": total, "avg_pay": None,
             "counties": [tot["known"], len(fips)],
             "top": top[:TOP_INDUSTRIES],
             "districts": dists,
-            "badge": None,
+            "badge": badge_for(badge_district(dists), bool(c.get("capital")), holds_state_capital(c)),
         }
-        withheld = (not any(d["id"] == "campus" for d in dists)
-                    and m.industry(campus["naics"], campus["own"], fips)["suppressed"] > 0)
-        out_cities[c["id"]]["badge"] = (college_badge(r1.get(c["id"], []), c.get("population"), withheld)
-                                        or badge_for(badge_district(dists), bool(c.get("capital")),
-                                                     holds_state_capital(c)))
 
-    out_counties = {}
-    for f, t in sorted(q["totals"].items()):
-        if not t:
-            continue
-        dists = evaluate(m, [f], t[0], True)
-        out_counties[f] = {"emp": t[0], "districts": [[d["id"], d["lq"], d["emp"]] for d in dists]}
-
-    year = q["year"]
-    catalog = []
-    for d in CATALOG:
-        e = dict(d)
-        e["naics"] = list(d["naics"])
-        catalog.append(e)
+    catalog = [dict(d, naics=list(d["naics"])) for d in CATALOG]
     doc = {
         "version": 1,
         "vintage": payload.get("vintage") or q["vintage"],
-        "year": year,
-        "sources": ["bls_qcew", "ipeds"],
+        "year": q["year"],
+        "sources": ["ibge_cempre"],
         "rule": {"min_lq": MIN_LQ, "min_jobs": MIN_JOBS, "min_share": MIN_SHARE, "specialty_lq": SPECIALTY_LQ,
                  "specialty_jobs": SPECIALTY_JOBS, "specialty_share": SPECIALTY_SHARE,
                  "max_per_city": MAX_PER_CITY, "harbor_needs_water": True, "badge_lq": BADGE_LQ,
-                 "badge_share": BADGE_SHARE, "college_share": COLLEGE_SHARE, "text": RULE_TEXT,
-                 "county_note": "County districts use the same rule without the Harbor water test."},
+                 "badge_share": BADGE_SHARE, "text": RULE_TEXT,
+                 "county_note": "Só as cidades do mapa: os municípios fora delas não foram baixados."},
         "catalog": catalog,
         "industries": industries,
-        "national": {"emp": m.us_emp, "avg_pay": round(m.us_wages / m.us_emp)},
+        "national": {"emp": m.us_emp, "avg_pay": None},
         "cities": out_cities,
-        "counties": out_counties,
+        "counties": {},
     }
     write_web("districts.json", doc)
+    badges = {}
+    for row in out_cities.values():
+        if row and row["badge"]:
+            badges[row["badge"]["label"]] = badges.get(row["badge"]["label"], 0) + 1
+    print(f"    {sum(1 for r in out_cities.values() if r)} cities with jobs; city types: "
+          + ", ".join(f"{k} {v}" for k, v in sorted(badges.items(), key=lambda kv: -kv[1])))
 
 
 # ---------------------------------------------------------------------------------------------- check
@@ -528,8 +497,8 @@ def check(web_dir: Path) -> list[tuple[str, str]]:
             bad(f"city {cid}: districts but no badge")
     if any(lv == "FAIL" for lv, _ in out):
         return out
-    out.append(("PASS", f"districts.json: {len(cities)} cities ({n_null} without QCEW data), {n_badge} with a city "
+    out.append(("PASS", f"districts.json: {len(cities)} cities ({n_null} without CEMPRE data), {n_badge} with a city "
                         f"type, {len(doc['counties'])} counties"))
     out.append(("NOTE", "districts.json: cities per district: " + ", ".join(f"{k} {v}" for k, v in counts.items())))
-    out.append(("NOTE", f"districts.json: {n_lower} city districts are lower bounds (suppressed counties left out)"))
+    out.append(("NOTE", f"districts.json: {n_lower} city districts are lower bounds (suppressed municipalities left out)"))
     return out
