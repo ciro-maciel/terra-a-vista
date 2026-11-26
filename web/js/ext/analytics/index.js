@@ -1,7 +1,7 @@
 // Analytics: tells Operations Analytics what people do on the map, through the app's own hooks.
 // The tracker itself (window.analytics, loaded in index.html) counts the page view; this extension only adds goals.
 //
-//   lens:<id>         a lens was chosen on the map
+//   lens:<id>         one of the map's lenses was chosen
 //   timeline:<theme>  the timeline was opened, or its theme changed while open ("people" when no tema= in the hash)
 //   advisor:<id>      an advisor was opened ("council" for the picker)
 //   panel:city        a city panel was opened
@@ -30,9 +30,15 @@ function goalFor(prefix, id) {
 }
 
 export function install(app) {
-  // The payload is the lens object (null when the lens is turned off).
+  // The payload is the lens object (null when the lens is turned off). Advisors and the timeline paint the map
+  // with lenses of their own and put the person's lens back when they close, so only the map's own lenses
+  // (app.lensById) count, and only when they differ from the last one counted.
+  let lastLens = null;
   app.on?.("lens", (lens) => {
-    if (lens?.id) goalFor("lens", lens.id);
+    const id = lens?.id;
+    if (!id || app.lensById?.get?.(id) !== lens || id === lastLens) return;
+    lastLens = id;
+    goalFor("lens", id);
   });
 
   let lastAdvisor = null;
