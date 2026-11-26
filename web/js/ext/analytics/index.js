@@ -9,6 +9,7 @@
 //   why:open          a "Por quê?" question was opened in the city or state panel
 //   share             the Share button was pressed; share:copy and share:image are what was done from it
 //   almanac:open      the Almanaque was opened
+//   ask:open, ask:copy, ask:question  sent by ext/ask (the MCP panel) itself
 //
 // Names are built only from the app's fixed ids (lenses, advisors, timeline themes) and checked against a short
 // pattern; nothing the person typed or any place they picked goes in a name. Without the tracker (a blocker,

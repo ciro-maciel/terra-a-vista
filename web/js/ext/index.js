@@ -5,8 +5,9 @@
 // layers/: static map layers (roads, rail, ports, forts, wonders, trade routes) and their toggles.
 // advisors/: the council of dashboards beside the map, built on the Brazilian data (states and cities).
 // timeline/: the map in each Census year since 1970. why/: "Por quê?" at the end of the city and state panels.
+// ask/: "Pergunte à sua IA", the way into the map's MCP server (mcp/) and its weekly index.
 // analytics/: goals for Operations Analytics (lens, timeline, advisor, panels, "Por quê?", share, Almanaque).
-const MODULES = ["./cityView/index.js", "./layers/index.js", "./advisors/index.js", "./timeline/index.js", "./why/index.js", "./analytics/index.js"];
+const MODULES = ["./cityView/index.js", "./layers/index.js", "./advisors/index.js", "./timeline/index.js", "./why/index.js", "./ask/index.js", "./analytics/index.js"];
 
 export async function installExtensions(app, list = MODULES) {
   const loads = list.map((spec) => import(spec).then((m) => ({ m }), (err) => ({ err })));
