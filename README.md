@@ -7,7 +7,7 @@ relief and land cover. Every number traces back to a public source, listed in th
 **Live: [ciro-maciel.github.io/terra-a-vista](https://ciro-maciel.github.io/terra-a-vista/?ref=oss-terra-a-vista)** ·
 [Leia em português](README.pt-BR.md)
 
-![Brazil as a hex strategy map: forest across the Amazon, scrub in the Caatinga, farmland in the Centre-South and the banners of the state capitals](docs/images/terra-a-vista.png)
+![Terra à Vista: BRASIL in gold over the hex strategy map of the country, with the round Brazilian flag emblem, "como jogo de estratégia, feito de dados públicos", and a band with the sources (IBGE, MapBiomas, Comex Stat, Datasus, Inep, Anatel, Tesouro Nacional) and the address](docs/images/capa.png)
 
 ## What is on the map
 
