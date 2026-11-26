@@ -772,6 +772,25 @@ A city's value in a Census year sums its member municipalities that existed that
 later was counted in the one it split from); `null` when the municipality that names the city did not exist yet.
 GDP follows the same rule and uses Brazil's GDP deflator for every municipality.
 
+### series_<theme>.json (lazy)
+
+One file per timeline theme besides the Census one (`series_land.json`: MapBiomas). Built through
+`pipeline/build/series_util.py`; every metric is a ratio Σ num ÷ Σ den, so a city, a state and the nation add up the
+same way as a municipality.
+
+```js
+{
+  id: "land", name: "Terra", vintage, sources: [...], rule: "…", question: "O que aconteceu com a terra desde {first}?",
+  years: [1985, 1990, …, 2025],
+  metrics: [{id, name, unit, format, scale, domain, ramp, higher_is, description, muni_div}],
+  munis: {metric: [[value × muni_div per year] per municipality, in world.json "counties" order]},
+  cities: {id: {metric: [value per year]}}, states: {abbr: {metric: [...]}}, nation: {metric: [...]},
+}
+```
+
+`domain` is fixed across the years (2nd to 98th percentile of every municipality in every year), so a colour means the
+same in every year. Shares (`format: "pct"`) travel per municipality as whole thousandths (`muni_div: 1000`).
+
 ## sources.json
 
 A list of `{id, title, publisher, homepage, license, description, used_for, vintage, files: [{file, url, retrieved, sha256, bytes}]}`.

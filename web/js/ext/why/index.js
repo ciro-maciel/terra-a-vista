@@ -5,6 +5,7 @@
 //   GDP        → the sectors (value added) and the municipalities, and its real change since 2002
 //   growth     → which municipalities added or lost people between the two estimates
 //   city type  → the activities whose share of formal jobs is far above Brazil's
+//   each timeline series theme (series_<id>.json) → its measures in the first and the last year, against Brazil
 // Each answer names its source; a number the data cannot take apart says so instead of guessing.
 import { esc, int, money, pct, dec } from "../../format.js";
 
@@ -57,8 +58,7 @@ export function install(app) {
     sec.innerHTML = `<h3>Por quê?</h3><p class="src">Abra uma pergunta para ver de onde vem cada número.</p>`;
     const foot = panel.querySelector(".cp-foot");
     panel.insertBefore(sec, foot);
-    const qs = questions(target);
-    for (const q of qs) {
+    const add = (q) => {
       const d = document.createElement("details");
       d.innerHTML = `<summary>${q.title}</summary><div class="why-a"><p class="src">Lendo os dados…</p></div>`;
       d.addEventListener("toggle", async () => {
@@ -66,7 +66,7 @@ export function install(app) {
         d.dataset.done = "1";
         let html;
         try {
-          html = q.answer(await load());
+          html = q.answer(q.series ? await app.timeline.series(q.series) : await load());
         } catch (err) {
           console.error("why:", err);
           html = `<p>Não consegui montar esta resposta (${esc(err.message || err)}).</p>`;
@@ -74,6 +74,14 @@ export function install(app) {
         d.querySelector(".why-a").innerHTML = html;
       });
       sec.appendChild(d);
+    };
+    questions(target).forEach(add);
+    // One question per timeline series theme, once its file is in (it loads in the background, a few hundred kB).
+    for (const th of app.timeline?.themes || []) {
+      if (!th.file) continue;
+      app.timeline.series(th.id).then((d) => {
+        if (d?.question && sec.isConnected) add({ title: d.question.replace("{first}", d.years[0]), series: th.id, answer: (f) => whySeries(target, f) });
+      }).catch(() => {});
     }
   }
 
@@ -181,6 +189,51 @@ export function install(app) {
       if (down.length) html += `<p>Os que perderam:</p><table>${down.map(row).join("")}</table>`;
     }
     return html + `<p class="src">IBGE, Estimativas da População (1º de julho). As estimativas levam um ajuste de cobertura do Censo 2022, então ficam acima da contagem do Censo: o crescimento compara só estimativas entre si. Elas não separam nascimentos de migração.</p>`;
+  }
+
+  // A series theme: each measure in the first and the last year here and in Brazil, and, for a group of municipalities,
+  // the ones that changed the most in the first measure.
+  function whySeries(t, d) {
+    if (!d) return `<p>A série não carregou.</p>`;
+    const s = t.kind === "city" ? d.cities[t.city.id] : d.states[t.st.abbr];
+    if (!s) return `<p>Sem dados para ${esc(nameOf(t))}.</p>`;
+    const ys = d.years, y0 = ys[0], y1 = ys.at(-1);
+    const fmt = (m, v) => (v == null ? "–" : m.format === "pct" ? pct(v, v < 0.1 ? 1 : 0) : dec(v, m.format === "int" ? 0 : 1));
+    const diff = (m, a, b) => {
+      if (a == null || b == null) return "";
+      const x = m.format === "pct" ? (b - a) * 100 : b - a;
+      return `<span class="${x >= 0 ? "pos" : "neg"}">${x >= 0 ? "+" : "−"}${dec(Math.abs(x), 1)}${m.format === "pct" ? " pt" : ""}</span>`;
+    };
+    const first = (arr) => arr.findIndex((v) => v != null);
+    let html = `<p>${esc(nameOf(t))} em ${y0} e em ${y1}, ao lado do Brasil:</p><table><tr><td class="m"></td><td class="n m">${y0}</td><td class="n m">${y1}</td><td class="n m">mudança</td><td class="n m">Brasil ${y1}</td></tr>`;
+    for (const m of d.metrics) {
+      const v = s[m.id] || [], i0 = first(v);
+      html += `<tr><td>${esc(m.name)}</td><td class="n">${fmt(m, v[i0])}</td><td class="n">${fmt(m, v.at(-1))}</td><td class="n">${diff(m, v[i0], v.at(-1))}</td><td class="n m">${fmt(m, d.nation[m.id]?.at(-1))}</td></tr>`;
+    }
+    html += `</table>`;
+    // The municipalities behind it (a city of several, or a state), by the change in the first measure.
+    const m = d.metrics[0];
+    const codes = t.kind === "city" ? t.city.counties || [] : null;
+    const all = app.w.raw.counties || [];
+    const rows = [];
+    for (let k = 0; k < all.length; k++) {
+      const code = String(all[k].geoid);
+      if (codes ? !codes.includes(code) : code.slice(0, 2) !== t.st.fips) continue;
+      const r = d.munis[m.id]?.[k];
+      if (!r) continue;
+      const a = r[first(r)], b = r.at(-1);
+      if (a == null || b == null) continue;
+      rows.push({ name: all[k].name, d: (b - a) / (m.muni_div || 1) });
+    }
+    if (rows.length > 2) {
+      rows.sort((a, b) => a.d - b.d);
+      const tiny = m.format === "pct" ? 0.005 : 0.05;
+      const down = rows.slice(0, 3).filter((x) => x.d < -tiny), up = rows.slice(-3).reverse().filter((x) => x.d > tiny);
+      const list = (xs) => `<table>${xs.map((x) => `<tr><td>${esc(x.name)}</td><td class="n">${diff(m, 0, x.d)}</td></tr>`).join("")}</table>`;
+      if (down.length) html += `<p>${esc(m.name)}: os municípios com a maior queda de ${y0} a ${y1}:</p>${list(down)}`;
+      if (up.length) html += `<p>E os com a maior alta:</p>${list(up)}`;
+    }
+    return html + `<p class="src">${esc(d.rule)} Fonte: ${esc(d.vintage)}.</p>`;
   }
 
   function whyType(t, { districts: d }) {
