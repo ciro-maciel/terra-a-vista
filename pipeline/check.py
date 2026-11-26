@@ -490,7 +490,8 @@ def check_lenses(r: Report, doc, ctx: dict | None, source_ids: set | None) -> No
     ids = Counter(l.get("id") for l in doc["lenses"] if isinstance(l, dict))
     if any(k > 1 for k in ids.values()):
         r.fail(f"lenses.json: duplicate lens ids {[i for i, k in ids.items() if k > 1]}")
-    keys = ["id", "group", "name", "icon", "emoji", "unit", "format", "scale", "domain", "ramp", "higher_is", "source", "description", "values"]
+    # emoji is optional: every Terra à Vista lens names an SVG icon
+    keys = ["id", "group", "name", "icon", "unit", "format", "scale", "domain", "ramp", "higher_is", "source", "description", "values"]
     for lens in doc["lenses"]:
         what = f"lenses.json {lens.get('id') if isinstance(lens, dict) else lens!r}"
         if not need_keys(r, what, lens, keys):

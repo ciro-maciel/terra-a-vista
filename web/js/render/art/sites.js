@@ -467,9 +467,9 @@ export function drawProtected(ctx, sets, vp, o) {
 // --- wonders --------------------------------------------------------------------------------------------------------
 
 export const WONDER_KINDS = {
-  natural: { name: "Natural wonder", ring: "#8fd07a", base: "#3f6a34", icon: "w-park" },
-  university: { name: "Great university", ring: "#8fb8ec", base: "#2c4a78", icon: "w-university" },
-  landmark: { name: "Landmark", ring: "#ecc46a", base: "#6a4a1c", icon: "w-landmark" },
+  natural: { name: "Maravilha natural", ring: "#8fd07a", base: "#3f6a34", icon: "w-park" },
+  university: { name: "Grande universidade", ring: "#8fb8ec", base: "#2c4a78", icon: "w-university" },
+  landmark: { name: "Marco", ring: "#ecc46a", base: "#6a4a1c", icon: "w-landmark" },
 };
 
 /**

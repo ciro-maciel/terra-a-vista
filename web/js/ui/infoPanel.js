@@ -43,11 +43,8 @@ export function statRow(ic, fallback, label, v, nv, fmt, higherIsGood) {
 
 export function amenities(o, n) {
   return `
-    ${statRow("unemployment", "😐", "Desemprego", o.unemployment, n.unemployment, (x) => pct(x), false)}
-    ${statRow("l-income", "💵", "Renda mediana do domicílio", o.median_income, n.median_income, dollars, true)}
-    ${statRow("l-home", "🏠", "Valor mediano do imóvel", o.home_value, n.home_value, dollars, null)}
-    ${statRow("l-homeownership", "🔑", "Aluguel mediano / mês", o.median_rent, n.median_rent, dollars, false)}
-    ${statRow(null, "⚖️", "Aluguel ÷ renda", o.rent_burden, n.rent_burden, (x) => pct(x), false)}`;
+    ${statRow("unemployment", "😐", "Desocupação", o.unemployment, n.unemployment, (x) => pct(x), false)}
+    ${statRow("l-income", "💵", "Renda média do trabalho", o.median_income, n.median_income, dollars, true)}`;
 }
 
 // Workforce by industry with location quotients vs. the nation ("specialisation"). limit = max rows (0 = all).

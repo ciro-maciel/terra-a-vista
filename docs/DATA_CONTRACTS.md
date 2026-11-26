@@ -189,6 +189,12 @@ Also, per state:
 
 ## lenses.json
 
+**Brazil (Terra à Vista):** `pipeline/build/lenses.py` builds 13 lenses from municipal data (Censo 2022 tables in
+`sources/ibge_censo2022.py`, PIB dos Municípios) and ESA WorldCover land cover: density, median age, ageing index,
+earnings per worker, GDP per person, unemployment, literacy, degrees, sewer, water, forest, farmland, built-up.
+Municipalities are spread over hexes by population share, like the upstream counties; one that no sample hits goes
+to its seat's hex, or the nearest land hex when the seat sits in a sea hex. `emoji` is optional.
+
 Produced by `pipeline/build/lenses.py`.
 
 ```jsonc
@@ -650,6 +656,10 @@ Built by `pipeline/build/military.py` from `mirta` (`sources/mirta.py`), `dmdc_p
   San Clemente and San Nicolas Islands).
 
 ### wonders.json (eager)
+
+**Brazil:** every Brazilian site on UNESCO's World Heritage List (`sources/unesco_whc.py`), rule `world_heritage`,
+`kind` natural or landmark (cultural and mixed), `metrics` {inscribed, category, danger, whc_id}, ranked by year of
+inscription. An island smaller than a hex (Fernando de Noronha) sits on its sea hex with `state` null.
 
 Built by `pipeline/build/wonders.py` from `nps_boundaries` (`sources/nps.py`), `nps_visits`, `ipeds`, `herd`
 (`sources/nsf_herd.py`) and `nhl_landmarks` (`sources/nrhp_nhl.py`). About 20 kB, 52 wonders.

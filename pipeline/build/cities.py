@@ -22,7 +22,7 @@ from ..core.store import load_interim, load_interim_payload, write_web
 from .growth import Growth
 from .yields import GDP_INDUSTRIES, INDUSTRY_LINES, YIELDS, bea_combos, economy, gdp_profile, sum_counties
 
-REQUIRES = ["_world", "ibge_census", "ibge_gdp", "ibge_arranjos", "ibge_localities", "ibge_boundaries", "ibge_cempre"]
+REQUIRES = ["_world", "ibge_census", "ibge_gdp", "ibge_arranjos", "ibge_localities", "ibge_boundaries", "ibge_cempre", "ibge_censo2022"]
 PRODUCES = ["cities.json", "nation.json"]
 
 NON_CONUS = {"AK", "HI", "PR"}
@@ -255,7 +255,20 @@ def level_jobs(values_of) -> dict:
     return out
 
 
-def empty_economy(population, gdp, gdp_year, jobs: dict | None = None, employed=None) -> dict:
+def labour(censo: dict | None, codes: list[str]) -> dict:
+    """Mean monthly earnings per worker and the unemployment rate over a set of territories (Censo 2022 counts,
+    so a city adds up its municipalities exactly). Any member missing → None."""
+    if censo is None:
+        return {"income": None, "unemployment": None}
+    def tot(key):
+        vals = [censo[key].get(c) for c in codes]
+        return None if not vals or any(v is None for v in vals) else sum(vals)
+    earn, occ, unemp, force = tot("earnings_total"), tot("employed"), tot("unemployed"), tot("labour_force")
+    return {"income": round(earn / occ) if earn is not None and occ else None,
+            "unemployment": round(unemp / force, 4) if unemp is not None and force else None}
+
+
+def empty_economy(population, gdp, gdp_year, jobs: dict | None = None, employed=None, work: dict | None = None) -> dict:
     """The economic shape of a city, state or nation: population, GDP and formal jobs (null = unknown)."""
     jobs = jobs or {k: None for k in INDUSTRY_LINES}
     yields = {}
@@ -270,10 +283,10 @@ def empty_economy(population, gdp, gdp_year, jobs: dict | None = None, employed=
         "yields": yields,
         "jobs": jobs,
         "employed": employed,
-        "median_income": None,
+        "median_income": (work or {}).get("income"),  # Brazil: mean monthly earnings per worker (Censo 2022)
         "median_rent": None,
         "home_value": None,
-        "unemployment": None,
+        "unemployment": (work or {}).get("unemployment"),
         "rent_burden": None,
         "gdp": gdp,
         "gdp_year": gdp_year if gdp is not None else None,
@@ -326,6 +339,7 @@ def build() -> None:
     pop, money = census["municipalities"], gdp["municipalities"]
     names = {c["geoid"]: c["name"] for c in bounds["counties"]}
     cempre = load_interim("ibge_cempre")
+    censo22 = load_interim("ibge_censo2022")
 
     groups = []  # (members, full name, principal)
     in_arranjo = set()
@@ -361,7 +375,8 @@ def build() -> None:
                 "x": round(x, 1),
                 "y": round(y, 1),
                 "cell": grid.cell_at(x, y),
-                **empty_economy(population, city_gdp, gdp_year, *municipal_jobs(cempre, members)),
+                **empty_economy(population, city_gdp, gdp_year, *municipal_jobs(cempre, members),
+                                work=labour(censo22["municipalities"], members)),
                 "counties": sorted(members),
                 "pop_series": None,
             }
@@ -401,7 +416,7 @@ def build() -> None:
 
     nation = empty_economy(census["nation"]["1"], gdp["nation"]["1"], gdp_year,
                            level_jobs(lambda c: (cempre["us"].get(c) or [None])[0] and cempre["us"][c][0][0]),
-                           cempre["us_total"][0])
+                           cempre["us_total"][0], labour(censo22["nation"], ["1"]))
     write_web("cities.json", cities)
     write_web(
         "nation.json",

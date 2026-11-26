@@ -3,7 +3,7 @@ resource summaries and state land shares / energy (pure functions on tiny inputs
 
 import unittest
 
-from pipeline.build import cities, counties, resources, states
+from pipeline.build import cities, resources, states
 
 
 class FootprintTest(unittest.TestCase):
@@ -80,18 +80,6 @@ class StateLandTest(unittest.TestCase):
         self.assertEqual(land["forest"], 0.75)
         self.assertEqual(land["crop"], 0.25)
         self.assertIsNone(states.land_shares(world, 5))
-
-
-class CountyFieldsTest(unittest.TestCase):
-    def test_fields_cover_requested_metrics(self):
-        keys = [f["key"] for f in counties.fields()]
-        for k in ("geoid", "name", "state", "population", "land_km2", "density", "bachelors", "median_age", "poverty",
-                  "broadband", "commute", "foreign_born", "homeownership", "uninsured", "income", "home_value",
-                  "forest", "crop", "pasture", "developed", "cbsa"):
-            self.assertIn(k, keys)
-        self.assertEqual(len(keys), len(set(keys)))
-        # Only the land shares and the map-hex column are about hexes; lens descriptions are reworded for a county.
-        self.assertTrue(all("hex" not in f["description"].lower() or f["key"] in counties.LAND or f["key"] == "cell" for f in counties.fields()))
 
 
 if __name__ == "__main__":

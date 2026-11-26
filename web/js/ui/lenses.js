@@ -104,7 +104,7 @@ export function initLensDock(opts) {
     quick.innerHTML = row.map(quickBtn).join("");
     const inRow = !active || recent.includes(active.id);
     moreBtn.classList.toggle("active", !inRow);
-    moreBtn.innerHTML = `${icon("layers", "▤", { size: 15 })}<span>${inRow ? "Lenses" : esc(active.name)}</span><span class="caret" aria-hidden="true">▾</span>`;
+    moreBtn.innerHTML = `${icon("layers", "▤", { size: 15 })}<span>${inRow ? "Lentes" : esc(active.name)}</span><span class="caret" aria-hidden="true">▾</span>`;
     moreBtn.title = "Todas as lentes (L alterna)";
     moreBtn.hidden = !lenses.length;
   }

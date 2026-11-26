@@ -10,12 +10,12 @@ import { createModel } from "./model.js";
 import { makeLayers } from "./layers.js";
 import { tips } from "./tips.js";
 
-// Terra à Vista: only the layers that have Brazilian data. Wonders come back with their data;
-// the military layer is out of scope.
+// Terra à Vista: only the layers that have Brazilian data; the military layer is out of scope.
 const TOGGLES = [
   { id: "roads", label: "Rodovias", icon: "t-road", def: true, title: "Rodovias principais (Natural Earth, como arte do mapa)", layers: ["roads"] },
   { id: "rail", label: "Ferrovias", icon: "t-rail", def: true, title: "Linhas férreas principais e secundárias (Natural Earth, como arte do mapa)", layers: ["rail"] },
   { id: "hubs", label: "Portos e aeroportos", icon: "d-harbor", def: true, title: "Portos e terminais do Anuário da ANTAQ e aeroportos pelo movimento da ANAC", layers: ["hubs"] },
+  { id: "wonders", label: "Maravilhas", icon: "w-landmark", def: true, title: "Os sítios do Patrimônio Mundial da UNESCO no Brasil", layers: ["wonders", "plates"] },
   { id: "trade", label: "Rotas aéreas", icon: "t-trade", def: false, title: "As 40 maiores ligações aéreas de passageiros entre cidades (ANAC)", layers: ["trade"] },
 ];
 

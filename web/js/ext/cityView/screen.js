@@ -130,11 +130,8 @@ function citizens(m) {
     </div>
     <div class="cv-stats">
       ${row("pop", "👥", "Empregos formais", c.employed, null, int, null, c.population, empSub, usEmpShare != null ? usEmpShare * c.population : null)}
-      ${row("unemployment", "😐", "Desemprego", c.unemployment, n.unemployment, (x) => pct(x), "low")}
-      ${row("l-income", "💵", "Renda mediana do domicílio", c.median_income, n.median_income, dollars, "high")}
-      ${row("l-homeownership", "🔑", "Aluguel mediano / mês", c.median_rent, n.median_rent, dollars, null)}
-      ${row("l-home", "🏠", "Valor mediano do imóvel", c.home_value, n.home_value, dollars, null)}
-      ${row(null, "⚖️", "Peso do aluguel (aluguel ÷ renda)", c.rent_burden, n.rent_burden, (x) => pct(x), "low")}
+      ${row("unemployment", "😐", "Desocupação", c.unemployment, n.unemployment, (x) => pct(x), "low")}
+      ${row("l-income", "💵", "Renda média do trabalho", c.median_income, n.median_income, dollars, "high")}
     </div>
     <div class="cv-legend-tiles">${tileLegend(m)}<p>${tilesNote}</p></div>
     <h4 class="cv-h4">Municípios <span class="muted">(${(c.counties || []).length})</span></h4>
@@ -283,14 +280,12 @@ const COMPARE = {
   size: [
     ["População", (c) => c.population, (v) => popShort(v)],
     ["PIB / habitante", (c) => (c.gdp != null && c.population ? c.gdp / c.population : null), money],
-    ["Renda", (c) => c.median_income, money],
+    ["Renda do trabalho", (c) => c.median_income, money],
     ["Crescimento", (c) => (Number.isFinite(c.growth) ? c.growth : null), (v) => signed(v)],
   ],
   housing: [
-    ["Valor do imóvel", (c) => c.home_value, money],
-    ["Aluguel / mês", (c) => c.median_rent, (v) => (v == null ? "–" : "R$ " + int(v))],
-    ["Peso do aluguel", (c) => c.rent_burden, (v) => pct(v, 0)],
-    ["Desemprego", (c) => c.unemployment, (v) => pct(v)],
+    ["Renda do trabalho", (c) => c.median_income, money],
+    ["Desocupação", (c) => c.unemployment, (v) => pct(v)],
   ],
 };
 
@@ -318,7 +313,7 @@ function compare(m) {
     <p class="cv-lead">As ${m.peers.length} cidades com população mais parecida. Clique numa para abrir.</p>
     <div class="cv-seg" role="group" aria-label="Medidas">
       <button type="button" data-set="size" aria-pressed="true">Tamanho e riqueza</button>
-      <button type="button" data-set="housing" aria-pressed="false">Moradia e trabalho</button>
+      <button type="button" data-set="housing" aria-pressed="false">Trabalho</button>
     </div>
     <div data-compare>${compareTable(m, "size")}</div>
   </section>`;

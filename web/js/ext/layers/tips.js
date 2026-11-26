@@ -60,23 +60,11 @@ export const tips = {
     ].join("<br>");
   },
   wonder(x, m) {
-    const k = WONDER_KINDS[x.kind]?.name || "Wonder";
     const rule = m.data.wonders?.rules?.find((r) => r.id === x.rule);
     const mt = x.metrics || {};
-    const lines = [`<b>${esc(x.name)}</b> ${muted(esc([x.state].filter(Boolean).join("")))}`];
-    if (x.kind === "university") {
-      lines.push(`${esc(k)} · #${esc(x.rank)} by research spending`);
-      if (mt.rd_usd != null) lines.push(`R&amp;D ${usd(mt.rd_usd)} (FY${esc(mt.year)})${mt.federal_usd != null ? `, ${pct(mt.federal_usd / mt.rd_usd, 0)} federal` : ""}`);
-      if (mt.enrollment != null) lines.push(`${int(mt.enrollment)} students (12-month headcount, ${esc(mt.enrollment_year)})`);
-    } else if (x.curated) {
-      lines.push(`${esc(k)} · hand-picked (curated, not ranked by data)`);
-      if (mt.visits != null) lines.push(`${num(mt.visits)} recreation visits (${esc(mt.year)})`);
-      if (mt.designated) lines.push(`National Historic Landmark since ${esc(mt.designated)}`);
-    } else {
-      lines.push(`${esc(k)} · #${esc(x.rank)} by visits${mt.unit_type ? ` among ${esc(mt.unit_type === "National Park" ? "National Parks" : "other park units")}` : ""}`);
-      if (mt.visits != null) lines.push(`<b>${num(mt.visits)}</b> recreation visits (${esc(mt.year)})${mt.visits_of ? ` ${muted(`(${esc(mt.visits_of)})`)}` : ""}`);
-      if (mt.area_km2 != null) lines.push(`${int(mt.area_km2)} km²`);
-    }
+    const cat = { natural: "natural", cultural: "cultural", misto: "misto" }[mt.category] || mt.category || "";
+    const lines = [`<b>${esc(x.name)}</b> ${muted(esc(x.state || ""))}`];
+    lines.push(`Patrimônio Mundial ${esc(cat)}${mt.inscribed ? `, inscrito em ${esc(mt.inscribed)}` : ""}${mt.danger ? " · em perigo" : ""}`);
     if (rule?.text) lines.push(muted(esc(rule.text)));
     return lines.join("<br>");
   },
