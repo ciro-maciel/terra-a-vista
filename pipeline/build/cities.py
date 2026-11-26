@@ -22,7 +22,7 @@ from ..core.store import load_interim, load_interim_payload, write_web
 from .growth import Growth
 from .yields import GDP_INDUSTRIES, INDUSTRY_LINES, YIELDS, bea_combos, economy, gdp_profile, sum_counties
 
-REQUIRES = ["_world", "census_gazetteer", "acs_1yr", "acs_5yr", "cbsa_delineation", "bea_gdp", "pep_population"]
+REQUIRES = ["_world", "ibge_census", "ibge_gdp", "ibge_arranjos", "ibge_localities", "ibge_boundaries"]
 PRODUCES = ["cities.json", "nation.json"]
 
 NON_CONUS = {"AK", "HI", "PR"}
@@ -180,107 +180,135 @@ def add_ranks(cities: list[dict]) -> None:
         c["peers"] = [cities[j]["id"] for _, j in near[:PEERS]]
 
 
+def brazil_yields() -> list[dict]:
+    """The yield definitions for Brazil: Gold is municipal GDP; the job yields wait for RAIS (phase 2)."""
+    out = []
+    for y in YIELDS:
+        y = dict(y)
+        if y["key"] == "gold":
+            # unit stays "usd": the browser reads it as "money" (shown as R$, web/js/format.js)
+            y["description"] = ("PIB a preços correntes de 2023, em reais (IBGE, PIB dos Municípios). O Ouro de uma "
+                                "cidade é a soma do PIB dos seus municípios.")
+        else:
+            y["description"] = "Ainda sem dado: este rendimento conta empregos por setor e entra com a RAIS."
+        out.append(y)
+    return out
+
+
+def empty_economy(population, gdp, gdp_year) -> dict:
+    """The economic shape of a city, state or nation with only population and GDP known (null = unknown)."""
+    return {
+        "population": population,
+        "yields": {y["key"]: (gdp if y["key"] == "gold" else None) for y in YIELDS},
+        "jobs": {k: None for k in INDUSTRY_LINES},
+        "employed": None,
+        "median_income": None,
+        "median_rent": None,
+        "home_value": None,
+        "unemployment": None,
+        "rent_burden": None,
+        "gdp": gdp,
+        "gdp_year": gdp_year if gdp is not None else None,
+        "gdp_by_industry": None,
+        "gdp_undisclosed": None,
+        "gdp_estimated": None,
+        "growth": None,
+        "growth_years": None,
+    }
+
+
+MIN_ISOLATED_POP = 50_000  # a municipality outside every arranjo becomes a city from this population
+METRO_POP = 100_000  # IBGE's threshold for an urban concentration (concentração urbana)
+CAPITAL_CODE = "5300108"  # Brasília
+CITY_RULE = (
+    f"Cada arranjo populacional do IBGE (grupos de municípios integrados pelo deslocamento para trabalhar e "
+    f"estudar, ou pela mancha urbana contínua) é uma cidade, e todo município fora de arranjo com pelo menos "
+    f"{MIN_ISOLATED_POP:,} habitantes no Censo 2022 também. A cidade leva o nome do município que dá nome ao "
+    f"arranjo (o mais populoso, se o título não nomear nenhum), e o estandarte fica na sede dele."
+).replace(",", ".")
+
+
+def title_principal(arranjo: dict, codes: list[str], pop: dict) -> str:
+    """The municipality the IBGE title names first ("Vitória/ES" → Vitória, not the larger Serra); the most
+    populous member when the title names none of them."""
+    first = re.split(r"/| - ", arranjo["name"])[0].strip()
+    named = [m["code"] for m in arranjo["members"] if m["name"] == first and m["code"] in codes]
+    return named[0] if named else max(codes, key=lambda m: pop.get(m) or 0)
+
+
+def sum_or_none(values) -> float | None:
+    """Sum, or None when any member is unknown (a partial sum would look like a real total)."""
+    values = list(values)
+    return None if any(v is None for v in values) else sum(values)
+
+
 def build() -> None:
     world = load_interim("_world")
-    gaz = load_interim("census_gazetteer")
-    acs_payload = load_interim_payload("acs_1yr")
-    acs = acs_payload["data"]
-    acs5 = load_interim("acs_5yr")["geos"]
-    deline = load_interim("cbsa_delineation")
-    bea_payload = load_interim_payload("bea_gdp")
-    bea = bea_payload["data"]
+    census = load_interim("ibge_census")
+    gdp = load_interim("ibge_gdp")
+    arranjos = load_interim("ibge_arranjos")["arranjos"]
+    seats = load_interim("ibge_localities")["seats"]
+    bounds = load_interim("ibge_boundaries")
+    gdp_year = load_interim_payload("ibge_gdp")["data"]["year"]
     proj = MapProjection(**world["projection"])
     grid = HexGrid(**world["grid"])
     owner = world["owner"]
-
     state_index = {fips: i for i, fips in enumerate(world["states"])}
-    fips_of_usps = {g["usps"]: geoid[:2] for geoid, g in gaz["counties"].items()}
-    places_by_state: dict[str, list] = {}
-    for p in gaz["places"]:
-        places_by_state.setdefault(p["usps"], []).append(p)
-    places_by_geoid = {p["geoid"]: p for p in gaz["places"]}
-    county_pop = {k[9:]: r.get("B01003_001") for k, r in acs5.items()}
-    combos = bea_combos(bea, gaz["counties"])
-    pep = load_interim("pep_population")
-    growth = Growth(pep, acs["year"])
-    no_growth: dict[str, list[str]] = {}
+    abbr = {s["fips"]: s["abbr"] for s in bounds["states"]}
+    pop, money = census["municipalities"], gdp["municipalities"]
+    names = {c["geoid"]: c["name"] for c in bounds["counties"]}
 
-    cities = []
-    fallbacks, centroid, split_gdp, no_gdp = [], [], [], []
-    for cbsa_id, rec in acs["cbsa"].items():
-        meta = gaz["cbsa"].get(cbsa_id)
-        if not meta:
+    groups = []  # (members, full name, principal)
+    in_arranjo = set()
+    for a in arranjos:
+        codes = [m["code"] for m in a["members"] if m["code"] in pop]
+        in_arranjo.update(codes)
+        groups.append((codes, f"Arranjo Populacional de {a['name']}", title_principal(a, codes, pop)))
+    for code, p in pop.items():
+        if code not in in_arranjo and p is not None and p >= MIN_ISOLATED_POP:
+            groups.append(([code], f"{names.get(code, code)} ({abbr[code[:2]]})", code))
+
+    cities, no_seat = [], []
+    for members, full, principal in groups:
+        seat = seats.get(principal)
+        if seat is None:
+            no_seat.append(full)
             continue
-        short, states = parse_cbsa_name(meta["name"])
-        if states[0] in NON_CONUS:
-            continue
-        econ_pop = rec.get("B01003_001")
-        if not econ_pop:
-            continue
-        place = delineated_place(deline["principal_cities"].get(cbsa_id, []), places_by_geoid, short, states)
-        if not place:
-            place = principal_place(places_by_state, short, states[0])
-            fallbacks.append(meta["name"])
-        if place:
-            lon, lat = place["lon"], place["lat"]
-        else:
-            lon, lat = meta["lon"], meta["lat"]
-            centroid.append(meta["name"])
-        x, y = proj(lon, lat)
-
-        members = deline["counties"].get(cbsa_id)
-        est: set = set()
-        if members:
-            lines, split = sum_counties(members, bea, combos, county_pop, est)
-            if split:
-                split_gdp.append(meta["name"])
-        else:
-            lines = None
-        gdp = gdp_profile(lines, bea["year"], est)
-        if gdp["total"] is None:
-            no_gdp.append(meta["name"])
-
-        g, why = growth.cbsa(cbsa_id, members)
-        if why:
-            no_growth.setdefault(why, []).append(meta["name"])
-
+        x, y = proj(seat["lon"], seat["lat"])
+        ufs = []
+        for m in sorted(members, key=lambda m: -(pop.get(m) or 0)):
+            if abbr[m[:2]] not in ufs:
+                ufs.append(abbr[m[:2]])
+        population = sum_or_none(pop.get(m) for m in members)
+        city_gdp = sum_or_none(money.get(m) for m in members)
         cities.append(
             {
-                "id": cbsa_id,
-                "name": DISPLAY_NAME.get(short, short),
-                "full": meta["name"],
-                "states": states,
-                "metro": meta["metro"],
-                "capital": cbsa_id == CAPITAL_CBSA,
+                "id": principal,
+                "name": names.get(principal, seat["name"]),
+                "full": full,
+                "states": ufs,
+                "metro": (population or 0) >= METRO_POP,
+                "capital": principal == CAPITAL_CODE,
                 "x": round(x, 1),
                 "y": round(y, 1),
                 "cell": grid.cell_at(x, y),
-                **economy(rec, gdp),
-                "growth": g,
-                "growth_years": growth.years,
-                "counties": sorted(members or []),
-                "pop_series": pop_series(pep, cbsa_id, members),
+                **empty_economy(population, city_gdp, gdp_year),
+                "counties": sorted(members),
+                "pop_series": None,
             }
         )
     cities.sort(key=lambda c: -c["population"])
 
-    # Banner cells: on US land, one city per cell where possible (bigger cities choose first).
+    # Banner cells: on Brazilian land, one city per cell where possible (bigger cities choose first).
+    fips_of_abbr = {v: k for k, v in abbr.items()}
     taken: set[int] = set()
-    snapped, pulled, moved, shared = [], [], [], []
+    snapped, moved, shared = [], [], []
     for c in cities:
-        own = {state_index.get(fips_of_usps.get(u), -1) for u in c["states"]}
-        state = state_index.get(fips_of_usps.get(c["states"][0]), -1)
+        state = state_index.get(fips_of_abbr[c["states"][0]], -1)
         cell = c["cell"]
         if cell < 0 or owner[cell] < 0:
             cell = nearest_land(grid, owner, max(cell, 0), c["x"], c["y"], state)
             snapped.append(c["name"])
-        elif owner[cell] not in own:
-            # A border city whose point falls just across the line: pull it back into its
-            # first state if that state has a free cell within 2 rings (the same reach as below).
-            alt = free_cell(grid, owner, taken, cell, c["x"], c["y"], state)
-            if alt is not None and owner[alt] == state:
-                cell = alt
-                pulled.append(c["name"])
         if cell in taken:
             alt = free_cell(grid, owner, taken, cell, c["x"], c["y"], state)
             if alt is None:
@@ -291,48 +319,28 @@ def build() -> None:
         taken.add(cell)
         c["cell"] = cell
 
-    feet = footprints(world, deline["counties"])
-    own_only = []
+    feet = footprints(world, {c["id"]: c["counties"] for c in cities})
     for c in cities:
-        cells = feet.get(c["id"], set())
-        if c["cell"] not in cells:
-            if not cells:
-                own_only.append(c["name"])
-            cells = cells | {c["cell"]}
-        c["footprint"] = sorted(cells)
+        c["footprint"] = sorted(feet.get(c["id"], set()) | {c["cell"]})
     add_ranks(cities)
-    no_series = [c["name"] for c in cities if c["pop_series"] is None]
 
-    print(f"    {len(cities)} cities; principal city from OMB list 2 for {len(cities) - len(fallbacks)}")
-    for label, items in (
-        ("placed by name heuristic (no OMB principal-city match)", fallbacks),
-        ("placed at area centroid", centroid),
-        ("snapped off water/foreign cells", snapped),
-        ("pulled back across a state line into their own state", pulled),
-        ("moved to a free neighbouring cell", moved),
-        ("still sharing a cell", shared),
-        ("GDP uses a population split of a BEA combined area", split_gdp),
-        ("without GDP", no_gdp),
-        ("with a one-hex footprint (no cell with a county-sample majority)", own_only),
-        ("without a population series", no_series),
-        *((f"without growth: {why}", names) for why, names in sorted(no_growth.items())),
-    ):
+    print(f"    {len(cities)} cities ({len(arranjos)} arranjos + {len(cities) - len(arranjos) + len(no_seat)} isolated)")
+    for label, items in (("without a seat point (left out)", no_seat), ("snapped off water/foreign cells", snapped),
+                         ("moved to a free neighbouring cell", moved), ("still sharing a cell", shared)):
         if items:
             print(f"    {len(items)} {label}: {', '.join(items[:8])}{' …' if len(items) > 8 else ''}")
 
-    nat_rec = acs["geos"].get("0100000US", {})
-    nation = economy(nat_rec, gdp_profile(bea["nation"], bea["year"]))
-    nation["growth"] = growth.nation()
-    nation["growth_years"] = growth.years
+    nation = empty_economy(census["nation"]["1"], gdp["nation"]["1"], gdp_year)
     write_web("cities.json", cities)
     write_web(
         "nation.json",
         {
-            "vintage": acs_payload["vintage"],
-            "year": acs["year"],
-            "gdp_vintage": bea_payload["vintage"],
+            "vintage": "Censo 2022",
+            "year": 2022,
+            "gdp_vintage": f"IBGE, PIB dos Municípios {gdp_year}",
+            "city_rule": CITY_RULE,
             "nation": nation,
-            "yields": YIELDS,
+            "yields": brazil_yields(),
             "industries": {k: label for k, (_, label) in INDUSTRY_LINES.items()},
             "gdp_industries": GDP_INDUSTRIES,
         },

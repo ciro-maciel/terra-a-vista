@@ -16,6 +16,6 @@ function rollover(n, fmt) {
 }
 
 export const compact = (n) => rollover(n, baseCompact);
-export const money = (n) => (n == null ? "–" : "$" + compact(n));
+export const money = (n) => (n == null ? "–" : "R$ " + compact(n));
 export const yieldValue = (y, v) => (y.unit === "usd" ? money(v) : compact(v));
 export const popShort = (n) => rollover(n, basePopShort);

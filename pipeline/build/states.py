@@ -19,11 +19,11 @@ from collections import deque
 
 from ..core.hexgrid import HexGrid
 from ..core.paths import WEB_DATA
-from ..core.store import load_interim, write_web
+from ..core.store import load_interim, load_interim_payload, write_web
 from .growth import Growth
 from .yields import YIELDS, economy, gdp_profile
 
-REQUIRES = ["_world", "census_boundaries", "acs_1yr", "bea_gdp", "pep_population", "resources.json"]
+REQUIRES = ["_world", "ibge_boundaries", "ibge_census", "ibge_gdp", "cities.json"]
 PRODUCES = ["states.json"]
 
 MIN_LABEL_KM, MAX_LABEL_KM = 14.0, 110.0  # suggested font height range, map km
@@ -152,14 +152,15 @@ def energy_by_state() -> dict[str, dict] | None:
 
 
 def build() -> None:
+    from .cities import empty_economy
+
     world = load_interim("_world")
-    acs_all = load_interim("acs_1yr")
-    acs = acs_all["geos"]
-    growth = Growth(load_interim("pep_population"), acs_all["year"])  # Census estimates, see growth.py
-    bea = load_interim("bea_gdp")
+    census = load_interim("ibge_census")
+    gdp = load_interim("ibge_gdp")
+    gdp_year = load_interim_payload("ibge_gdp")["data"]["year"]
     grid = HexGrid(**world["grid"])
     owner = world["owner"]
-    names = {s["fips"]: s for s in load_interim("census_boundaries")["states"]}
+    names = {s["fips"]: s for s in load_interim("ibge_boundaries")["states"]}
 
     energy = energy_by_state()
     if energy is None:
@@ -167,16 +168,13 @@ def build() -> None:
     states = []
     for i, fips in enumerate(world["states"]):
         meta = names.get(fips, {"abbr": None, "name": fips})
-        rec = acs.get("0400000US" + fips, {})
-        econ = economy(rec, gdp_profile(bea["states"].get(fips), bea["year"]))
+        econ = empty_economy(census["states"].get(fips), gdp["states"].get(fips), gdp_year)
         states.append(
             {
                 "fips": fips,
                 "abbr": meta["abbr"],
                 "name": meta["name"],
                 **econ,
-                "growth": growth.state(fips),
-                "growth_years": growth.years,
                 "ranks": {},
                 "label": label_anchor(grid, owner, i, meta["name"]),
                 "land": land_shares(world, i),
@@ -193,4 +191,3 @@ def build() -> None:
     write_web("states.json", states)
     no_label = [s["abbr"] for s in states if not s["label"]]
     print(f"    {len(states)} states" + (f"; no hexes (no label anchor): {', '.join(no_label)}" if no_label else ""))
-

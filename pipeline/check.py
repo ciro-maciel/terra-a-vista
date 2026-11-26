@@ -306,9 +306,9 @@ def check_cities(r: Report, cities, ctx: dict | None, yield_keys=YIELD_KEYS) -> 
     dup = [i for i, k in ids.items() if k > 1]
     if dup:
         r.fail(f"cities.json: duplicate ids {_sample(dup)}")
-    bad_id = [c.get("id") for c in cities if not (isinstance(c.get("id"), str) and re.fullmatch(r"\d{5}", c["id"]))]
+    bad_id = [c.get("id") for c in cities if not (isinstance(c.get("id"), str) and re.fullmatch(r"\d{7}", c["id"]))]
     if bad_id:
-        r.fail(f"cities.json: ids must be 5-digit CBSA strings: {_sample(bad_id)}")
+        r.fail(f"cities.json: ids must be 7-digit IBGE municipality codes (the principal municipality): {_sample(bad_id)}")
     pops = [c.get("population") for c in cities]
     if any(not is_num(p) or p <= 0 for p in pops):
         r.fail("cities.json: every city needs a positive population")
@@ -354,8 +354,8 @@ def _check_city_view(r: Report, what: str, c: dict, ctx: dict | None, ids: set) 
         if owner and any(not 0 <= v < ctx["n"] or owner[v] < 0 for v in fp):
             r.fail(f"{what}: footprint has cells that are not US land")
     cs = c.get("counties")
-    if not (isinstance(cs, list) and all(isinstance(g, str) and re.fullmatch(r"\d{5}", g) for g in cs)):
-        r.fail(f"{what}: counties must be a list of 5-digit GEOID strings")
+    if not (isinstance(cs, list) and all(isinstance(g, str) and re.fullmatch(r"\d{7}", g) for g in cs)):
+        r.fail(f"{what}: counties must be a list of 7-digit IBGE municipality codes")
     ps = c.get("pop_series")
     if ps is not None and not (isinstance(ps, dict) and ps and all(re.fullmatch(r"\d{4}", str(y)) for y in ps)
                                and all(v is None or (is_num(v) and v > 0) for v in ps.values())):
@@ -670,8 +670,8 @@ def check_counties(r: Report, doc, ctx: dict | None, city_ids: set | None) -> No
                     errs[f"{k} not text"] += 1
             elif not is_num(v) or (fmt[k] == "pct" and not 0 <= v <= 1) or (k in ("population", "land_km2", "density") and v < 0):
                 errs[f"{k} out of range"] += 1
-        if not (isinstance(rec["geoid"], str) and re.fullmatch(r"\d{5}", rec["geoid"])):
-            errs["geoid not 5 digits"] += 1
+        if not (isinstance(rec["geoid"], str) and re.fullmatch(r"\d{7}", rec["geoid"])):
+            errs["geoid not a 7-digit IBGE code"] += 1
         if city_ids is not None and rec["cbsa"] is not None and rec["cbsa"] not in city_ids:
             errs["cbsa not a cities.json id"] += 1
     if errs:

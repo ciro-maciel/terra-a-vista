@@ -288,7 +288,7 @@ const COMPARE = {
   ],
   housing: [
     ["Home value", (c) => c.home_value, money],
-    ["Rent / mo", (c) => c.median_rent, (v) => (v == null ? "–" : "$" + int(v))],
+    ["Rent / mo", (c) => c.median_rent, (v) => (v == null ? "–" : "R$ " + int(v))],
     ["Rent burden", (c) => c.rent_burden, (v) => pct(v, 0)],
     ["Jobless", (c) => c.unemployment, (v) => pct(v)],
   ],

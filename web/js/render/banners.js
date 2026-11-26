@@ -639,6 +639,19 @@ export function drawBanners(ctx, cam, w, state, yields, nation = state.nation) {
       tiered = false; // no room for the yield row: try the one-line plate
       layout();
     }
+    if (blocked(rect)) {
+      // Slide the plate half its width right, then left, the pointer still on the city (Rio beside São Paulo).
+      const x0 = x;
+      for (const dx of [width / 2, -width / 2]) {
+        const nx = Math.round(x0 + dx);
+        const r2 = { ...rect, x: nx - GAP_X };
+        if (nx < bx0 || nx + width > bx1 || blocked(r2)) continue;
+        x = nx;
+        rect = r2;
+        ptr = Math.round(Math.max(9, Math.min(width - 9, sx - x)));
+        break;
+      }
+    }
     if (blocked(rect)) continue;
     placed.push(rect);
     const onScreen = x + width > 0 && x < cam.w && y + height > 0 && y < cam.h;

@@ -16,14 +16,14 @@ export function formatLensValue(lens, v) {
   if (v == null || !Number.isFinite(v)) return "no data";
   switch (lens.format) {
     case "category": return lens.categories?.[Math.round(v)]?.name ?? "no data";
-    case "usd": return "$" + compact(v);
+    case "usd": return "R$ " + compact(v);
     case "pct": return (v * 100).toFixed(v < 0.1 ? 1 : 0) + "%";
     case "int": return intish(v) + (lens.unit?.startsWith("people") ? " /km²" : lens.unit ? " " + lens.unit : "");
     case "minutes": return v.toFixed(0) + " min";
     case "years": return v.toFixed(1) + " yrs";
     case "float": return (v < 10 ? v.toFixed(1) : compact(v)) + (lens.unit ? " " + lens.unit : "");
   }
-  if (lens.unit?.includes("$")) return "$" + compact(v);
+  if (lens.unit?.includes("$")) return "R$ " + compact(v);
   return (v < 10 ? v.toFixed(1) : compact(v)) + (lens.unit?.startsWith("people") ? " /km²" : "");
 }
 

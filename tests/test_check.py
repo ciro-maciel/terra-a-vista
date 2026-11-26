@@ -31,20 +31,20 @@ def dataset():
             + [{"id": i, "key": k, "name": k, "color": "#123456"} for i, k in enumerate(check.COVER_KEYS) if i],
         },
         "states": [{"fips": "01", "abbr": "AL", "name": "Alabama"}, {"fips": "02", "abbr": "AK", "name": "Alaska"}],
-        "counties": [{"geoid": "01001", "name": "A County"}, {"geoid": "01003", "name": "B County"}],
+        "counties": [{"geoid": "1100015", "name": "A County"}, {"geoid": "1100023", "name": "B County"}],
         "rivers": [{"name": "Big", "rank": 1, "pts": [1.0, 1.0, 50.0, 30.0]}],
     }
     # Ranks: equal values keep population order; Small has the higher GDP per person (same GDP, fewer people).
     city_ranks = {"population": 1, "gdp": 1, "gdp_per_capita": 2, "growth": 1,
                   **{k: (None if v is None else 1) for k, v in YIELDS.items()}}
     cities = [
-        {"id": "10000", "name": "Big", "full": "Big, AL", "states": ["AL"], "metro": True, "capital": True,
-         "x": 1.0, "y": 1.0, "cell": 0, **ECON, "counties": ["01001"], "footprint": [0, 1],
-         "pop_series": {"2020": 990, "2021": 995, "2025": 1020}, "ranks": city_ranks, "peers": ["10001"]},
-        {"id": "10001", "name": "Small", "full": "Small, AL", "states": ["AL"], "metro": False, "capital": False,
-         "x": 40.0, "y": 40.0, "cell": 4, **ECON, "population": 10, "counties": ["01003"], "footprint": [3, 4],
+        {"id": "3550308", "name": "Big", "full": "Big, AL", "states": ["AL"], "metro": True, "capital": True,
+         "x": 1.0, "y": 1.0, "cell": 0, **ECON, "counties": ["1100015"], "footprint": [0, 1],
+         "pop_series": {"2020": 990, "2021": 995, "2025": 1020}, "ranks": city_ranks, "peers": ["3304557"]},
+        {"id": "3304557", "name": "Small", "full": "Small, AL", "states": ["AL"], "metro": False, "capital": False,
+         "x": 40.0, "y": 40.0, "cell": 4, **ECON, "population": 10, "counties": ["1100023"], "footprint": [3, 4],
          "pop_series": None, "ranks": {k: (None if v is None else (1 if k == "gdp_per_capita" else 2))
-                                       for k, v in city_ranks.items()}, "peers": ["10000"]},
+                                       for k, v in city_ranks.items()}, "peers": ["3550308"]},
     ]
     # Two states, so ranks have an order to check. Yields: AL > AK except culture (null in both).
     ranks = {k: (None if v is None else 1) for k, v in YIELDS.items()}
@@ -71,7 +71,7 @@ def dataset():
     resources = {"types": [{"id": "nuclear", "name": "Nuclear", "category": "energy", "emoji": "*", "icon": "r-n", "color": "#e8d44d",
                             "unit": "MW", "description": "≥ 1 MW", "source": "acs_5yr"}],
                  "items": [{"type": "nuclear", "name": "P", "x": 5.0, "y": 5.0, "cell": 0, "value": 100, "detail": "",
-                            "state": "AL", "cbsa": "10000"}],
+                            "state": "AL", "cbsa": "3550308"}],
                  "summary": {"note": "mapped sites only", "national": {"nuclear": {"count": 1, "value": 100, "unit": "MW"}},
                              "states": {"AL": {"nuclear": {"count": 1, "value": 100, "unit": "MW"}}}}}
     county_fields = [{"key": k, "label": k, "format": f, "unit": None, "higher_is": "neutral", "source": "acs_5yr",
@@ -79,11 +79,11 @@ def dataset():
                      for k, f in [("geoid", "text"), ("name", "text"), ("state", "text"), ("population", "int"),
                                   ("land_km2", "km2"), ("density", "float"), ("poverty", "pct"), ("cbsa", "text")]]
     counties = {"vintage": "ACS 2024 5-year", "fields": county_fields, "columns": [f["key"] for f in county_fields],
-                "rows": [["01001", "A County", "AL", 1000, 100.0, 10.0, 0.12, "10000"],
-                         ["01003", "B County", "AL", 2000, 50.0, 40.0, None, None]]}
+                "rows": [["1100015", "A County", "AL", 1000, 100.0, 10.0, 0.12, "3550308"],
+                         ["1100023", "B County", "AL", 2000, 50.0, 40.0, None, None]]}
     interim = {
-        "_world": {"data": {"counties": ["01001", "01003"], "county_samples": [[0] * 7, [0] * 7, [], [1] * 7, [1] * 7, []]}},
-        "acs_5yr": {"data": {"geos": {"0500000US01001": {"B01003_001": 1000.0}, "0500000US01003": {"B01003_001": 2000.0}}}},
+        "_world": {"data": {"counties": ["1100015", "1100023"], "county_samples": [[0] * 7, [0] * 7, [], [1] * 7, [1] * 7, []]}},
+        "acs_5yr": {"data": {"geos": {"0500000US1100015": {"B01003_001": 1000.0}, "0500000US1100023": {"B01003_001": 2000.0}}}},
     }
     return {"world.json": world, "cities.json": cities, "states.json": states, "nation.json": nation,
             "lenses.json": lenses, "sources.json": sources, "resources.json": resources, "counties.json": counties}, interim
@@ -153,7 +153,7 @@ class CheckTest(unittest.TestCase):
             "relief on water": lambda w: w["world.json"]["relief"].__setitem__(2, 2),
             "pct over 100": lambda w: w["world.json"]["pct"]["crop"].__setitem__(0, 90),
             "cities unsorted": lambda w: w["cities.json"].reverse(),
-            "duplicate city id": lambda w: w["cities.json"][1].__setitem__("id", "10000"),
+            "duplicate city id": lambda w: w["cities.json"][1].__setitem__("id", "3550308"),
             "bad yield key": lambda w: w["cities.json"][0].__setitem__("yields", {"food": 1}),
             "unemployment as percent": lambda w: w["states.json"][0].__setitem__("unemployment", 5.0),
             "state order": lambda w: w["states.json"].reverse(),
@@ -196,7 +196,7 @@ class CheckTest(unittest.TestCase):
             "county geoid not a string": lambda w: w["cities.json"][0].__setitem__("counties", [1001]),
             "pop_series negative": lambda w: w["cities.json"][0]["pop_series"].__setitem__("2021", -5),
             "pop_series bad year": lambda w: w["cities.json"][0]["pop_series"].__setitem__("y2", 5),
-            "peer is self": lambda w: w["cities.json"][0].__setitem__("peers", ["10000"]),
+            "peer is self": lambda w: w["cities.json"][0].__setitem__("peers", ["3550308"]),
             "unknown peer": lambda w: w["cities.json"][0].__setitem__("peers", ["99999"]),
             "city ranks missing key": lambda w: w["cities.json"][0]["ranks"].pop("gdp_per_capita"),
             "city ranks against value": lambda w: (w["cities.json"][0]["ranks"].__setitem__("gdp_per_capita", 1),
@@ -234,7 +234,7 @@ class CheckTest(unittest.TestCase):
     def test_published_zero_is_a_note(self):
         web, interim = dataset()
         web["cities.json"][0]["yields"] = {**YIELDS, "food": 0}
-        interim["acs_1yr"] = {"data": {"cbsa": {"10000": {"C24030_004": 0.0, "C24030_031": 0.0}}}}
+        interim["acs_1yr"] = {"data": {"cbsa": {"3550308": {"C24030_004": 0.0, "C24030_031": 0.0}}}}
         rep = self.run_check(web, interim)
         self.assertEqual(self.levels(rep, "WARN"), [])
         self.assertTrue(any("published as 0" in m for m in self.levels(rep, "NOTE")))
@@ -282,9 +282,9 @@ class CheckTest(unittest.TestCase):
         self.assertTrue(any("density conservation" in m for m in self.levels(rep, "WARN")))
 
     def _add_unsampled_county(self, web, interim, pop):
-        interim["_world"]["data"]["counties"].append("01005")
-        web["world.json"]["counties"].append({"geoid": "01005", "name": "C County"})
-        interim["acs_5yr"]["data"]["geos"]["0500000US01005"] = {"B01003_001": pop}
+        interim["_world"]["data"]["counties"].append("1100031")
+        web["world.json"]["counties"].append({"geoid": "1100031", "name": "C County"})
+        interim["acs_5yr"]["data"]["geos"]["0500000US1100031"] = {"B01003_001": pop}
 
     def test_unsampled_county_placed_is_noted(self):
         """The lens carries the unsampled county's people (ratio exactly 1), so the line is only a NOTE."""

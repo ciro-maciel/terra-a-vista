@@ -75,12 +75,18 @@ low/med/high) ≥ 30% of land samples. NLCD 21 (developed open space) counts tow
 
 ## cities.json
 
+**Brazil (Terra à Vista):** a city is an IBGE arranjo populacional, or a municipality outside every arranjo with at
+least 50,000 people (Censo 2022); the rule text is in nation.json `city_rule`. `id` is the 7-digit code of the
+principal municipality (the one the arranjo title names first), `counties` are member municipality codes. Until RAIS
+arrives, only `population`, `gdp` (BRL, current prices) and `yields.gold` are filled; every other economic field is
+null. Money fields keep the unit key `usd`, which the browser reads as "money" and shows as R$.
+
 A list sorted by population, descending:
 
 ```jsonc
 {
-  "id": "35620",                  // 5-digit CBSA code
-  "name": "New York", "full": "New York-Newark-Jersey City, NY-NJ Metro Area",
+  "id": "3550308",                // 7-digit IBGE code of the principal municipality
+  "name": "São Paulo", "full": "Arranjo Populacional de São Paulo/SP",
   "states": ["NY", "NJ"], "metro": true, "capital": false,   // capital: the national capital (Washington)
   "x": 3912.1, "y": 1100.4,       // principal city's true position (map km)
   "cell": 4567,                   // land cell (owner >= 0), unique per city where possible; banners anchor here
@@ -94,7 +100,7 @@ A list sorted by population, descending:
   "gdp_undisclosed": null,          // optional: total minus the industries above when some stay null (usd), else null
   "gdp_estimated": ["utilities"],   // optional: industries whose value includes an apportioned county figure, or null
   "growth": 0.0174, "growth_years": [2021, 2025],         // population change, see below
-  "counties": ["34003", "36005", "..."],                  // member county GEOIDs (OMB delineation, list 1), sorted
+  "counties": ["3503901", "3550308", "..."],              // member municipality codes (IBGE), sorted
   "footprint": [3721, 3722, 3845, "..."],                 // US land cells of the metro, sorted (see below)
   "pop_series": {"2020": 20081935, "2021": 19708911, "...": null, "2025": 20112448},  // PEP, or null
   "ranks": {"population": 1, "gdp": 1, "gdp_per_capita": 12, "growth": 301,

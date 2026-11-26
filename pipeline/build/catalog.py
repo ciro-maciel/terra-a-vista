@@ -30,6 +30,8 @@ def build() -> None:
             for name in names
             for m in [manifest[name]]
         ]
+        if not payload and not files:
+            continue  # a registered source this map never processed (the upstream US ones): the Almanac cites only what is used
         vintage = payload.get("vintage")
         out.append({**s.info.to_dict(), "vintage": vintage, "files": files})
     write_web("sources.json", out)

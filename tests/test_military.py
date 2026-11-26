@@ -63,8 +63,8 @@ def inst(id, county, component="army", tier="base", status="act", area=50.0, cel
 class EncampmentRuleTest(unittest.TestCase):
     def setUp(self):
         self.loc = SimpleNamespace(cities={
-            "A": {"counties": ["01001"], "footprint": [0]},
-            "B": {"counties": ["01003"], "footprint": [3]},
+            "A": {"counties": ["1100015"], "footprint": [0]},
+            "B": {"counties": ["1100023"], "footprint": [3]},
             "C": {"counties": ["01005"], "footprint": [4]},
             "D": {"counties": ["01007"], "footprint": [9]},
         })
@@ -74,9 +74,9 @@ class EncampmentRuleTest(unittest.TestCase):
         return {f"0500000US{g}": {"B23025_006": a, "B23025_001": p} for g, (a, p) in af.items()}
 
     def test_tiers_thresholds_and_exclusions(self):
-        sites = [inst("fort", "01001"), inst("armory", "01003", component="army_guard"),
+        sites = [inst("fort", "1100015"), inst("armory", "1100023", component="army_guard"),
                  inst("office", "01005", tier="site"), inst("ship", "01007", component="navy")]
-        acs = self.acs(**{"01001": (500, 10000), "01003": (900, 10000), "01005": (900, 10000), "01007": (150, 10000)})
+        acs = self.acs(**{"1100015": (500, 10000), "1100023": (900, 10000), "01005": (900, 10000), "01007": (150, 10000)})
         out = military.cities_block(self.loc, sites, [], acs)
         self.assertEqual(out["A"]["tier"], "fortress")  # 5%
         self.assertNotIn("B", out)  # Guard only
@@ -87,27 +87,27 @@ class EncampmentRuleTest(unittest.TestCase):
         self.assertEqual(out["A"]["share"], 0.05)
 
     def test_count_threshold_and_range_footprint(self):
-        acs = self.acs(**{"01001": (2500, 1_000_000), "01003": (1500, 1_000_000)})
+        acs = self.acs(**{"1100015": (2500, 1_000_000), "1100023": (1500, 1_000_000)})
         rng = [{"cells": [3], "installation": "range"}]
-        sites = [inst("fort", "01001"), inst("range", "09999", tier="major", area=900)]
+        sites = [inst("fort", "1100015"), inst("range", "09999", tier="major", area=900)]
         out = military.cities_block(self.loc, sites, rng, acs)
         self.assertNotIn("A", out)  # 2,500 but only 0.25%: a big metro is not a garrison town
-        acs["0500000US01001"]["B23025_006"] = 3500
+        acs["0500000US1100015"]["B23025_006"] = 3500
         out = military.cities_block(self.loc, sites, rng, acs)
         self.assertEqual(out["A"]["tier"], "garrison")  # 0.35%, at least 2,000
         self.assertNotIn("B", out)  # range covers its hex, but 1,500 and 0.15% fail (b)
-        acs["0500000US01003"]["B23025_006"] = 20000
+        acs["0500000US1100023"]["B23025_006"] = 20000
         out = military.cities_block(self.loc, sites, rng, acs)
         self.assertEqual(out["B"]["installations"], ["range"])
 
     def test_naval_by_tier_weight_not_parcel_count(self):
-        sites = [inst("navy1", "01001", component="navy"), inst("navy2", "01001", component="navy"),
-                 inst("navy3", "01001", component="navy"), inst("big", "01001", component="air_force", tier="major")]
-        out = military.cities_block(self.loc, sites, [], self.acs(**{"01001": (500, 10000)}))
+        sites = [inst("navy1", "1100015", component="navy"), inst("navy2", "1100015", component="navy"),
+                 inst("navy3", "1100015", component="navy"), inst("big", "1100015", component="air_force", tier="major")]
+        out = military.cities_block(self.loc, sites, [], self.acs(**{"1100015": (500, 10000)}))
         self.assertFalse(out["A"]["naval"])  # three small Navy parcels do not outweigh one major Air Force base
 
     def test_missing_acs_is_not_zero(self):
-        out = military.cities_block(self.loc, [inst("fort", "01001")], [], {})
+        out = military.cities_block(self.loc, [inst("fort", "1100015")], [], {})
         self.assertEqual(out, {})
 
 
@@ -158,14 +158,14 @@ def good_doc():
         "components": military.COMPONENTS,
         "installations": [{"id": "fort-usa", "name": "Fort", "component": "army", "joint": False, "status": "act",
                            "tier": "major", "area_km2": 500.0, "cells": [0, 1], "x": 5.0, "y": 5.0, "cell": 0,
-                           "county": "01001", "cbsa": "10000", "state": "AL"}],
+                           "county": "1100015", "cbsa": "3550308", "state": "AL"}],
         "ranges": [{"id": "fort-usa", "name": "Fort", "component": "army", "area_km2": 500.0, "cells": [0, 1],
                     "state": "AL", "installation": "fort-usa"}],
         "states": {"AL": {"personnel": {"active": {"army": 10, "total": 10}, "guard_reserve": {"total": None},
                                         "civilian": {"total": 3}, "total": 13},
-                          "spending": {"total": 1.5e9, "pct_gdp": 0.02, "top_counties": [{"name": "A", "county": "01001"}]}}},
+                          "spending": {"total": 1.5e9, "pct_gdp": 0.02, "top_counties": [{"name": "A", "county": "1100015"}]}}},
         "national": {"veterans": 1},
-        "cities": {"10000": {"tier": "fortress", "armed_forces": 100, "share": 0.05, "naval": False,
+        "cities": {"3550308": {"tier": "fortress", "armed_forces": 100, "share": 0.05, "naval": False,
                              "installations": ["fort-usa"]}},
     }
 
@@ -197,8 +197,8 @@ class MilitaryCheckTest(unittest.TestCase):
             "range cells": lambda d: d["ranges"][0].update(cells=[5]),
             "pct_gdp": lambda d: d["states"]["AL"]["spending"].update(pct_gdp=2.5),
             "personnel": lambda d: d["states"]["AL"]["personnel"]["active"].update(army=-1),
-            "city tier": lambda d: d["cities"]["10000"].update(tier="castle"),
-            "city id": lambda d: d["cities"].update({"99999": d["cities"]["10000"]}),
+            "city tier": lambda d: d["cities"]["3550308"].update(tier="castle"),
+            "city id": lambda d: d["cities"].update({"99999": d["cities"]["3550308"]}),
             "dup id": lambda d: d["installations"].append(dict(d["installations"][0])),
         }
         for what, change in cases.items():

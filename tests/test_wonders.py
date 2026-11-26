@@ -22,7 +22,7 @@ def unit(code, type_, state="UT", rings=None, park=None):
 def fake_place(loc, lon, lat, rings=2, filed=None, county=None):
     if filed == "AK":
         return None  # outside the lower 48
-    return {"x": 1.0, "y": 1.0, "cell": 0, "county": "01001", "cbsa": county or "10000", "state": filed or "AL"}
+    return {"x": 1.0, "y": 1.0, "cell": 0, "county": "1100015", "cbsa": county or "3550308", "state": filed or "AL"}
 
 
 class ParkRulesTest(unittest.TestCase):
@@ -119,7 +119,7 @@ def good_doc():
                   {"id": "landmark", "kind": "landmark", "curated": True, "text": "t"}],
         "wonders": [{"id": f"nps-P{k}", "name": "P", "short": "P", "kind": "natural", "rule": "national_park",
                      "rank": k, "metrics": {"visits": 10, "year": 2025}, "x": 1.0, "y": 1.0, "cell": 0,
-                     "cells": [0, 1] if k == 1 else None, "county": "01001", "cbsa": "10000", "state": "AL",
+                     "cells": [0, 1] if k == 1 else None, "county": "1100015", "cbsa": "3550308", "state": "AL",
                      "curated": False} for k in range(1, 31)]
                    + [{"id": "nhl-1", "name": "L", "short": "L", "kind": "landmark", "rule": "landmark", "rank": 1,
                        "metrics": {}, "x": 1.0, "y": 1.0, "cell": 3, "cells": None, "county": None, "cbsa": None,

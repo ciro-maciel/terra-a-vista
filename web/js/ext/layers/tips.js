@@ -12,10 +12,10 @@ const sign = (x) => (x > 0 ? "+" : x < 0 ? "−" : "±");
 function usd(n) {
   if (n == null || !Number.isFinite(n)) return "–";
   const a = Math.abs(n);
-  if (a >= 1e12) return `$${(n / 1e12).toFixed(2)} trillion`;
-  if (a >= 1e9) return `$${(n / 1e9).toFixed(a >= 1e10 ? 1 : 2)} billion`;
-  if (a >= 1e6) return `$${(n / 1e6).toFixed(1)} million`;
-  return `$${int(n)}`;
+  if (a >= 1e12) return `R$ ${(n / 1e12).toFixed(2)} trillion`;
+  if (a >= 1e9) return `R$ ${(n / 1e9).toFixed(a >= 1e10 ? 1 : 2)} billion`;
+  if (a >= 1e6) return `R$ ${(n / 1e6).toFixed(1)} million`;
+  return `R$ ${int(n)}`;
 }
 
 const HUB_NAME = { L: "Large hub", M: "Medium hub", S: "Small hub", N: "Nonhub primary airport" };

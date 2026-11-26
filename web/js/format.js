@@ -8,8 +8,8 @@ export function compact(n) {
   return String(Math.round(n));
 }
 
-export const money = (n) => (n == null ? "–" : "$" + compact(n));
-export const dollars = (n) => (n == null ? "–" : "$" + Math.round(n).toLocaleString("en-US"));
+export const money = (n) => (n == null ? "–" : "R$ " + compact(n));
+export const dollars = (n) => (n == null ? "–" : "R$ " + Math.round(n).toLocaleString("pt-BR"));
 export const int = (n) => (n == null ? "–" : Math.round(n).toLocaleString("en-US"));
 export const pct = (x, d = 1) => (x == null ? "–" : (x * 100).toFixed(d) + "%");
 

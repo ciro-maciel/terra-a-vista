@@ -52,7 +52,7 @@ export function fmtCell(format, v, unit) {
   const a = Math.abs(v);
   switch (format) {
     case "int": case "count": return a >= 1e4 ? count3(v) : int(v);
-    case "usd": return a >= 1e4 ? `$${count3(v)}` : dollars(v);
+    case "usd": return a >= 1e4 ? `R$ ${count3(v)}` : dollars(v);
     case "money": return money(v);
     case "km2": return a >= 1e5 ? `${count3(v)} km²` : `${int(v)} km²`;
     case "float": return a >= 1e4 ? count3(v) : fmtValue(format, v, unit);
